@@ -1,66 +1,48 @@
 # Render Deployment State
 
-> This file is the deployment ledger for СОСТОЯНИЕ / Promomed. Update it after every production/demo deployment. GitHub `PetrFedin/promomed` is the product source-of-truth.
+> Operational ledger for СОСТОЯНИЕ / Promomed. Product source-of-truth: `PetrFedin/promomed/main`.
 
-## Current live state — 2026-09-30
+## Current authoritative live — 2026-09-30
 
-### Operational web service
-
-- Render service: `sostoyanie-promomed-v06`
-- Service ID: `srv-datcnn893c1s73a3irng`
-- URL: https://sostoyanie-promomed-v06.onrender.com
+- Release: **v1.4 Health Media & Conference**
+- Repository: `PetrFedin/promomed`
+- Branch: `main`
+- Verified application Git SHA: `7315c8036050a85254d91d9504c063f09edeedb6`
+- Render service: `sostoyanie-promomed-live`
+- Service ID: `srv-daug7pnlot8c73b1aja0`
+- Deploy ID: `dep-daug9m1srm7s73c59dk0`
+- URL: https://sostoyanie-promomed-live.onrender.com
 - Region: Frankfurt
 - Plan: free
-- Runtime: Python
+- Runtime: Python 3.12.8
 - Build: `python -m py_compile server.py`
 - Start: `python server.py`
 - Auto deploy: yes
-- Live deploy: `dep-daudqeflot8c73aomq30`
-- Live source commit: `32ad35e4cc3f1ad70d627e239fdb44faa23bd088`
-- Live release: v1.3 Pilot Command System
-- Status at capture: LIVE
+- Render status: **LIVE**
+- Runtime evidence: `SOSTOYANIE v1.4 health media conference listening 10000`
+- HTTP evidence: Render observed `HEAD / 200` and `GET / 200`
+- Build evidence: **Build successful**
+- Error logs at verification: no deployment/runtime error reported.
 
-### Static sales/demo surface
+## v1.4 product state
 
-- Render service: `sostoyanie-promomed-preview`
-- Service ID: `srv-dat45kgjo6nc73e6aofg`
-- URL: https://sostoyanie-promomed-preview.onrender.com
-- Auto deploy: yes
-- Live deploy: `dep-daudqgek1f9s73beucu0`
-- Live source commit: `667fe54e2e26aca34e30f88476bbe3620d1ae055`
-- Live release: v1.3 Pilot Command System
-- Status at capture: LIVE
+- homepage rebuilt as a year-round health media/product/conference hub;
+- Promomed editorial/company/product context;
+- products presented inside an educational and regulatory-aware journey, not as disguised independent recommendation;
+- richer Media: explainers, R&D/company stories, healthy launches, FM/podcast, lectorium and СОСТОЯНИЕ Box concept;
+- conference expanded from 18 to **42 events**;
+- **7 parallel venues**, 09:00–20:00;
+- keynote, lecture, debate, panel, roundtable, workshop, practice, appointments, community, networking and B2B formats;
+- existing v1.3 Pilot Command System remains part of the release.
 
-## Repository migration state
+## Legacy Render services
 
-The two existing live services were originally created from temporary branches in `PetrFedin/Moscow`:
-
-- `deploy/promomed-v06-interactive`
-- `deploy/promomed-sostoyanie-preview`
-
-The complete current source has now been migrated to `PetrFedin/promomed/main`.
-
-**Migration blocker:** Render's GitHub integration currently cannot fetch the private `PetrFedin/promomed` repository. An attempted direct service creation on 2026-09-30 returned `repository URL is invalid or unfetchable`. Until GitHub access is granted to Render for this private repository, the legacy Render services must remain attached to the old branches to keep the existing URLs live.
-
-After access is granted, the required cutover is:
-
-1. deploy `PetrFedin/promomed/main` as the authoritative Render service;
-2. verify `/health`, role flows and `/api/command`;
-3. record new service/deploy IDs and exact Git SHA here;
-4. retire the two legacy Render services or repoint traffic;
-5. remove the two Promomed branches from `PetrFedin/Moscow`.
+Historical services `sostoyanie-promomed-v06` and `sostoyanie-promomed-preview` were created from temporary Moscow branches. They are no longer the source-of-truth. The authoritative service above is built directly from `PetrFedin/promomed/main`.
 
 ## Release completion rule
 
-A change is **not complete** merely because it is committed. Every completed release must record:
+Every completed wave records: application Git SHA, release version, Render service ID, deploy ID, URL, build/runtime verification and known production boundaries.
 
-- Git SHA in `PetrFedin/promomed`;
-- release/version;
-- Render service ID;
-- Render deploy ID;
-- deployment status;
-- public URL;
-- smoke-test result;
-- known blockers/deferred boundaries.
+## Known production boundary
 
-The newest verified entry in this file is the operational answer to “where did we finish?”.
+Persistent production datastore is still not admitted: current free service uses SQLite under `/tmp`. Production pilot requires durable PostgreSQL/migrations/session-consent-audit authority.
