@@ -1,5 +1,5 @@
 {
-  "captured_at": "2026-09-30T15:48:21+03:00",
+  "captured_at": "2026-09-30T15:52:20+03:00",
   "source_of_truth": {
     "repository": "PetrFedin/promomed",
     "branch": "main"
@@ -9,8 +9,8 @@
     "service": "sostoyanie-promomed-live",
     "service_id": "srv-daug7pnlot8c73b1aja0",
     "url": "https://sostoyanie-promomed-live.onrender.com",
-    "deploy_id": "dep-daug9m1srm7s73c59dk0",
-    "application_git_sha": "7315c8036050a85254d91d9504c063f09edeedb6",
+    "deploy_id": "dep-daugbl8jo6nc738agrmg",
+    "application_git_sha": "6b6fc601e6694edbf6c98a0922c34d92d3f789d4",
     "status": "live",
     "region": "frankfurt",
     "plan": "free",
