@@ -55,6 +55,9 @@ CREATE TABLE IF NOT EXISTS challenges(email TEXT,challenge_id TEXT,status TEXT,d
 CREATE TABLE IF NOT EXISTS challenge_actions(email TEXT,challenge_id TEXT,action_id TEXT,label TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,challenge_id,action_id));
 CREATE TABLE IF NOT EXISTS speakers(id TEXT PRIMARY KEY,name TEXT,role TEXT,org TEXT,bio TEXT,topics TEXT,kind TEXT);
 CREATE TABLE IF NOT EXISTS partners(id TEXT PRIMARY KEY,name TEXT,category TEXT,description TEXT,status TEXT);
+CREATE TABLE IF NOT EXISTS product_catalog(id TEXT PRIMARY KEY,name TEXT,inn TEXT,company TEXT,theme TEXT,kind TEXT,summary TEXT,source_label TEXT,source_url TEXT,disclosure TEXT);
+CREATE TABLE IF NOT EXISTS content_catalog(id TEXT PRIMARY KEY,kind TEXT,theme TEXT,title TEXT,dek TEXT,duration TEXT,author TEXT,reviewer TEXT,partner TEXT,status TEXT);
+CREATE TABLE IF NOT EXISTS partner_packages(id TEXT PRIMARY KEY,name TEXT,tier TEXT,summary TEXT,deliverables TEXT,measurement TEXT,disclosure TEXT);
 CREATE TABLE IF NOT EXISTS session_speakers(item_id TEXT,speaker_id TEXT,PRIMARY KEY(item_id,speaker_id));
 CREATE TABLE IF NOT EXISTS appointment_slots(id TEXT PRIMARY KEY,item_id TEXT,start TEXT,end TEXT,capacity INTEGER,partner_id TEXT);
 CREATE TABLE IF NOT EXISTS appointment_bookings(email TEXT,slot_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,slot_id));
@@ -126,13 +129,18 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
   ]
   c.executemany("INSERT OR IGNORE INTO program_items(id,start,end,venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",extended_program)
   speakers=[
-   ("SP01","Анна Миронова","Медицинский редактор","СОСТОЯНИЕ","Разбирает исследования и помогает переводить научные данные в понятный язык.","научная грамотность,сон","expert"),
-   ("SP02","Ирина Волкова","R&D / стратегический спикер","Промомед","Демо-профиль лидера научного направления компании.","разработка,метаболическое здоровье","promomed"),
-   ("SP03","Максим Орлов","Предприниматель","HealthTech demo","Говорит о сервисах, технологиях и новой health economy.","healthtech,клиентский опыт","business"),
+   ("SP01","Анна Миронова","Медицинский редактор","СОСТОЯНИЕ","Демо-профиль. Переводит исследования в понятный редакционный язык; профиль не представляет реального специалиста.","научная грамотность,сон","expert"),
+   ("SP02","Ирина Волкова","R&D / стратегический спикер","Промомед","Демо-профиль представителя компании для показа будущей структуры карточки: роль, компетенции, выступления, материалы и disclosure.","разработка,метаболическое здоровье","promomed"),
+   ("SP03","Максим Орлов","Предприниматель","HealthTech demo","Демо-профиль основателя health-tech проекта: технологии, сервисный дизайн и новая health economy.","healthtech,клиентский опыт","business"),
    ("SP04","Елена К.","Участник / клиент","Community demo","Демо-профиль участника с интересом к научной грамотности и восстановлению.","сон,наука","client"),
-   ("SP05","Мария Левина","Эксперт beauty/wellness","Beauty partner demo","Демо-профиль партнёрского эксперта.","кожа,healthy ageing","partner")
+   ("SP05","Мария Левина","Эксперт beauty/wellness","Beauty partner demo","Демо-профиль партнёрского эксперта. Коммерческая связь всегда раскрывается.","кожа,healthy ageing","partner"),
+   ("SP06","Александр Руднев","Врач-эндокринолог","Expert demo","Демо-профиль для метаболического трека. В production квалификация и место работы подтверждаются редакцией.","эндокринология,ожирение,диабет","expert"),
+   ("SP07","Дарья Соколова","Научный журналист","СОСТОЯНИЕ Studio","Демо-профиль ведущей Studio: задаёт вопросы о качестве доказательств, рисках и границах знания.","наука,медиа,интервью","opinion"),
+   ("SP08","Никита Беляев","Creator / founder","Wellbeing demo","Демо opinion-leader profile для перевода сложных health-тем в повседневную культуру без медицинских советов.","wellbeing,привычки,community","opinion"),
+   ("SP09","Ольга Воронцова","Онколог","Expert demo","Демо-профиль профессионального контура. Контент сложных состояний не смешивается с entertainment-механиками.","онкология,patient journey","expert"),
+   ("SP10","Софья Громова","Редактор healthy ageing","СОСТОЯНИЕ","Демо-профиль редактора тематического хаба о качестве жизни, коже и профилактике.","healthy ageing,кожа,профилактика","opinion")
   ]
-  c.executemany("INSERT OR IGNORE INTO speakers(id,name,role,org,bio,topics,kind) VALUES(?,?,?,?,?,?,?)",speakers)
+  c.executemany("INSERT OR REPLACE INTO speakers(id,name,role,org,bio,topics,kind) VALUES(?,?,?,?,?,?,?)",speakers)
   partners=[
    ("BR01","Промомед","Core health","Научное и продуктовое ядро экосистемы.","core"),
    ("BR02","Beauty partner · demo","Beauty / healthy ageing","Диагностические и косметические активности в Beauty Lab.","demo"),
@@ -141,13 +149,44 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
    ("BR05","Fitness partner · demo","Movement","Движение и физическая активность.","demo")
   ]
   c.executemany("INSERT OR IGNORE INTO partners(id,name,category,description,status) VALUES(?,?,?,?,?)",partners)
-  links=[("P01","SP02"),("P02","SP02"),("P03","SP05"),("P05","SP01"),("P07","SP01"),("P07","SP02"),("P10","SP03"),("P10","SP04"),("P12","SP05"),("P13","SP02"),("P15","SP03"),("P16","SP02"),("P17","SP04")]
+  links=[("P01","SP02"),("P02","SP02"),("P02","SP06"),("P03","SP05"),("P05","SP01"),("P05","SP07"),("P07","SP01"),("P07","SP02"),("P10","SP03"),("P10","SP04"),("P12","SP05"),("P13","SP02"),("P15","SP03"),("P16","SP02"),("P17","SP04"),("P21","SP06"),("P21","SP07"),("P22","SP08"),("P26","SP06"),("P27","SP05"),("P30","SP02"),("P30","SP07"),("P32","SP07"),("P33","SP02"),("P34","SP09"),("P35","SP05"),("P39","SP01"),("P41","SP07")]
   c.executemany("INSERT OR IGNORE INTO session_speakers(item_id,speaker_id) VALUES(?,?)",links)
   slots=[
    ("SL01","P06","11:00","11:10",1,"BR02"),("SL02","P06","11:10","11:20",1,"BR02"),("SL03","P06","11:20","11:30",1,"BR02"),
    ("SL04","P12","15:00","15:15",2,"BR02"),("SL05","P12","15:15","15:30",2,"BR02"),("SL06","P12","15:30","15:45",2,"BR02")
   ]
   c.executemany("INSERT OR IGNORE INTO appointment_slots(id,item_id,start,end,capacity,partner_id) VALUES(?,?,?,?,?,?)",slots)
+  products=[
+   ("PR01","Тирзетта®","тирзепатид","ПРОМОМЕД","Метаболическое здоровье","real","Официальный продуктовый контекст внутри темы метаболического здоровья. Не является назначением лечения.","Годовой отчёт ПРОМОМЕД 2024","https://promomed.ru/","Реальный бренд ПРОМОМЕД; показ в MVP требует medical/legal review перед публичным запуском."),
+   ("PR02","Велгия®","семаглутид","ПРОМОМЕД","Управление весом","real","Препарат ПРОМОМЕД, представленный в официальных материалах компании для терапии избыточной массы тела и ожирения.","ПРОМОМЕД · официальный пресс-релиз","https://promomed.ru/","Информационная карточка; не медицинская рекомендация и не механизм стимулирования покупки."),
+   ("PR03","Квинсента®","семаглутид","ПРОМОМЕД","Эндокринология","real","Бренд ПРОМОМЕД из эндокринологического портфеля; в MVP связан с образовательным контекстом диабета и метаболического здоровья.","ПРОМОМЕД · публичные материалы","https://promomed.ru/","Только официальный продуктовый контекст; решение о терапии принимает врач."),
+   ("PR04","Recovery Ring","—","Partner demo","Сон и восстановление","demo","Вымышленный wearable для демонстрации партнёрского product journey.","DEMO","", "Вымышленный продукт; коммерческая интеграция маркируется."),
+   ("PR05","Skin Lab Scan","—","Beauty partner demo","Healthy ageing","demo","Демонстрационный сервис диагностики кожи по записи на конференции.","DEMO","", "Вымышленный сервис; не медицинская диагностика.")
+  ]
+  c.executemany("INSERT OR REPLACE INTO product_catalog(id,name,inn,company,theme,kind,summary,source_label,source_url,disclosure) VALUES(?,?,?,?,?,?,?,?,?,?)",products)
+  contents=[
+   ("CT01","cover","Метаболическое здоровье","Метаболическое здоровье: новая реальность","Что изменилось в языке веса, диабета и качества жизни — и как читать новую терапевтическую эпоху без упрощений.","12 мин","Редакция СОСТОЯНИЕ","medical review · demo","ПРОМОМЕД","review"),
+   ("CT02","explainer","Научная грамотность","Как отличить сильное исследование от громкого заголовка","Шесть вопросов к источнику до того, как делиться выводом.","8 мин","Анна Миронова · demo","medical review · demo","","published"),
+   ("CT03","dictionary","Метаболическое здоровье","ГПП-1 и ГИП: понятный словарь","Механизмы, термины и вопросы, которые стоит обсуждать со специалистом.","10 мин","Редакция СОСТОЯНИЕ","medical review · demo","ПРОМОМЕД","review"),
+   ("CT04","video","Компания","От идеи к молекуле","R&D, производство, контроль качества и путь продукта до рынка.","14 мин","СОСТОЯНИЕ Studio","corporate review","ПРОМОМЕД","concept"),
+   ("CT05","podcast","Мозг и энергия","Можно ли сделать ЗОЖ менее тревожным?","Врач и creator разбирают границу между полезной привычкой и health anxiety.","38 мин","СОСТОЯНИЕ FM","editorial review","","concept"),
+   ("CT06","guide","Healthy ageing","Кожа, возраст и ожидания","Что может lifestyle, что может косметология и где начинается медицина.","11 мин","Софья Громова · demo","medical review · demo","Beauty partner · demo","concept"),
+   ("CT07","interview","Компания","Наука как бренд","Как R&D, прозрачность и качественная коммуникация создают доверие к компании.","18 мин","Дарья Соколова · demo","corporate review","ПРОМОМЕД","concept"),
+   ("CT08","guide","Диагностика","Чекап без перегруза","Как обсуждать профилактику и скрининг без гонки за максимальным числом анализов.","9 мин","Редакция СОСТОЯНИЕ","medical review · demo","Diagnostics partner · demo","concept"),
+   ("CT09","video","Онкология","Сложный диагноз: навигация вместо информационного шума","Как устроить профессиональный patient-support контур.","16 мин","Expert Studio · demo","medical review · demo","ПРОМОМЕД","concept"),
+   ("CT10","report","Тренды","СОСТОЯНИЕ Index 2027","Какие health-вопросы, форматы и барьеры доверия формируют новую потребительскую повестку.","24 мин","Research desk · demo","methodology review","ПРОМОМЕД","concept"),
+   ("CT11","short","Сон и восстановление","Что изменить сегодня вечером","Короткий evidence-aware маршрут без обещаний идеального сна.","4 мин","СОСТОЯНИЕ Studio","editorial review","Sleep partner · demo","concept"),
+   ("CT12","case","Health economy","Как бренду создавать health value без рекламного шума","Партнёрская интеграция как полезный сервис, а не логотип на сцене.","7 мин","Business desk","commercial disclosure","Partner council · demo","concept")
+  ]
+  c.executemany("INSERT OR REPLACE INTO content_catalog(id,kind,theme,title,dek,duration,author,reviewer,partner,status) VALUES(?,?,?,?,?,?,?,?,?,?)",contents)
+  packages=[
+   ("PK01","Strategic Health Partner","annual","Годовая роль внутри одной тематической вертикали.","Hub co-creation | Studio series | flagship session | partner zone | 1/7/30 continuation | annual report","reach | qualified engagement | booked experiences | consented follow-up | return","Коммерческое участие раскрывается во всех материалах."),
+   ("PK02","Conference Track Partner","conference","Кураторство одной программной темы без права подменять редакционную политику.","session | speaker integration | branded experience | replay | post-event content","attendance | dwell | replay | opt-in","Спонсорство не означает медицинское одобрение."),
+   ("PK03","Studio Partner","media","Серия видео/подкастов с отдельным editorial review.","4 episodes | shorts | transcript | topic hub | distribution","views | completion | saves | return","Каждый выпуск маркирует партнёрство."),
+   ("PK04","Experience Partner","event","Полезная запись по времени: диагностика, практика или сервис.","bookable slots | venue presence | QR route | follow-up | report","bookings | show rate | satisfaction | opt-in","Запрещены скрытые medical claims и стимулирование покупки рецептурных препаратов."),
+   ("PK05","Research / Index Partner","thought leadership","Поддержка исследования и публичного отчёта при сохранении методологической прозрачности.","research module | roundtable | report presence | launch event","report reach | citations | executive leads","Методология и спонсорство раскрываются отдельно.")
+  ]
+  c.executemany("INSERT OR REPLACE INTO partner_packages(id,name,tier,summary,deliverables,measurement,disclosure) VALUES(?,?,?,?,?,?,?)",packages)
   chapters=[
    ("CH01","P05",0,"Почему заголовки вводят в заблуждение","chapter"),("CH02","P05",240,"Корреляция и причинность","chapter"),("CH03","P05",510,"Что проверить в источнике","chapter"),
    ("CH04","P13",0,"Энергия и внимание","chapter"),("CH05","P13",330,"Сон и восстановление","chapter"),("CH06","P13",690,"Что можно изменить завтра","takeaway")
@@ -214,6 +253,9 @@ def state(c,email=None):
  d["program"]=[dict(r) for r in c.execute("SELECT * FROM program_items ORDER BY start,venue")]
  d["speakers"]=[dict(r) for r in c.execute("SELECT * FROM speakers ORDER BY name")]
  d["partners"]=[dict(r) for r in c.execute("SELECT * FROM partners ORDER BY name")]
+ d["products"]=[dict(r) for r in c.execute("SELECT * FROM product_catalog ORDER BY id")]
+ d["content_catalog"]=[dict(r) for r in c.execute("SELECT * FROM content_catalog ORDER BY id")]
+ d["partner_packages"]=[dict(r) for r in c.execute("SELECT * FROM partner_packages ORDER BY id")]
  d["session_speakers"]=[dict(r) for r in c.execute("SELECT ss.item_id,s.id,s.name,s.role,s.org,s.kind FROM session_speakers ss JOIN speakers s ON s.id=ss.speaker_id ORDER BY ss.item_id,s.name")]
  d["appointment_slots"]=[dict(r) for r in c.execute("SELECT a.*,p.name partner_name FROM appointment_slots a LEFT JOIN partners p ON p.id=a.partner_id ORDER BY a.start")]
  d["venue_state"]=[dict(r) for r in c.execute("SELECT venue,capacity,occupied,status,next_change,updated FROM venue_state ORDER BY venue")]
@@ -333,7 +375,7 @@ class H(SimpleHTTPRequestHandler):
   self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
-  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v14-health-media-conference","authority":"shared-sqlite-demo","golden_demo":True})
+  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v15-product-quality","authority":"shared-sqlite-demo","golden_demo":True})
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/me": return self.out({"authenticated":bool(a),"role":a[0] if a else None,"name":a[1] if a else None})
@@ -760,4 +802,4 @@ class H(SimpleHTTPRequestHandler):
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
 
 if __name__=="__main__":
- init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.4 health media conference listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
+ init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.5 product quality listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
