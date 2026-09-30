@@ -98,6 +98,33 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
    ("P18","19:00","20:00","Клуб","Community","club","Closing club & partner encounters","участники / спикеры / бренды",180,0,0,"СОСТОЯНИЕ")
   ]
   c.executemany("INSERT OR IGNORE INTO program_items(id,start,end,venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",program)
+  extended_program=[
+   ("P19","09:30","10:10","Partner Studio","Диагностика","workshop","Чекап без перегруза: как выбирать действительно нужное","участники",45,1,1,"Diagnostics partner · demo"),
+   ("P20","09:45","10:30","Recovery Lab","Восстановление","practice","Утро, энергия, ритм: настройка дня","по записи",32,0,1,"Recovery partner · demo"),
+   ("P21","10:30","11:15","Главная сцена","Метаболическое здоровье","debate","Вес, метаболизм и качество жизни: что изменилось за пять лет","все",600,1,1,"Промомед"),
+   ("P22","10:50","11:30","Клуб","Community","talk","Как говорить о здоровье без стыда и давления","все",180,1,1,"СОСТОЯНИЕ"),
+   ("P23","11:20","12:00","Business Club","Клиенты","case","От продукта к отношениям: consumer health как новая категория","бренды / клиенты",100,1,1,"Промомед"),
+   ("P24","11:40","12:20","Partner Studio","Технологии","demo","Wearables и данные: что полезно человеку, а что просто шум","участники",45,1,1,"HealthTech partner · demo"),
+   ("P25","11:50","12:30","Recovery Lab","Сон","practice","Дневная энергия без героизма: сон, свет, движение","по записи",32,0,1,"Sleep partner · demo"),
+   ("P26","12:30","13:15","Наука","Эндокринология","lecture","ГПП-1 и ГИП: как читать новую эпоху метаболической терапии","все",180,1,1,"Промомед"),
+   ("P27","12:40","13:20","Beauty Lab","Healthy ageing","masterclass","Кожа как часть здоровья: ожидания, доказательства, процедуры","по записи",36,1,1,"Beauty partner · demo"),
+   ("P28","13:00","13:45","Business Club","Партнёрства","roundtable","Как брендам входить в health ecosystem этично и измеримо","бренды / партнёры",100,1,1,"Промомед + partners"),
+   ("P29","13:30","14:10","Partner Studio","Питание","workshop","Белок, клетчатка, режим: собрать рацион без диетической религии","по записи",45,1,1,"Nutrition partner · demo"),
+   ("P30","13:45","14:25","Главная сцена","Лидерство","interview","Наука как бренд: почему доверие становится активом компании","все",600,1,1,"Промомед"),
+   ("P31","14:00","14:35","Recovery Lab","Стресс","practice","Перезагрузка за 30 минут: recovery session","по записи",32,0,1,"Recovery partner · demo"),
+   ("P32","14:45","15:25","Клуб","Community","fishbowl","Вопрос, который я боялся задать врачу","участники / эксперты",180,1,1,"СОСТОЯНИЕ"),
+   ("P33","15:30","16:15","Главная сцена","Инновации","keynote","Российская биофарма: от лаборатории до человека","все",600,1,1,"Промомед"),
+   ("P34","15:50","16:30","Наука","Онкология","lecture","Сложные состояния: как говорить о новых возможностях ответственно","профессиональный контур",160,1,1,"Промомед"),
+   ("P35","16:20","17:00","Beauty Lab","Beauty science","panel","Beauty, медицина и wellness: где проходят границы обещаний","все",36,1,1,"Beauty partner · demo"),
+   ("P36","16:30","17:15","Partner Studio","Диагностика","workshop","Личный health dashboard: какие показатели действительно стоит помнить","по записи",45,1,1,"Diagnostics partner · demo"),
+   ("P37","17:00","17:40","Business Club","Клиенты","roundtable","CRM после конференции: как удерживать доверие, а не просто контакт","бренды / клиенты",100,1,1,"Промомед"),
+   ("P38","17:15","17:55","Recovery Lab","Движение","practice","Mobility reset: тело после целого дня конференции","по записи",32,0,1,"Fitness partner · demo"),
+   ("P39","17:50","18:30","Наука","Неврология","panel","Мозг, сон, внимание: что реально можно изменить","все",180,1,1,"Промомед + experts"),
+   ("P40","18:00","18:45","Partner Studio","Партнёры","showcase","Partner Demo Hour: сервисы, которые продолжают маршрут","участники / бренды",45,1,1,"Partners · demo"),
+   ("P41","18:45","19:25","Главная сцена","Итоги","closing","СОСТОЯНИЕ: 10 идей, которые стоит забрать в следующий год","все",600,1,1,"Промомед + СОСТОЯНИЕ"),
+   ("P42","19:20","20:00","Business Club","B2B","reception","Client & Partner Salon: разговоры без сцены","клиенты / партнёры / спикеры",100,0,0,"Промомед")
+  ]
+  c.executemany("INSERT OR IGNORE INTO program_items(id,start,end,venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",extended_program)
   speakers=[
    ("SP01","Анна Миронова","Медицинский редактор","СОСТОЯНИЕ","Разбирает исследования и помогает переводить научные данные в понятный язык.","научная грамотность,сон","expert"),
    ("SP02","Ирина Волкова","R&D / стратегический спикер","Промомед","Демо-профиль лидера научного направления компании.","разработка,метаболическое здоровье","promomed"),
@@ -128,7 +155,7 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
   c.executemany("INSERT OR IGNORE INTO replay_chapters(id,item_id,offset_sec,title,kind) VALUES(?,?,?,?,?)",chapters)
   venue_rows=[("Главная сцена",600,420,"open","P07 · 12:00",int(time.time())),("Наука",180,96,"open","P05 · 11:00",int(time.time())),("Beauty Lab",36,28,"busy","P06 · 11:00",int(time.time())),("Business Club",100,64,"open","P10 · 14:00",int(time.time())),("Partner Studio",45,21,"open","P08 · 12:15",int(time.time())),("Recovery Lab",32,18,"open","P09 · 13:10",int(time.time())),("Клуб",240,72,"open","P11 · 14:20",int(time.time()))]
   c.executemany("INSERT OR IGNORE INTO venue_state(venue,capacity,occupied,status,next_change,updated) VALUES(?,?,?,?,?,?)",venue_rows)
-  for iid in ("P01","P02","P04","P05","P07","P08","P10","P12","P13","P15","P16","P17"):
+  for iid in ("P01","P02","P04","P05","P07","P08","P10","P12","P13","P15","P16","P17","P19","P21","P22","P23","P24","P26","P27","P28","P29","P30","P32","P33","P34","P35","P36","P37","P39","P40","P41"):
    c.execute("INSERT OR IGNORE INTO stream_state(item_id,status,health,delay_sec,updated) VALUES(?,'scheduled','ok',3,?)",(iid,int(time.time())))
   staff_rows=[("Алексей","Floor lead","Главная сцена","08:00","20:30","on_shift"),("Мария","Check-in","Главная сцена","08:00","13:00","on_shift"),("Олег","Venue manager","Beauty Lab","09:00","18:00","on_shift"),("Дарья","Partner desk","Partner Studio","10:00","18:30","on_shift"),("Илья","AV / Stream","Наука","09:00","18:00","on_shift"),("Светлана","Community host","Клуб","12:00","20:30","on_shift")]
   c.executemany("INSERT OR IGNORE INTO staff_assignments(staff_name,role,venue,shift_start,shift_end,status,updated) VALUES(?,?,?,?,?,?,?)",[(a,b,d,e,f,g,int(time.time())) for a,b,d,e,f,g in staff_rows])
@@ -306,7 +333,7 @@ class H(SimpleHTTPRequestHandler):
   self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
-  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v13-pilot-command","authority":"shared-sqlite-demo","golden_demo":True})
+  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v14-health-media-conference","authority":"shared-sqlite-demo","golden_demo":True})
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/me": return self.out({"authenticated":bool(a),"role":a[0] if a else None,"name":a[1] if a else None})
@@ -733,4 +760,4 @@ class H(SimpleHTTPRequestHandler):
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
 
 if __name__=="__main__":
- init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.3 pilot command listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
+ init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.4 health media conference listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
