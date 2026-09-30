@@ -4,7 +4,7 @@
 
 ## Текущая версия
 
-**v1.3 Pilot Command System** — iPhone-first participant experience + операционный контур конференции + Customer Intelligence + Owner Control Tower.
+**v1.4 Health Media & Conference + Pilot Command System** — year-round health-media и product experience + 42-event multi-track conference + Pilot Command System + Customer Intelligence + Owner Control Tower.
 
 ### Что реализовано
 
@@ -69,3 +69,9 @@ Health endpoint: `/health`.
 - Правила дальнейшей разработки и релизов: `docs/RELEASE_PROTOCOL.md`.
 
 После каждого live-деплоя фиксируются exact Git SHA, Render deploy ID, URL, smoke-test и оставшиеся блокеры. Это обязательная часть завершения каждой следующей волны.
+
+## Current live
+
+Authoritative Render service: https://sostoyanie-promomed-live.onrender.com
+
+Current verified application release: **v1.4**, 42 conference events across seven parallel venues plus year-round Media/Product/Partner surfaces. Exact deployment evidence is maintained in `docs/DEPLOYMENT_STATE.md`.
