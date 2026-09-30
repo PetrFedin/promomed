@@ -1,19 +1,26 @@
-# Implemented Scope — through v1.3
+# Implemented Scope — through v1.4
+
+## Year-round home & media
+Editorial lead; Promomed Today; company/R&D stories; educational product context; health topics; explainers; healthy launches; audio/video/FM; lectorium; curated Box concept; partner ecosystem; 1/7/30 continuation.
+
+## Conference
+42 events, seven parallel venues, 09:00–20:00. Keynotes, lectures, debates, panels, roundtables, workshops, practices, appointments, networking, community, partner showcase and B2B salon. Timetable/grid, detail pages, My Schedule, Smart Route conflict resolution, live/replay and venue concierge.
 
 ## Experience
-Сегодня / Медиа / События / Сообщество / Моё; conference-day mode; programme; bookings; waitlist; ticket/QR; post-event journey; replay/captions boundary.
+Registration, profile, programme, bookings, waitlist, ticket/QR, partner appointments, post-event journey and role-based surfaces.
 
 ## Operations
-Floor map; occupancy; queues; venue status; staff assignments; incidents; SLA; speaker readiness; session attendance; stream health; participant operational alerts.
+Pilot Command System: floor map, occupancy, queues, venue status, staff assignments, incidents/SLA, speaker readiness, session attendance, stream health and operational participant alerts.
 
 ## Partner & commercial
-Partner cockpit; contracted/engagement surfaces; appointment desk; consented leads; attendance and engagement analytics.
+Partner cockpit; contracted/engagement surfaces; appointment desk; consented leads; content/event/attendance signals and partner attribution.
 
 ## Intelligence
-Customer Intelligence, retention windows D1/D7/D30, session/track/partner signals and Owner Control Tower.
+Customer Intelligence, retention D1/D7/D30, track/partner signals and Owner Control Tower.
 
-## Demonstration
-Role-based demo access and sales presentation mode for a controlled management walkthrough.
+## Current live
+`PetrFedin/promomed/main` → Render `sostoyanie-promomed-live`.
+See `docs/DEPLOYMENT_STATE.md`.
 
-## Next production wave
-Persistent production data authority, provider integrations, real push delivery, signed credentials/wallet pass, event-time digital twin, predictive congestion and operational recommendation engine.
+## Production boundaries
+Durable PostgreSQL/migrations; production auth/session/consent; real push; signed QR/Wallet; streaming provider; analytics governance; legal/medical review workflow and backup/restore.
