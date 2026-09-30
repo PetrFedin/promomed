@@ -58,6 +58,14 @@ CREATE TABLE IF NOT EXISTS partners(id TEXT PRIMARY KEY,name TEXT,category TEXT,
 CREATE TABLE IF NOT EXISTS product_catalog(id TEXT PRIMARY KEY,name TEXT,inn TEXT,company TEXT,theme TEXT,kind TEXT,summary TEXT,source_label TEXT,source_url TEXT,disclosure TEXT);
 CREATE TABLE IF NOT EXISTS content_catalog(id TEXT PRIMARY KEY,kind TEXT,theme TEXT,title TEXT,dek TEXT,duration TEXT,author TEXT,reviewer TEXT,partner TEXT,status TEXT);
 CREATE TABLE IF NOT EXISTS partner_packages(id TEXT PRIMARY KEY,name TEXT,tier TEXT,summary TEXT,deliverables TEXT,measurement TEXT,disclosure TEXT);
+CREATE TABLE IF NOT EXISTS studio_episodes(id TEXT PRIMARY KEY,topic TEXT,title TEXT,dek TEXT,duration TEXT,speaker_id TEXT,content_id TEXT,item_id TEXT,thread_id TEXT,track_id TEXT,status TEXT);
+CREATE TABLE IF NOT EXISTS community_threads(id TEXT PRIMARY KEY,topic TEXT,title TEXT,summary TEXT,moderator TEXT,status TEXT,related_item TEXT);
+CREATE TABLE IF NOT EXISTS community_posts(id INTEGER PRIMARY KEY AUTOINCREMENT,thread_id TEXT,email TEXT,body TEXT,status TEXT,ts INTEGER);
+CREATE TABLE IF NOT EXISTS topic_subscriptions(email TEXT,topic TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,topic));
+CREATE TABLE IF NOT EXISTS expert_follows(email TEXT,speaker_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,speaker_id));
+CREATE TABLE IF NOT EXISTS learning_tracks(id TEXT PRIMARY KEY,topic TEXT,title TEXT,summary TEXT,duration_days INTEGER,level TEXT);
+CREATE TABLE IF NOT EXISTS learning_steps(track_id TEXT,step_no INTEGER,kind TEXT,ref_id TEXT,title TEXT,PRIMARY KEY(track_id,step_no));
+CREATE TABLE IF NOT EXISTS learning_enrollments(email TEXT,track_id TEXT,status TEXT,current_step INTEGER DEFAULT 0,started INTEGER,updated INTEGER,PRIMARY KEY(email,track_id));
 CREATE TABLE IF NOT EXISTS session_speakers(item_id TEXT,speaker_id TEXT,PRIMARY KEY(item_id,speaker_id));
 CREATE TABLE IF NOT EXISTS appointment_slots(id TEXT PRIMARY KEY,item_id TEXT,start TEXT,end TEXT,capacity INTEGER,partner_id TEXT);
 CREATE TABLE IF NOT EXISTS appointment_bookings(email TEXT,slot_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,slot_id));
@@ -187,6 +195,31 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
    ("PK05","Research / Index Partner","thought leadership","Поддержка исследования и публичного отчёта при сохранении методологической прозрачности.","research module | roundtable | report presence | launch event","report reach | citations | executive leads","Методология и спонсорство раскрываются отдельно.")
   ]
   c.executemany("INSERT OR REPLACE INTO partner_packages(id,name,tier,summary,deliverables,measurement,disclosure) VALUES(?,?,?,?,?,?,?)",packages)
+  community_threads=[
+   ("TH01","Метаболическое здоровье","Как читать новости о весе и терапии без крайностей","Разбираем язык доказательств, рисков и ожиданий. Вопросы проходят модерацию; персональные назначения не публикуются.","Анна Миронова · demo","open","P21"),
+   ("TH02","Сон и восстановление","Что действительно помогает восстановлению","Практические вопросы после Studio и лекций: сон, свет, движение, режим. Без диагностики и обещаний результата.","Community host · demo","open","P39"),
+   ("TH03","Healthy ageing","Возраст, кожа и качество жизни","Разговор о реалистичных ожиданиях, профилактике и границах между lifestyle, косметологией и медициной.","Софья Громова · demo","open","P27"),
+   ("TH04","Научная грамотность","Источник недели: читаем исследование вместе","Модерируемый клуб по разбору источников, абсолютного риска, дизайна исследований и качества выводов.","Редакция СОСТОЯНИЕ","open","P05")
+  ]
+  c.executemany("INSERT OR REPLACE INTO community_threads(id,topic,title,summary,moderator,status,related_item) VALUES(?,?,?,?,?,?,?)",community_threads)
+  learning_tracks=[
+   ("LT01","Метаболическое здоровье","Метаболическое здоровье без информационного шума","Материал → эксперт → debate → replay → обсуждение. Короткий маршрут для понимания темы, а не для самолечения.",14,"foundation"),
+   ("LT02","Сон и восстановление","Сон и энергия: 7 дней понимания","Studio, практическая сессия, replay и community-разбор вокруг устойчивых привычек.",7,"foundation"),
+   ("LT03","Healthy ageing","Healthy ageing: ожидания и доказательства","Редакционный маршрут о качестве жизни, коже, профилактике и корректной коммуникации обещаний.",14,"foundation")
+  ]
+  c.executemany("INSERT OR REPLACE INTO learning_tracks(id,topic,title,summary,duration_days,level) VALUES(?,?,?,?,?,?)",learning_tracks)
+  learning_steps=[
+   ("LT01",1,"material","CT01","Прочитать cover story"),("LT01",2,"expert","SP06","Познакомиться с экспертом"),("LT01",3,"event","P21","Добавить debate в маршрут"),("LT01",4,"replay","P21","Открыть replay и тезисы"),("LT01",5,"community","TH01","Продолжить обсуждение"),
+   ("LT02",1,"studio","ST02","Посмотреть Studio"),("LT02",2,"material","CT11","Сохранить короткий guide"),("LT02",3,"event","P39","Посетить или открыть replay"),("LT02",4,"community","TH02","Разобрать вопрос в клубе"),
+   ("LT03",1,"material","CT06","Разобрать ожидания"),("LT03",2,"expert","SP10","Открыть профиль редактора"),("LT03",3,"event","P27","Добавить masterclass"),("LT03",4,"community","TH03","Продолжить тему после события")
+  ]
+  c.executemany("INSERT OR REPLACE INTO learning_steps(track_id,step_no,kind,ref_id,title) VALUES(?,?,?,?,?)",learning_steps)
+  studio_episodes=[
+   ("ST01","Метаболическое здоровье","Почему разговор о весе стал другим","12 минут после сцены: язык доказательств, ожидания и границы уверенности.","12 мин","SP06","CT01","P21","TH01","LT01","ready"),
+   ("ST02","Сон и восстановление","Что мы переоцениваем в идеальном сне","Врачебный контекст встречается с повседневной культурой без превращения разговора в назначение.","16 мин","SP07","CT11","P39","TH02","LT02","ready"),
+   ("ST03","Healthy ageing","Можно ли говорить о молодости без обещаний чуда","Редактор и эксперт разбирают доказательства, маркетинговый язык и реальные ожидания аудитории.","18 мин","SP10","CT06","P27","TH03","LT03","scheduled")
+  ]
+  c.executemany("INSERT OR REPLACE INTO studio_episodes(id,topic,title,dek,duration,speaker_id,content_id,item_id,thread_id,track_id,status) VALUES(?,?,?,?,?,?,?,?,?,?,?)",studio_episodes)
   chapters=[
    ("CH01","P05",0,"Почему заголовки вводят в заблуждение","chapter"),("CH02","P05",240,"Корреляция и причинность","chapter"),("CH03","P05",510,"Что проверить в источнике","chapter"),
    ("CH04","P13",0,"Энергия и внимание","chapter"),("CH05","P13",330,"Сон и восстановление","chapter"),("CH06","P13",690,"Что можно изменить завтра","takeaway")
@@ -256,6 +289,10 @@ def state(c,email=None):
  d["products"]=[dict(r) for r in c.execute("SELECT * FROM product_catalog ORDER BY id")]
  d["content_catalog"]=[dict(r) for r in c.execute("SELECT * FROM content_catalog ORDER BY id")]
  d["partner_packages"]=[dict(r) for r in c.execute("SELECT * FROM partner_packages ORDER BY id")]
+ d["studio_episodes"]=[dict(r) for r in c.execute("SELECT e.*,s.name speaker_name,s.role speaker_role FROM studio_episodes e LEFT JOIN speakers s ON s.id=e.speaker_id ORDER BY e.id")]
+ d["community_threads"]=[dict(r) for r in c.execute("SELECT t.*,COUNT(p.id) post_count FROM community_threads t LEFT JOIN community_posts p ON p.thread_id=t.id AND p.status IN ('published_demo','pending_moderation') GROUP BY t.id ORDER BY t.id")]
+ d["learning_tracks"]=[dict(r) for r in c.execute("SELECT * FROM learning_tracks ORDER BY id")]
+ d["learning_steps"]=[dict(r) for r in c.execute("SELECT * FROM learning_steps ORDER BY track_id,step_no")]
  d["session_speakers"]=[dict(r) for r in c.execute("SELECT ss.item_id,s.id,s.name,s.role,s.org,s.kind FROM session_speakers ss JOIN speakers s ON s.id=ss.speaker_id ORDER BY ss.item_id,s.name")]
  d["appointment_slots"]=[dict(r) for r in c.execute("SELECT a.*,p.name partner_name FROM appointment_slots a LEFT JOIN partners p ON p.id=a.partner_id ORDER BY a.start")]
  d["venue_state"]=[dict(r) for r in c.execute("SELECT venue,capacity,occupied,status,next_change,updated FROM venue_state ORDER BY venue")]
@@ -277,6 +314,10 @@ def state(c,email=None):
   d["partner_engagement"]=[dict(r) for r in c.execute("SELECT partner,kind,ref_id,consent,ts FROM partner_engagement WHERE email=? ORDER BY id DESC LIMIT 12",(email,))]
   d["challenges"]=[dict(r) for r in c.execute("SELECT challenge_id,status,days_required,started,verified,reward FROM challenges WHERE email=?",(email,))]
   d["challenge_actions"]=[dict(r) for r in c.execute("SELECT challenge_id,action_id,label,status,ts FROM challenge_actions WHERE email=? ORDER BY action_id",(email,))]
+  d["topic_subscriptions"]=[dict(r) for r in c.execute("SELECT topic,status,ts FROM topic_subscriptions WHERE email=? ORDER BY topic",(email,))]
+  d["expert_follows"]=[dict(r) for r in c.execute("SELECT f.speaker_id,f.status,f.ts,s.name,s.role,s.org FROM expert_follows f JOIN speakers s ON s.id=f.speaker_id WHERE f.email=? ORDER BY s.name",(email,))]
+  d["learning_enrollments"]=[dict(r) for r in c.execute("SELECT e.track_id,e.status,e.current_step,e.started,e.updated,t.title,t.duration_days,t.topic,(SELECT COUNT(*) FROM learning_steps ls WHERE ls.track_id=e.track_id) total_steps FROM learning_enrollments e JOIN learning_tracks t ON t.id=e.track_id WHERE e.email=? ORDER BY e.updated DESC",(email,))]
+  d["community_posts"]=[dict(r) for r in c.execute("SELECT id,thread_id,body,status,ts FROM community_posts WHERE email=? ORDER BY id DESC LIMIT 12",(email,))]
   rel="registered"
   if c.execute("SELECT 1 FROM checkins WHERE ticket='DEMO-2027-001'").fetchone(): rel="attended"
   if c.execute("SELECT 1 FROM journeys WHERE email=? AND (replay=1 OR club=1)",(email,)).fetchone(): rel="continuing"
@@ -300,7 +341,7 @@ def state(c,email=None):
  return d
 
 def reset_demo(c,actor):
- for t in ("checkins","leads","registrations","bookings","questions","journeys","notifications","events","meetings","session_feedback","takeaways","product_interests","followups"):
+ for t in ("checkins","leads","registrations","bookings","questions","journeys","notifications","events","meetings","session_feedback","takeaways","product_interests","followups","topic_subscriptions","expert_follows","learning_enrollments","community_posts"):
   c.execute("DELETE FROM "+t)
  for k,v in {"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"0"}.items(): setv(c,k,v)
  setv(c,"demo_run",int(sval(c,"demo_run","0"))+1)
@@ -375,7 +416,7 @@ class H(SimpleHTTPRequestHandler):
   self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
-  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v15-product-quality","authority":"shared-sqlite-demo","golden_demo":True})
+  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v16-continuity","authority":"shared-sqlite-demo","golden_demo":True})
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/product-quality-proof":
@@ -397,6 +438,21 @@ class H(SimpleHTTPRequestHandler):
     },
     "surfaces":["premium_home","topic_hubs","media_catalog","product_detail","speaker_profile","rich_session_detail","studio","partner_marketplace"],
     "disclosure":"real Promomed product context is separated from demo partner content"
+   }
+   c.close(); return self.out(proof)
+  if p=="/api/continuity-proof":
+   c=conn()
+   proof={
+    "ok":True,"version":"v1.6","contract":"continuity",
+    "counts":{
+     "studio_episodes":c.execute("SELECT COUNT(*) n FROM studio_episodes").fetchone()["n"],
+     "community_threads":c.execute("SELECT COUNT(*) n FROM community_threads").fetchone()["n"],
+     "learning_tracks":c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
+     "learning_steps":c.execute("SELECT COUNT(*) n FROM learning_steps").fetchone()["n"]
+    },
+    "journey":["studio","expert","topic_hub","community","event","replay","learning_track"],
+    "guardrails":["community moderation","medical/editorial disclosure","no personalized treatment advice","explicit follow and subscription actions"],
+    "durability":"demo authority remains SQLite until production PostgreSQL admission"
    }
    c.close(); return self.out(proof)
   if p=="/api/me": return self.out({"authenticated":bool(a),"role":a[0] if a else None,"name":a[1] if a else None})
@@ -505,6 +561,56 @@ class H(SimpleHTTPRequestHandler):
      cur=int(sval(c,"demo_step","0")); nxt=cur+1
      if nxt>=len(DEMO_STEPS): return self.out({"error":"demo_complete","dashboard":commercial(c)},409)
      run_demo_step(c,nxt,email)
+    elif p=="/api/follow-expert":
+     if role!="participant": return self.out({"error":"forbidden"},403)
+     speaker_id=str(data.get("speaker_id",""))[:20]; action=str(data.get("action","follow"))
+     speaker=c.execute("SELECT id,name FROM speakers WHERE id=?",(speaker_id,)).fetchone()
+     if not speaker: return self.out({"error":"speaker_not_found"},404)
+     if action=="unfollow":
+      c.execute("DELETE FROM expert_follows WHERE email=? AND speaker_id=?",(email,speaker_id)); audit(c,"expert_unfollowed",email,{"speaker_id":speaker_id})
+     else:
+      c.execute("INSERT INTO expert_follows(email,speaker_id,status,ts) VALUES(?,?,'active',?) ON CONFLICT(email,speaker_id) DO UPDATE SET status='active',ts=excluded.ts",(email,speaker_id,int(time.time())))
+      notify(c,email,"expert_followed","Вы подписались на эксперта",speaker["name"]+" · новые материалы и эфиры появятся в вашем маршруте.")
+      audit(c,"expert_followed",email,{"speaker_id":speaker_id})
+    elif p=="/api/subscribe-topic":
+     if role!="participant": return self.out({"error":"forbidden"},403)
+     topic=str(data.get("topic",""))[:120].strip(); action=str(data.get("action","subscribe"))
+     allowed={r["topic"] for r in c.execute("SELECT DISTINCT topic FROM community_threads")}
+     if topic not in allowed: return self.out({"error":"topic_not_found"},404)
+     if action=="unsubscribe":
+      c.execute("DELETE FROM topic_subscriptions WHERE email=? AND topic=?",(email,topic)); audit(c,"topic_unsubscribed",email,{"topic":topic})
+     else:
+      c.execute("INSERT INTO topic_subscriptions(email,topic,status,ts) VALUES(?,?,'active',?) ON CONFLICT(email,topic) DO UPDATE SET status='active',ts=excluded.ts",(email,topic,int(time.time())))
+      notify(c,email,"topic_subscribed","Тема добавлена в ваш маршрут",topic+" · Studio, материалы, события и обсуждения будут собираться вместе.")
+      audit(c,"topic_subscribed",email,{"topic":topic})
+    elif p=="/api/community-post":
+     if role!="participant": return self.out({"error":"forbidden"},403)
+     thread_id=str(data.get("thread_id",""))[:20]; text=str(data.get("body","")).strip()[:800]
+     thread=c.execute("SELECT id,title FROM community_threads WHERE id=? AND status='open'",(thread_id,)).fetchone()
+     if not thread: return self.out({"error":"thread_not_found"},404)
+     if len(text)<8: return self.out({"error":"post_too_short"},400)
+     c.execute("INSERT INTO community_posts(thread_id,email,body,status,ts) VALUES(?,?,?,'pending_moderation',?)",(thread_id,email,text,int(time.time())))
+     notify(c,email,"community_post","Вопрос отправлен на модерацию",thread["title"]+" · после проверки он появится в обсуждении.")
+     audit(c,"community_post_submitted",email,{"thread_id":thread_id})
+    elif p=="/api/learning":
+     if role!="participant": return self.out({"error":"forbidden"},403)
+     track_id=str(data.get("track_id",""))[:20]; action=str(data.get("action","enroll"))
+     track=c.execute("SELECT id,title FROM learning_tracks WHERE id=?",(track_id,)).fetchone()
+     if not track: return self.out({"error":"learning_track_not_found"},404)
+     total=c.execute("SELECT COUNT(*) n FROM learning_steps WHERE track_id=?",(track_id,)).fetchone()["n"]
+     if action=="enroll":
+      c.execute("INSERT INTO learning_enrollments(email,track_id,status,current_step,started,updated) VALUES(?,?,'active',0,?,?) ON CONFLICT(email,track_id) DO UPDATE SET status='active',updated=excluded.updated",(email,track_id,int(time.time()),int(time.time())))
+      notify(c,email,"learning_enrolled","Маршрут начат",track["title"]+" · прогресс сохраняется в профиле.")
+      audit(c,"learning_enrolled",email,{"track_id":track_id})
+     elif action=="advance":
+      row=c.execute("SELECT current_step,status FROM learning_enrollments WHERE email=? AND track_id=?",(email,track_id)).fetchone()
+      if not row: return self.out({"error":"learning_not_enrolled"},409)
+      new_step=min(total,int(row["current_step"])+1)
+      status="completed" if total and new_step>=total else "active"
+      c.execute("UPDATE learning_enrollments SET current_step=?,status=?,updated=? WHERE email=? AND track_id=?",(new_step,status,int(time.time()),email,track_id))
+      if status=="completed": notify(c,email,"learning_completed","Маршрут завершён",track["title"]+" · материалы и replay остаются в вашем профиле.")
+      audit(c,"learning_advanced",email,{"track_id":track_id,"current_step":new_step,"total_steps":total,"status":status})
+     else: return self.out({"error":"bad_action"},400)
     elif p=="/api/move-session":
      if role!="organizer": return self.out({"error":"forbidden"},403)
      t=str(data.get("time","11:30")); room=str(data.get("room","Лекторий"))[:80]
