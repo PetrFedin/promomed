@@ -7,10 +7,10 @@
 - Release: **v1.4 Health Media & Conference**
 - Repository: `PetrFedin/promomed`
 - Branch: `main`
-- Verified application Git SHA: `7315c8036050a85254d91d9504c063f09edeedb6`
+- Verified application Git SHA: `6b6fc601e6694edbf6c98a0922c34d92d3f789d4`
 - Render service: `sostoyanie-promomed-live`
 - Service ID: `srv-daug7pnlot8c73b1aja0`
-- Deploy ID: `dep-daug9m1srm7s73c59dk0`
+- Deploy ID: `dep-daugbl8jo6nc738agrmg`
 - URL: https://sostoyanie-promomed-live.onrender.com
 - Region: Frankfurt
 - Plan: free
@@ -34,6 +34,7 @@
 - **7 parallel venues**, 09:00–20:00;
 - keynote, lecture, debate, panel, roundtable, workshop, practice, appointments, community, networking and B2B formats;
 - existing v1.3 Pilot Command System remains part of the release.
+- Promomed thought-leadership layer added: СОСТОЯНИЕ Index, Studio, Selection/Awards concept and opinion-leader engine.
 
 ## Legacy Render services
 
