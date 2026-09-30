@@ -1,36 +1,32 @@
 {
-  "captured_at": "2026-09-30",
+  "captured_at": "2026-09-30T15:48:21+03:00",
   "source_of_truth": {
     "repository": "PetrFedin/promomed",
     "branch": "main"
   },
-  "live": [
+  "authoritative_live": {
+    "release": "v1.4 Health Media & Conference",
+    "service": "sostoyanie-promomed-live",
+    "service_id": "srv-daug7pnlot8c73b1aja0",
+    "url": "https://sostoyanie-promomed-live.onrender.com",
+    "deploy_id": "dep-daug9m1srm7s73c59dk0",
+    "application_git_sha": "7315c8036050a85254d91d9504c063f09edeedb6",
+    "status": "live",
+    "region": "frankfurt",
+    "plan": "free",
+    "runtime": "python"
+  },
+  "legacy_render": [
     {
-      "name": "sostoyanie-promomed-v06",
+      "service": "sostoyanie-promomed-v06",
       "service_id": "srv-datcnn893c1s73a3irng",
-      "type": "web_service",
-      "url": "https://sostoyanie-promomed-v06.onrender.com",
-      "region": "frankfurt",
-      "plan": "free",
-      "status": "live",
-      "deploy_id": "dep-daudqeflot8c73aomq30",
-      "source_commit": "32ad35e4cc3f1ad70d627e239fdb44faa23bd088",
-      "legacy_source": "PetrFedin/Moscow:deploy/promomed-v06-interactive"
+      "status": "legacy"
     },
     {
-      "name": "sostoyanie-promomed-preview",
+      "service": "sostoyanie-promomed-preview",
       "service_id": "srv-dat45kgjo6nc73e6aofg",
-      "type": "static_site",
-      "url": "https://sostoyanie-promomed-preview.onrender.com",
-      "status": "live",
-      "deploy_id": "dep-daudqgek1f9s73beucu0",
-      "source_commit": "667fe54e2e26aca34e30f88476bbe3620d1ae055",
-      "legacy_source": "PetrFedin/Moscow:deploy/promomed-sostoyanie-preview"
+      "status": "legacy"
     }
   ],
-  "migration": {
-    "target": "PetrFedin/promomed:main",
-    "status": "blocked_on_render_github_private_repo_access",
-    "rule": "Do not remove legacy branches until promomed/main replacement is live and smoke-tested."
-  }
+  "production_boundary": "SQLite /tmp is demo authority; durable PostgreSQL is still required for production pilot."
 }
