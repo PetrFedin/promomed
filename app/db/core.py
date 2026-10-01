@@ -60,7 +60,7 @@ def adapt_sql(sql):
         return sql
     sql = _rewrite_insert_or_replace(sql)
     sql = _rewrite_insert_or_ignore(sql)
-    sql = re.sub(r"\b(program_items|appointment_slots)\.end\b", r'\1."end"', sql)
+    sql = re.sub(r'(?<!["\\w])end(?!["\\w])', '"end"', sql)
     return sql.replace("?", "%s")
 
 class CompatConnection:
