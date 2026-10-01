@@ -703,3 +703,64 @@ The plan is complete only when:
 ---
 
 **Implementation instruction:** integrate capabilities around the existing СОСТОЯНИЕ product graph; do not replace working participant, event, operations, partner or intelligence authorities with third-party products merely because those products have broader feature sets.
+
+## 12. Additional integration wave — observability, privileged identity and citation rendering
+
+### 12.1 OpenTelemetry production observability — ADOPT
+
+Reference: https://github.com/open-telemetry/opentelemetry-python
+
+After the PostgreSQL/code-structure phase, trace:
+
+`request -> auth/consent -> domain command -> DB -> provider/worker -> notification/media/search -> response`
+
+Record release SHA, correlation ID, bounded entity IDs, provider/result and latency.
+
+Never export medical/free-text content, raw consent payloads, authentication secrets or participant PII in spans.
+
+Use traces to support incident response for booking, waitlist, stream, content publication, Studio processing and partner appointment flows.
+
+### 12.2 Passkeys for privileged operators — ADOPT
+
+Reference: https://github.com/MasterKale/SimpleWebAuthn
+
+Add passkeys first to:
+
+- organiser;
+- editor/medical reviewer;
+- administrator;
+- partner/sales roles that can access consented lead exports.
+
+Require step-up authentication for:
+
+- publication/retraction of reviewed content;
+- role changes;
+- export of consented participant data;
+- partner package/lead administration;
+- security configuration.
+
+Passkeys do not change the participant profile authority.
+
+### 12.3 Citation.js rendering layer — ADOPT/ADAPT
+
+Reference: https://github.com/citation-js/citation-js
+
+Use it underneath the Evidence & Citation Library to render source metadata consistently from DOI/CSL/BibTeX-style records.
+
+Flow:
+
+`evidence source -> normalized citation metadata -> reviewed claim link -> Citation.js presentation -> article/session/replay source block`
+
+Citation.js formats references only. It does not decide that a paper supports a claim.
+
+Store the normalized metadata and claim-evidence decision in Promomed; generated citation text is a derivative.
+
+### 12.4 Operational acceptance
+
+- trace sampling/redaction is documented;
+- privileged role recovery/step-up flow is auditable;
+- source formatting is deterministic and reproducible;
+- a retracted/corrected evidence source propagates status to public content without erasing history.
+
+**Sequencing:** observability follows PostgreSQL migration; passkeys follow production auth; citation rendering follows the Evidence Library schema.
+
