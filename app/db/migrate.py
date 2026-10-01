@@ -11,9 +11,10 @@ def migrate():
     if backend_name() != "postgres":
         c = connect()
         try:
-            integration = MIGRATIONS / "0003_integration_authorities.sql"
-            if integration.exists():
-                c.executescript(integration.read_text(encoding="utf-8"))
+            for name in ("0003_integration_authorities.sql","0004_observability_passkeys_citations.sql"):
+                migration = MIGRATIONS / name
+                if migration.exists():
+                    c.executescript(migration.read_text(encoding="utf-8"))
             c.commit()
         finally:
             c.close()
