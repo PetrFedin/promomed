@@ -56,12 +56,11 @@ def _rewrite_insert_or_replace(sql):
     return f"INSERT INTO {table}({','.join(cols)}) VALUES({vals_raw}){suffix}"
 
 def _quote_legacy_end(sql):
-    # Only the two legacy schemas use a column literally named "end".
-    # Avoid global text replacement: words such as attendee contain "end".
-    sql = re.sub(r'\\b([A-Za-z_][A-Za-z0-9_]*)\\.end\\b', r'\\1."end"', sql)
+    # PostgreSQL reserves END. Quote only the two legacy columns that use it.
+    sql = re.sub(r'\b([A-Za-z_][A-Za-z0-9_]*)\.end\b', r'\1."end"', sql)
     for table in ("program_items", "appointment_slots"):
         m = re.match(
-            rf"(\\s*INSERT\\s+INTO\\s+{table}\\s*\\()([^)]+)(\\)\\s*VALUES.*)",
+            rf"(\s*INSERT\s+INTO\s+{table}\s*\()([^)]+)(\)\s*VALUES.*)",
             sql,
             flags=re.I | re.S,
         )
@@ -70,8 +69,8 @@ def _quote_legacy_end(sql):
             cols = ['"end"' if c.lower() == "end" else c for c in cols]
             sql = m.group(1) + ",".join(cols) + m.group(3)
         sql = re.sub(
-            rf"(\\bUPDATE\\s+{table}\\s+SET\\s+)end\\b",
-            rf'\\1"end"',
+            rf"(\bUPDATE\s+{table}\s+SET\s+)end\b",
+            rf'\1"end"',
             sql,
             flags=re.I,
         )
