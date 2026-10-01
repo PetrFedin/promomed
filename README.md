@@ -75,3 +75,11 @@ Health endpoint: `/health`.
 Authoritative Render service: https://sostoyanie-promomed-live.onrender.com
 
 Current verified application release: **v1.4**, 42 conference events across seven parallel venues plus year-round Media/Product/Partner surfaces. Exact deployment evidence is maintained in `docs/DEPLOYMENT_STATE.md`.
+
+## План интеграционного развития
+
+Канонический документ для следующих волн развития и внешних интеграций:
+
+- [docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md](./docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md)
+
+Это **план внедрения**, а не утверждение о том, что перечисленные возможности уже реализованы. В документе зафиксированы последовательность работ, границы authority, внешние референсы, зависимости и критерии приёмки. Для запуска полной запланированной волны следует явно ссылаться на это имя файла.
