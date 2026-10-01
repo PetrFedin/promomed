@@ -55,12 +55,34 @@ def _rewrite_insert_or_replace(sql):
         suffix = f" ON CONFLICT ({conflict}) DO NOTHING"
     return f"INSERT INTO {table}({','.join(cols)}) VALUES({vals_raw}){suffix}"
 
+def _quote_legacy_end(sql):
+    # Only the two legacy schemas use a column literally named "end".
+    # Avoid global text replacement: words such as attendee contain "end".
+    sql = re.sub(r'\\b([A-Za-z_][A-Za-z0-9_]*)\\.end\\b', r'\\1."end"', sql)
+    for table in ("program_items", "appointment_slots"):
+        m = re.match(
+            rf"(\\s*INSERT\\s+INTO\\s+{table}\\s*\\()([^)]+)(\\)\\s*VALUES.*)",
+            sql,
+            flags=re.I | re.S,
+        )
+        if m:
+            cols = [c.strip() for c in m.group(2).split(",")]
+            cols = ['"end"' if c.lower() == "end" else c for c in cols]
+            sql = m.group(1) + ",".join(cols) + m.group(3)
+        sql = re.sub(
+            rf"(\\bUPDATE\\s+{table}\\s+SET\\s+)end\\b",
+            rf'\\1"end"',
+            sql,
+            flags=re.I,
+        )
+    return sql
+
 def adapt_sql(sql):
     if backend_name() != "postgres":
         return sql
     sql = _rewrite_insert_or_replace(sql)
     sql = _rewrite_insert_or_ignore(sql)
-    sql = re.sub(r'(?<!["\\w])end(?!["\\w])', '"end"', sql)
+    sql = _quote_legacy_end(sql)
     return sql.replace("?", "%s")
 
 class CompatConnection:
