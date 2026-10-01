@@ -6,6 +6,8 @@ from app.integration_api import handle_get as integration_get, handle_post as in
 from app import notifications as notification_delivery
 from app.venue import ensure_demo_asset
 from app.gates import ensure_defaults as ensure_integration_gates
+from app.content import ensure_legacy_demo_publications
+from app.search import rebuild as rebuild_search_projection
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 
@@ -249,6 +251,8 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
   ensure_demo_accounts(c)
   ensure_integration_gates(c)
   ensure_demo_asset(c)
+  ensure_legacy_demo_publications(c)
+  rebuild_search_projection(c)
   c.commit(); c.close()
 
 def sval(c,k,default=""):
