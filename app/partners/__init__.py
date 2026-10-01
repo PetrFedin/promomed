@@ -43,3 +43,23 @@ def create_consented_lead(c,email,partner_id,purpose,consent_version):
     consent(c,email,"partner_lead",consent_version,True,"participant_action",partner_id)
     audit(c,"partner_consented_lead",email,{"partner_id":partner_id,"lead_id":lid,"purpose":purpose})
     return lid
+
+def upsert_deliverable(c,partner_id,data,actor):
+    did=str(data.get("id") or uid("deliverable"))
+    c.execute("""INSERT INTO partner_workspace_deliverables(id,partner_id,commitment_id,label,state,evidence_id,updated_at)
+                 VALUES(?,?,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET
+                 commitment_id=excluded.commitment_id,label=excluded.label,state=excluded.state,
+                 evidence_id=excluded.evidence_id,updated_at=excluded.updated_at""",
+              (did,partner_id,str(data.get("commitment_id") or ""),str(data.get("label") or "")[:240],
+               str(data.get("state") or "planned"),str(data.get("evidence_id") or ""),now()))
+    audit(c,"partner_deliverable_upserted",actor,{"partner_id":partner_id,"deliverable_id":did})
+    return did
+
+def upsert_renewal(c,partner_id,data,actor):
+    rid=str(data.get("id") or uid("renewal"))
+    c.execute("""INSERT INTO partner_renewals(id,partner_id,state,period,notes,updated_at) VALUES(?,?,?,?,?,?)
+                 ON CONFLICT(id) DO UPDATE SET state=excluded.state,period=excluded.period,notes=excluded.notes,updated_at=excluded.updated_at""",
+              (rid,partner_id,str(data.get("state") or "planned"),str(data.get("period") or ""),
+               str(data.get("notes") or "")[:1000],now()))
+    audit(c,"partner_renewal_upserted",actor,{"partner_id":partner_id,"renewal_id":rid})
+    return rid
