@@ -1,0 +1,24 @@
+name: Promomed UI quality
+
+on:
+  push:
+    branches:
+      - main
+      - promomed-home-inbox-responsive-2026-10-01
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ui-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Run UI and server contract tests
+        run: python -m unittest -v tests/test_ui_contract.py
