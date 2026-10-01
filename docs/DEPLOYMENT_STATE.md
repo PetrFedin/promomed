@@ -1,49 +1,57 @@
 # Render Deployment State
 
-> Operational ledger for СОСТОЯНИЕ / Promomed. Product source-of-truth: `PetrFedin/promomed/main`.
+> Operational ledger for СОСТОЯНИЕ / Promomed. Production source-of-truth remains `PetrFedin/promomed/main`.
 
-## Current authoritative live — 2026-09-30
+## Current authoritative live
 
-- Release: **v1.4 Health Media & Conference**
+The last verified live state remains the previously recorded v1.4 deployment until an exact-head v2 candidate is merged and verified.
+
 - Repository: `PetrFedin/promomed`
-- Branch: `main`
-- Verified application Git SHA: `6b6fc601e6694edbf6c98a0922c34d92d3f789d4`
+- Production branch: `main`
 - Render service: `sostoyanie-promomed-live`
 - Service ID: `srv-daug7pnlot8c73b1aja0`
-- Deploy ID: `dep-daugbl8jo6nc738agrmg`
 - URL: https://sostoyanie-promomed-live.onrender.com
 - Region: Frankfurt
-- Plan: free
-- Runtime: Python 3.12.8
-- Build: `python -m py_compile server.py`
-- Start: `python server.py`
-- Auto deploy: yes
-- Render status: **LIVE**
-- Runtime evidence: `SOSTOYANIE v1.4 health media conference listening 10000`
-- HTTP evidence: Render observed `HEAD / 200` and `GET / 200`
-- Build evidence: **Build successful**
-- Error logs at verification: no deployment/runtime error reported.
+- Existing plan: free
+- Last documented live boundary: SQLite under `/tmp`
 
-## v1.4 product state
+Historical v1.4 deployment identifiers remain in Git history. This file intentionally does not fabricate a new deploy ID before a v2 deployment is actually observed.
 
-- homepage rebuilt as a year-round health media/product/conference hub;
-- Promomed editorial/company/product context;
-- products presented inside an educational and regulatory-aware journey, not as disguised independent recommendation;
-- richer Media: explainers, R&D/company stories, healthy launches, FM/podcast, lectorium and СОСТОЯНИЕ Box concept;
-- conference expanded from 18 to **42 events**;
-- **7 parallel venues**, 09:00–20:00;
-- keynote, lecture, debate, panel, roundtable, workshop, practice, appointments, community, networking and B2B formats;
-- existing v1.3 Pilot Command System remains part of the release.
-- Promomed thought-leadership layer added: СОСТОЯНИЕ Index, Studio, Selection/Awards concept and opinion-leader engine.
+## v2 integration candidate — 2026-10-01
 
-## Legacy Render services
+Branch: `integration/master-plan-2026-10-01`.
 
-Historical services `sostoyanie-promomed-v06` and `sostoyanie-promomed-preview` were created from temporary Moscow branches. They are no longer the source-of-truth. The authoritative service above is built directly from `PetrFedin/promomed/main`.
+Implemented and CI-proven in code:
+
+- PostgreSQL 17 migrations and deterministic legacy seed;
+- durable DB auth/session/consent/audit model;
+- `/health` backend/migration visibility;
+- `/ready` fail-closed production gate;
+- PostgreSQL backup and restore proof;
+- integration authority contracts and iPhone/static frontend checks;
+- provider-failure fallbacks.
+
+### Production admission requirements
+
+A v2 release may be recorded as LIVE only after all of the following are true:
+
+1. integration candidate is merged to `main`;
+2. authoritative Render service deploys the exact merged SHA;
+3. a dedicated durable PostgreSQL `DATABASE_URL` is configured;
+4. migrations 0001–0003 are applied;
+5. `GET /health` reports PostgreSQL/durable state;
+6. `GET /ready` returns HTTP 200 with no pending migrations;
+7. existing participant/organizer/partner journeys smoke successfully;
+8. exact Render deploy ID and application SHA are recorded here.
+
+### External providers
+
+No provider is marked live merely from code presence. Directus, Meilisearch, Metarank, Owncast, Jitsi, pretalx, Novu, semantic retrieval and Umami require actual runtime configuration/evidence.
+
+## Legacy services
+
+Historical `sostoyanie-promomed-v06` and `sostoyanie-promomed-preview` are not source-of-truth.
 
 ## Release completion rule
 
-Every completed wave records: application Git SHA, release version, Render service ID, deploy ID, URL, build/runtime verification and known production boundaries.
-
-## Known production boundary
-
-Persistent production datastore is still not admitted: current free service uses SQLite under `/tmp`. Production pilot requires durable PostgreSQL/migrations/session-consent-audit authority.
+Every completed wave records exact Git SHA, Render service/deploy ID, runtime URL, build evidence, health/readiness evidence, datastore authority and remaining provider boundaries.
