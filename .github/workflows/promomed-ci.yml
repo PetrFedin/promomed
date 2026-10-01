@@ -55,7 +55,7 @@ jobs:
               c.close()
           PY
       - name: Integration authority contract
-        run: python tests/integration_contract.py
+        run: PYTHONPATH=. python tests/integration_contract.py
       - name: Backup and restore proof
         run: |
           PG_DOCKER_IMAGE=postgres:17 BACKUP_FILE=/tmp/promomed.dump bash scripts/backup_postgres.sh
