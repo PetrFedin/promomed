@@ -425,7 +425,7 @@ class H(SimpleHTTPRequestHandler):
  def __init__(self,*a,**kw): super().__init__(*a,directory=ROOT,**kw)
  def cors(self):
   self.send_header("Access-Control-Allow-Origin","https://sostoyanie-promomed-preview.onrender.com")
-  self.send_header("Access-Control-Allow-Headers","Authorization, Content-Type")
+  self.send_header("Access-Control-Allow-Headers","Authorization, Content-Type, X-Step-Up-Token, X-Correlation-ID")
   self.send_header("Access-Control-Allow-Methods","GET, POST, OPTIONS")
  def out(self,obj,status=200):
   b=json.dumps(obj,ensure_ascii=False).encode(); set_response_status(status); self.send_response(status)
@@ -597,7 +597,7 @@ class H(SimpleHTTPRequestHandler):
   with LOCK:
    c=conn()
    try:
-    ir=integration_post(self.path,data,a,c)
+    ir=integration_post(self.path,data,a,c,self.headers)
     if ir is not None:
      c.commit()
      return self.out(ir["payload"],ir["status"])
