@@ -2,6 +2,8 @@ import os
 import re
 import sqlite3
 
+from app.observability import db_span
+
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
 SQLITE_PATH = os.environ.get("SQLITE_PATH", "/tmp/sostoyanie.db")
 
@@ -90,16 +92,18 @@ class CompatConnection:
         self.backend = backend
 
     def execute(self, sql, params=()):
-        if self.backend == "postgres":
-            return self.raw.execute(adapt_sql(sql), params)
-        return self.raw.execute(sql, params)
+        with db_span(sql,self.backend):
+            if self.backend == "postgres":
+                return self.raw.execute(adapt_sql(sql), params)
+            return self.raw.execute(sql, params)
 
     def executemany(self, sql, seq):
-        if self.backend == "postgres":
-            cur = self.raw.cursor()
-            cur.executemany(adapt_sql(sql), seq)
-            return cur
-        return self.raw.executemany(sql, seq)
+        with db_span(sql,self.backend):
+            if self.backend == "postgres":
+                cur = self.raw.cursor()
+                cur.executemany(adapt_sql(sql), seq)
+                return cur
+            return self.raw.executemany(sql, seq)
 
     def executescript(self, script):
         if self.backend == "postgres":
