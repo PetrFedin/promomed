@@ -12,6 +12,8 @@ from app import recommendations
 from app import search
 from app.content import create_publication, import_snapshot, list_publications, transition
 from app.gates import list_gates, set_gate
+from app.auth import passkeys
+from app.observability import observability_status
 from app.providers import env_status
 from app.venue import add_poi, create_asset, get_asset
 
@@ -26,6 +28,8 @@ def _result(status,payload):
     return {"status":status,"payload":payload}
 
 def _error(exc):
+    if isinstance(exc,PermissionError):
+        return _result(403,{"error":str(exc)})
     if isinstance(exc,LookupError):
         return _result(404,{"error":str(exc)})
     if isinstance(exc,ValueError):
@@ -36,7 +40,10 @@ def handle_get(raw_path,auth,c):
     path,q=_q(raw_path)
     try:
         if path=="/api/integrations/status":
-            return _result(200,{"providers":env_status(),"gates":list_gates(c)})
+            return _result(200,{"providers":env_status(),"gates":list_gates(c),"observability":observability_status()})
+        if path=="/api/security/passkey/status":
+            if not auth or auth[0] not in passkeys.PRIVILEGED_ROLES: return _result(403,{"error":"forbidden"})
+            return _result(200,passkeys.status(c,auth[2]))
         if path=="/api/publications":
             public_only=not _allowed(auth,"editor","organizer","sales")
             return _result(200,{"items":list_publications(c,public_only=public_only)})
@@ -135,17 +142,34 @@ def handle_public_post(raw_path,data,headers,c):
     except Exception as exc:
         return _error(exc)
 
-def handle_post(raw_path,data,auth,c):
+def handle_post(raw_path,data,auth,c,headers=None):
     path,_=_q(raw_path)
+    headers=headers or {}
+    step_up_token=headers.get("X-Step-Up-Token","")
     try:
         actor=auth[2] if auth else "anonymous"
         role=auth[0] if auth else None
+        if path=="/api/security/passkey/register/options":
+            if role not in passkeys.PRIVILEGED_ROLES: return _result(403,{"error":"forbidden"})
+            return _result(200,passkeys.begin_registration(c,actor,auth[1]))
+        if path=="/api/security/passkey/register/verify":
+            if role not in passkeys.PRIVILEGED_ROLES: return _result(403,{"error":"forbidden"})
+            return _result(200,passkeys.complete_registration(c,actor,data.get("credential") or data,str(data.get("device_name") or "Passkey")))
+        if path=="/api/security/passkey/auth/options":
+            if role not in passkeys.PRIVILEGED_ROLES: return _result(403,{"error":"forbidden"})
+            return _result(200,passkeys.begin_authentication(c,actor))
+        if path=="/api/security/passkey/auth/verify":
+            if role not in passkeys.PRIVILEGED_ROLES: return _result(403,{"error":"forbidden"})
+            return _result(200,passkeys.complete_authentication(c,actor,data.get("credential") or data))
         if path=="/api/publications/create":
             if role not in ("editor","organizer"): return _result(403,{"error":"forbidden"})
             return _result(201,create_publication(c,data,actor))
         if path=="/api/publications/transition":
             if role not in ("editor","organizer"): return _result(403,{"error":"forbidden"})
-            return _result(200,transition(c,str(data.get("publication_id") or ""),str(data.get("target") or ""),actor,data.get("review_kind"),data.get("notes","")))
+            target=str(data.get("target") or "")
+            if target in ("published","retracted"):
+                passkeys.require_step_up(c,actor,step_up_token)
+            return _result(200,transition(c,str(data.get("publication_id") or ""),target,actor,data.get("review_kind"),data.get("notes","")))
         if path=="/api/publications/import":
             if role not in ("editor","organizer"): return _result(403,{"error":"forbidden"})
             return _result(200,import_snapshot(c,data,actor))
@@ -218,16 +242,28 @@ def handle_post(raw_path,data,auth,c):
             return _result(200,{"id":partners.upsert_contact(c,str(data.get("partner_id") or ""),data,actor)})
         if path=="/api/partner/commitment":
             if role not in ("partner","organizer","sales"): return _result(403,{"error":"forbidden"})
+            passkeys.require_step_up(c,actor,step_up_token)
             return _result(201,{"id":partners.create_commitment(c,str(data.get("partner_id") or ""),data,actor)})
         if path=="/api/partner/evidence":
             if role not in ("partner","organizer","sales"): return _result(403,{"error":"forbidden"})
             return _result(201,{"id":partners.add_evidence(c,str(data.get("partner_id") or ""),data,actor)})
         if path=="/api/partner/deliverable":
             if role not in ("partner","organizer","sales"): return _result(403,{"error":"forbidden"})
+            passkeys.require_step_up(c,actor,step_up_token)
             return _result(200,{"id":partners.upsert_deliverable(c,str(data.get("partner_id") or ""),data,actor)})
         if path=="/api/partner/renewal":
             if role not in ("partner","organizer","sales"): return _result(403,{"error":"forbidden"})
+            passkeys.require_step_up(c,actor,step_up_token)
             return _result(200,{"id":partners.upsert_renewal(c,str(data.get("partner_id") or ""),data,actor)})
+        if path=="/api/partner/leads/export":
+            if role not in ("organizer","sales"): return _result(403,{"error":"forbidden"})
+            passkeys.require_step_up(c,actor,step_up_token)
+            partner_id=str(data.get("partner_id") or "")
+            if not partner_id:return _result(422,{"error":"partner_id_required"})
+            rows=[dict(r) for r in c.execute("""SELECT partner_id,email,purpose,consent_version,state,created_at
+                                               FROM participant_consented_leads
+                                               WHERE partner_id=? ORDER BY created_at DESC""",(partner_id,))]
+            return _result(200,{"partner_id":partner_id,"items":rows,"step_up":"passkey"})
         if path=="/api/partner/lead":
             if role!="participant": return _result(403,{"error":"forbidden"})
             if data.get("consent") is not True:return _result(422,{"error":"consent_required"})
@@ -244,6 +280,7 @@ def handle_post(raw_path,data,auth,c):
             return _result(201,{"id":add_poi(c,str(data.get("asset_id") or ""),data,actor)})
         if path=="/api/integration-gate":
             if role!="organizer": return _result(403,{"error":"forbidden"})
+            passkeys.require_step_up(c,actor,step_up_token)
             return _result(200,set_gate(c,str(data.get("gate_key") or ""),str(data.get("status") or ""),str(data.get("rationale") or ""),actor))
         return None
     except Exception as exc:
