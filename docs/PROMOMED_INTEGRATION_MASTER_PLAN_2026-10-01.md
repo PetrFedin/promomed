@@ -1,7 +1,7 @@
 # СОСТОЯНИЕ × Promomed — Integration Master Plan
 
 **Document:** `docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md`  
-**Status:** IMPLEMENTED IN CODE — integration candidate; production admission pending exact-head durable PostgreSQL deployment  
+**Status:** IMPLEMENTATION IN PROGRESS — integration candidate; production admission pending exact-head durable PostgreSQL deployment  
 **Date:** 2026-10-01  
 **Repository:** `PetrFedin/promomed`  
 **Canonical branch:** `main`
@@ -704,10 +704,71 @@ The plan is complete only when:
 
 **Implementation instruction:** integrate capabilities around the existing СОСТОЯНИЕ product graph; do not replace working participant, event, operations, partner or intelligence authorities with third-party products merely because those products have broader feature sets.
 
+## 12. Additional integration wave — observability, privileged identity and citation rendering
 
-## 12. Implementation status — 2026-10-01
+### 12.1 OpenTelemetry production observability — ADOPT
 
-The implementation described below is present on the integration candidate. This section distinguishes **implemented code** from **live provider activation** and **production admission**.
+Reference: https://github.com/open-telemetry/opentelemetry-python
+
+After the PostgreSQL/code-structure phase, trace:
+
+`request -> auth/consent -> domain command -> DB -> provider/worker -> notification/media/search -> response`
+
+Record release SHA, correlation ID, bounded entity IDs, provider/result and latency.
+
+Never export medical/free-text content, raw consent payloads, authentication secrets or participant PII in spans.
+
+Use traces to support incident response for booking, waitlist, stream, content publication, Studio processing and partner appointment flows.
+
+### 12.2 Passkeys for privileged operators — ADOPT
+
+Server reference: https://github.com/duo-labs/py_webauthn
+
+Add passkeys first to:
+
+- organiser;
+- editor/medical reviewer;
+- administrator;
+- partner/sales roles that can access consented lead exports.
+
+Require step-up authentication for:
+
+- publication/retraction of reviewed content;
+- role changes;
+- export of consented participant data;
+- partner package/lead administration;
+- security configuration.
+
+Passkeys do not change the participant profile authority.
+
+### 12.3 Citation.js rendering layer — ADOPT/ADAPT
+
+Reference: https://github.com/citation-js/citation-js
+
+Use it underneath the Evidence & Citation Library to render source metadata consistently from DOI/CSL/BibTeX-style records.
+
+Flow:
+
+`evidence source -> normalized citation metadata -> reviewed claim link -> Citation.js presentation -> article/session/replay source block`
+
+Citation.js formats references only. It does not decide that a paper supports a claim.
+
+Store the normalized metadata and claim-evidence decision in Promomed; generated citation text is a derivative.
+
+### 12.4 Operational acceptance
+
+- trace sampling/redaction is documented;
+- privileged role recovery/step-up flow is auditable;
+- source formatting is deterministic and reproducible;
+- a retracted/corrected evidence source propagates status to public content without erasing history.
+
+**Sequencing:** observability follows PostgreSQL migration; passkeys follow production auth; citation rendering follows the Evidence Library schema.
+
+
+
+## 13. Implementation status — 2026-10-01
+
+This section distinguishes **implemented code** from **live provider activation** and **production admission**.
 
 | Phase | Code status | Production/provider status |
 |---|---|---|
@@ -729,12 +790,15 @@ The implementation described below is present on the integration candidate. This
 | 15 Wellness routines | REFERENCE GATE | native challenges/actions remain canonical |
 | 16 FHIR/clinical | GATE ENFORCED | Medplum/FHIR deferred until authorised clinical use case |
 | 17 Public analytics | IMPLEMENTED AS OPTIONAL BOUNDARY | anonymous acquisition only; Umami optional |
+| 12.1 OpenTelemetry | IN IMPLEMENTATION | must remain PII/free-text redacted |
+| 12.2 Privileged passkeys | IN IMPLEMENTATION | production relying-party origin required for final activation |
+| 12.3 Citation.js rendering | IN IMPLEMENTATION | derivative rendering only; claim-evidence decision stays Promomed-owned |
 
 ### Acceptance evidence in repository
 
 The candidate CI verifies PostgreSQL 17 migrations and seed, role-negative checks, consent recording, replay-safe webhook receipts, provider-unavailable fallback, deterministic recommendation reasons, transcript source-time lineage and human review, SQLite demo fallback, iPhone frontend contract/inline JavaScript syntax, and PostgreSQL backup/restore.
 
-### What remains before the roadmap can be called production-complete
+### Production completion gate
 
 The original definition of complete remains authoritative: merge the candidate to `main`, configure a dedicated durable PostgreSQL `DATABASE_URL` on the authoritative Render service, deploy the exact merged SHA, prove `/ready == 200`, smoke the existing journeys, and record the exact Render deploy evidence in `docs/DEPLOYMENT_STATE.md`.
 
