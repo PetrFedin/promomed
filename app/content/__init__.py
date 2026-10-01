@@ -110,3 +110,35 @@ def import_snapshot(c, payload, actor="provider"):
         elif target=="published":
             pub=transition(c,pub["id"],"published",actor)
     return pub
+
+def ensure_legacy_demo_publications(c):
+    rows=c.execute("SELECT id,title,dek,author,reviewer,partner,status FROM content_catalog ORDER BY id").fetchall()
+    created=0
+    for row in rows:
+        key="legacy_demo:"+row["id"]
+        existing=c.execute("SELECT id FROM publication_versions WHERE publication_key=? AND version=1",(key,)).fetchone()
+        if existing:
+            continue
+        pub=create_publication(c,{
+            "publication_key":key,
+            "version":1,
+            "source_type":"legacy_demo",
+            "source_ref":row["id"],
+            "title":row["title"],
+            "body":row["dek"] or "",
+            "author":row["author"] or "СОСТОЯНИЕ · demo",
+            "disclosure":"DEMO migration snapshot. Не является подтверждением фактического medical/legal review.",
+        },"demo-migration")
+        for target,kind in (
+            ("editorial_review","editorial"),
+            ("medical_review","medical"),
+            ("compliance_review","compliance"),
+            ("approved","compliance"),
+            ("published",None),
+        ):
+            pub=transition(
+                c,pub["id"],target,"demo-migration",kind,
+                "Illustrative demo approval state; production publication requires named authorised reviewers."
+            )
+        created+=1
+    return created
