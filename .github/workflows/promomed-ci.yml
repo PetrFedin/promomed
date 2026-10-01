@@ -56,6 +56,30 @@ jobs:
           PY
       - name: Integration authority contract
         run: PYTHONPATH=. python tests/integration_contract.py
+      - name: SQLite demo fallback smoke
+        env:
+          DATABASE_URL: ""
+          SQLITE_PATH: /tmp/promomed-ci-demo.db
+        run: |
+          rm -f /tmp/promomed-ci-demo.db
+          PYTHONPATH=. python - <<'PY'
+          import server
+          server.init()
+          c=server.conn()
+          try:
+              assert c.execute("SELECT COUNT(*) n FROM program_items").fetchone()["n"] >= 42
+              assert c.execute("SELECT COUNT(*) n FROM publication_versions").fetchone()["n"] > 0
+              server.notify(c,"participant@demo.ru","ci_smoke","CI smoke","SQLite delivery fallback")
+              c.commit()
+              assert c.execute("SELECT COUNT(*) n FROM notification_deliveries").fetchone()["n"] > 0
+          finally:
+              c.close()
+          print("PROMOMED SQLite demo fallback PASS")
+          PY
+      - name: iPhone frontend contract
+        run: |
+          python tests/frontend_contract.py
+          node --check /tmp/promomed-inline.js
       - name: Backup and restore proof
         run: |
           PG_DOCKER_IMAGE=postgres:17 BACKUP_FILE=/tmp/promomed.dump bash scripts/backup_postgres.sh
