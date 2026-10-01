@@ -1,9 +1,11 @@
 import os
 import re
 from app.domain import now
+from app.providers import request_json
 
 MEILI_URL=os.environ.get("MEILISEARCH_URL","").rstrip("/")
 MEILI_INDEX=os.environ.get("MEILISEARCH_INDEX","promomed")
+MEILI_KEY=os.environ.get("MEILISEARCH_API_KEY","")
 SEMANTIC_URL=os.environ.get("SEMANTIC_RETRIEVAL_URL","").rstrip("/")
 
 def provider_status():
@@ -37,7 +39,23 @@ def rebuild(c):
     for r in c.execute("SELECT id,title,topic,summary FROM learning_tracks"):
         c.execute("INSERT INTO search_documents VALUES(?,?,?,?,?,?,?,?,?,?,?)",
                   ("learning:"+r["id"],"learning",r["title"],r["summary"] or "",r["topic"] or "",None,None,None,"editorial","available",ts))
-    return c.execute("SELECT COUNT(*) n FROM search_documents").fetchone()["n"]
+    count=c.execute("SELECT COUNT(*) n FROM search_documents").fetchone()["n"]
+    if MEILI_URL:
+        sync_meilisearch(c)
+    return count
+
+def sync_meilisearch(c):
+    if not MEILI_URL:
+        return {"ok":False,"error":"provider_not_configured"}
+    headers={"Authorization":"Bearer "+MEILI_KEY} if MEILI_KEY else {}
+    docs=[dict(r) for r in c.execute("SELECT * FROM search_documents ORDER BY document_id")]
+    facets=["kind","topic","expert_id","event_id","partner","review_status","availability"]
+    settings=request_json(
+        f"{MEILI_URL}/indexes/{MEILI_INDEX}/settings/filterable-attributes",
+        facets,"PUT",headers
+    )
+    pushed=request_json(f"{MEILI_URL}/indexes/{MEILI_INDEX}/documents",docs,"POST",headers)
+    return {"ok":bool(pushed.get("ok")),"settings":settings,"documents":pushed,"count":len(docs)}
 
 def query(c,q="",kind=None,topic=None,review_status=None,availability=None,limit=30):
     clauses=[]; params=[]
@@ -53,6 +71,10 @@ def query(c,q="",kind=None,topic=None,review_status=None,availability=None,limit
     return [dict(r) for r in c.execute(sql,tuple(params)).fetchall()]
 
 def semantic(c,q,limit=12):
+    if SEMANTIC_URL:
+        external=request_json(SEMANTIC_URL,{"query":q,"limit":max(1,min(int(limit),30))})
+        if external.get("ok") and isinstance(external.get("body"),dict) and isinstance(external["body"].get("items"),list):
+            return external["body"]["items"]
     tokens={x for x in re.findall(r"[\w-]+",q.lower()) if len(x)>2}
     rows=query(c,"",limit=100)
     scored=[]
