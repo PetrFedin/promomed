@@ -1,0 +1,62 @@
+name: promomed-ci
+
+on:
+  push:
+    branches:
+      - main
+      - integration/**
+  pull_request:
+
+jobs:
+  python-contract:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_DB: promomed
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d promomed"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/promomed
+      PROMOMED_DEMO_ACCOUNTS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r requirements.txt
+      - name: Compile
+        run: python -m compileall -q server.py app tests
+      - name: Unit contracts
+        run: python -m unittest discover -s tests -v
+      - name: PostgreSQL migrations and seed
+        run: |
+          python - <<'PY'
+          from app.db.migrate import migrate, migration_status
+          import server
+          print(migrate())
+          server.init()
+          status=migration_status()
+          assert not status["pending"], status
+          c=server.conn()
+          try:
+              assert c.execute("SELECT COUNT(*) n FROM program_items").fetchone()["n"] >= 42
+              assert c.execute("SELECT COUNT(*) n FROM accounts").fetchone()["n"] >= 9
+          finally:
+              c.close()
+          PY
+      - name: Backup and restore proof
+        run: |
+          BACKUP_FILE=/tmp/promomed.dump bash scripts/backup_postgres.sh
+          PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres promomed_restore
+          RESTORE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/promomed_restore BACKUP_FILE=/tmp/promomed.dump bash scripts/restore_postgres.sh
+          test "$(PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d promomed_restore -tAc 'SELECT COUNT(*) FROM schema_migrations')" -ge 2
