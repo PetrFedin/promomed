@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS speaker_readiness(speaker_id TEXT,item_id TEXT,status
 CREATE TABLE IF NOT EXISTS ops_broadcasts(id INTEGER PRIMARY KEY AUTOINCREMENT,audience TEXT,venue TEXT,title TEXT,body TEXT,status TEXT,ts INTEGER);\nCREATE TABLE IF NOT EXISTS passport(email TEXT PRIMARY KEY,content INTEGER DEFAULT 0,event INTEGER DEFAULT 0,network INTEGER DEFAULT 0,partner INTEGER DEFAULT 0,updated INTEGER);
 CREATE TABLE IF NOT EXISTS journeys(email TEXT PRIMARY KEY,attended INTEGER DEFAULT 0,replay INTEGER DEFAULT 0,club INTEGER DEFAULT 0,updated INTEGER);
 CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,kind TEXT,title TEXT,body TEXT,seen INTEGER DEFAULT 0,ts INTEGER);
+CREATE TABLE IF NOT EXISTS direct_messages(id INTEGER PRIMARY KEY AUTOINCREMENT,sender TEXT,recipient TEXT,context TEXT,body TEXT,status TEXT,ts INTEGER);
 CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT,kind TEXT,actor TEXT,payload TEXT,ts INTEGER);
 CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,updated INTEGER);""")
   defaults={"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"-1","demo_run":"0"}
@@ -318,6 +319,7 @@ def state(c,email=None):
   d["expert_follows"]=[dict(r) for r in c.execute("SELECT f.speaker_id,f.status,f.ts,s.name,s.role,s.org FROM expert_follows f JOIN speakers s ON s.id=f.speaker_id WHERE f.email=? ORDER BY s.name",(email,))]
   d["learning_enrollments"]=[dict(r) for r in c.execute("SELECT e.track_id,e.status,e.current_step,e.started,e.updated,t.title,t.duration_days,t.topic,(SELECT COUNT(*) FROM learning_steps ls WHERE ls.track_id=e.track_id) total_steps FROM learning_enrollments e JOIN learning_tracks t ON t.id=e.track_id WHERE e.email=? ORDER BY e.updated DESC",(email,))]
   d["community_posts"]=[dict(r) for r in c.execute("SELECT id,thread_id,body,status,ts FROM community_posts WHERE email=? ORDER BY id DESC LIMIT 12",(email,))]
+  d["direct_messages"]=[dict(r) for r in c.execute("SELECT id,sender,recipient,context,body,status,ts FROM direct_messages WHERE sender=? OR recipient=? ORDER BY id DESC LIMIT 40",(email,email))]
   rel="registered"
   if c.execute("SELECT 1 FROM checkins WHERE ticket='DEMO-2027-001'").fetchone(): rel="attended"
   if c.execute("SELECT 1 FROM journeys WHERE email=? AND (replay=1 OR club=1)",(email,)).fetchone(): rel="continuing"
@@ -341,7 +343,7 @@ def state(c,email=None):
  return d
 
 def reset_demo(c,actor):
- for t in ("checkins","leads","registrations","bookings","questions","journeys","notifications","events","meetings","session_feedback","takeaways","product_interests","followups","topic_subscriptions","expert_follows","learning_enrollments","community_posts"):
+ for t in ("checkins","leads","registrations","bookings","questions","journeys","notifications","direct_messages","events","meetings","session_feedback","takeaways","product_interests","followups","topic_subscriptions","expert_follows","learning_enrollments","community_posts"):
   c.execute("DELETE FROM "+t)
  for k,v in {"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"0"}.items(): setv(c,k,v)
  setv(c,"demo_run",int(sval(c,"demo_run","0"))+1)
@@ -448,10 +450,11 @@ class H(SimpleHTTPRequestHandler):
      "studio_episodes":c.execute("SELECT COUNT(*) n FROM studio_episodes").fetchone()["n"],
      "community_threads":c.execute("SELECT COUNT(*) n FROM community_threads").fetchone()["n"],
      "learning_tracks":c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
-     "learning_steps":c.execute("SELECT COUNT(*) n FROM learning_steps").fetchone()["n"]
+     "learning_steps":c.execute("SELECT COUNT(*) n FROM learning_steps").fetchone()["n"],
+     "direct_messages":c.execute("SELECT COUNT(*) n FROM direct_messages").fetchone()["n"]
     },
-    "journey":["studio","expert","topic_hub","community","event","replay","learning_track"],
-    "guardrails":["community moderation","medical/editorial disclosure","no personalized treatment advice","explicit follow and subscription actions"],
+    "journey":["studio","expert","topic_hub","community","event","replay","learning_track","account_inbox"],
+    "guardrails":["community moderation","medical/editorial disclosure","no personalized treatment advice","explicit follow and subscription actions","direct messaging only after mutual consent or with organizer"],
     "durability":"demo authority remains SQLite until production PostgreSQL admission"
    }
    c.close(); return self.out(proof)
@@ -826,6 +829,25 @@ class H(SimpleHTTPRequestHandler):
      action=str(data.get("action","replay")); c.execute("INSERT OR IGNORE INTO journeys(email,updated) VALUES(?,?)",(email,int(time.time())))
      if action not in ("attended","replay","club"): return self.out({"error":"bad_action"},400)
      c.execute("UPDATE journeys SET "+action+"=1,updated=? WHERE email=?",(int(time.time()),email)); audit(c,"journey_"+action,email,{})
+    elif p=="/api/direct-message":
+     if role not in ("participant","organizer"): return self.out({"error":"forbidden"},403)
+     recipient=str(data.get("recipient","")).lower()[:120].strip(); text=str(data.get("body","")).strip()[:500]; context=str(data.get("context","inbox"))[:80]
+     if recipient not in ACCOUNTS or recipient==email: return self.out({"error":"recipient_not_allowed"},403)
+     if len(text)<1: return self.out({"error":"message_required"},422)
+     allowed=False
+     if role=="organizer":
+      allowed=ACCOUNTS[recipient][1]=="participant"
+     elif recipient=="organizer@demo.ru":
+      allowed=True
+     elif ACCOUNTS[recipient][1]=="participant":
+      rel=c.execute("""SELECT 1 FROM mutual_meetings
+                      WHERE status='confirmed' AND ((requester=? AND target_email=?) OR (requester=? AND target_email=?))
+                      LIMIT 1""",(email,recipient,recipient,email)).fetchone()
+      allowed=bool(rel)
+     if not allowed: return self.out({"error":"conversation_requires_mutual_consent"},403)
+     c.execute("INSERT INTO direct_messages(sender,recipient,context,body,status,ts) VALUES(?,?,?,?, 'delivered',?)",(email,recipient,context,text,int(time.time())))
+     notify(c,recipient,"direct_message","Новое сообщение",ACCOUNTS[email][2]+" · "+text[:120])
+     audit(c,"direct_message_sent",email,{"recipient":recipient,"context":context})
     elif p=="/api/profile":
      if role!="participant": return self.out({"error":"forbidden"},403)
      intent=str(data.get("intent","Понять полезное для себя"))[:120]; interests=str(data.get("interests","сон,наука,движение"))[:240]
