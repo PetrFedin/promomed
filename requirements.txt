@@ -1,1 +1,5 @@
 psycopg[binary]>=3.2,<4
+opentelemetry-api==1.45.0
+opentelemetry-sdk==1.45.0
+opentelemetry-exporter-otlp-proto-http==1.45.0
+webauthn==3.0.1
