@@ -56,7 +56,7 @@ jobs:
           PY
       - name: Backup and restore proof
         run: |
-          BACKUP_FILE=/tmp/promomed.dump bash scripts/backup_postgres.sh
+          PG_DOCKER_IMAGE=postgres:17 BACKUP_FILE=/tmp/promomed.dump bash scripts/backup_postgres.sh
           PGPASSWORD=postgres createdb -h 127.0.0.1 -U postgres promomed_restore
-          RESTORE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/promomed_restore BACKUP_FILE=/tmp/promomed.dump bash scripts/restore_postgres.sh
+          PG_DOCKER_IMAGE=postgres:17 RESTORE_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/promomed_restore BACKUP_FILE=/tmp/promomed.dump bash scripts/restore_postgres.sh
           test "$(PGPASSWORD=postgres psql -h 127.0.0.1 -U postgres -d promomed_restore -tAc 'SELECT COUNT(*) FROM schema_migrations')" -ge 2
