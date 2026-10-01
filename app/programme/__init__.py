@@ -86,3 +86,32 @@ def version_profile(c,speaker_id,actor):
               (vid,speaker_id,version,snapshot,hash_text(snapshot),actor,now()))
     audit(c,"expert_profile_versioned",actor,{"speaker_id":speaker_id,"version":version})
     return {"id":vid,"version":version,"snapshot_hash":hash_text(snapshot)}
+
+def import_pretalx_snapshot(c,data,actor):
+    revision=str(data.get("revision") or "").strip()
+    proposals=data.get("proposals") or []
+    if not revision or not isinstance(proposals,list):
+        raise ValueError("approved_snapshot_required")
+    imported=[]
+    for item in proposals:
+        if not isinstance(item,dict) or str(item.get("state") or "")!="approved":
+            continue
+        external_id=str(item.get("external_id") or item.get("id") or "")
+        if not external_id:
+            continue
+        pid="pretalx:"+external_id
+        existing=c.execute("SELECT id FROM programme_proposals WHERE id=?",(pid,)).fetchone()
+        if existing:
+            imported.append(pid); continue
+        c.execute("""INSERT INTO programme_proposals(id,topic,title,format,proposer,state,disclosure,created_at,updated_at)
+                     VALUES(?,?,?,?,?,'approved',?,?,?)""",
+                  (pid,str(item.get("topic") or ""),str(item.get("title") or "")[:300],str(item.get("format") or "talk"),
+                   str(item.get("proposer") or "pretalx"),str(item.get("disclosure") or ""),now(),now()))
+        imported.append(pid)
+    snapshot=dump({"provider":"pretalx","revision":revision,"proposal_ids":sorted(imported)})
+    rid=uid("pretalx_revision")
+    num=(c.execute("SELECT COUNT(*) n FROM programme_revisions").fetchone()["n"] or 0)+1
+    c.execute("INSERT INTO programme_revisions(id,revision_no,state,snapshot_json,snapshot_hash,approved_by,created_at) VALUES(?,?,'approved',?,?,?,?)",
+              (rid,num,snapshot,hash_text(snapshot),actor,now()))
+    audit(c,"pretalx_snapshot_imported",actor,{"revision":revision,"count":len(imported),"revision_id":rid})
+    return {"revision_id":rid,"revision":revision,"imported":imported,"snapshot_hash":hash_text(snapshot)}
