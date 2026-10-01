@@ -44,6 +44,35 @@ def _token_hash(token):
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 def ensure_demo_accounts(c):
+    if getattr(c, "backend", "sqlite") == "sqlite":
+        c.execute("""CREATE TABLE IF NOT EXISTS accounts(
+            email TEXT PRIMARY KEY,
+            password_hash TEXT NOT NULL,
+            role TEXT NOT NULL,
+            name TEXT NOT NULL,
+            status TEXT NOT NULL DEFAULT 'active',
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )""")
+        c.execute("""CREATE TABLE IF NOT EXISTS sessions(
+            token_hash TEXT PRIMARY KEY,
+            email TEXT NOT NULL,
+            role TEXT NOT NULL,
+            name TEXT NOT NULL,
+            created_at INTEGER NOT NULL,
+            expires_at INTEGER NOT NULL,
+            revoked_at INTEGER
+        )""")
+        c.execute("""CREATE TABLE IF NOT EXISTS consent_records(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL,
+            purpose TEXT NOT NULL,
+            consent_version TEXT NOT NULL,
+            granted INTEGER NOT NULL,
+            source TEXT NOT NULL,
+            business_ref TEXT,
+            ts INTEGER NOT NULL
+        )""")
     if not DEMO_ENABLED:
         return
     now = int(time.time())
