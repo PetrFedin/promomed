@@ -1,85 +1,122 @@
-# СОСТОЯНИЕ × Промомед — Pilot Command System v1.3
+# СОСТОЯНИЕ × Промомед
 
-Рабочий репозиторий концепции **СОСТОЯНИЕ** для Промомед. Это самостоятельный продуктовый концепт, а не официальный продукт компании. KO-LAB/co-lab.pro использовался только как референс концепции.
+Рабочий продуктовый концепт **СОСТОЯНИЕ** для Промомед: year-round health media + flagship conference + post-event relationship platform. Это самостоятельный концепт, а не официальный продукт компании.
 
-## Текущая версия
+## Текущий кодовый кандидат
 
-**v1.4 Health Media & Conference + Pilot Command System** — year-round health-media и product experience + 42-event multi-track conference + Pilot Command System + Customer Intelligence + Owner Control Tower.
+**v2.0 Integration Authority Candidate** реализует последовательность из `docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md`.
 
-### Что реализовано
+Базовый продукт сохраняет:
 
-- participant journey: регистрация, профиль, программа, персональный маршрут, ticket/QR, booking/waitlist;
-- live conference boundary: scheduled → live → technical pause → ended/replay, captions/replay boundary;
-- venue operations: live floor map, capacity/occupancy, queues, hall state, waitlist;
-- staff operations: assignments, on-shift state, оперативное переназначение;
-- incidents: severity, recovery, SLA status и escalation signal;
-- speaker readiness: check-in → briefing → mic → slides → ready;
-- session attendance и check-in authority;
-- partner cockpit и Partner Appointment Desk;
-- добровольный lead/consent boundary;
-- operational participant alerts;
-- multi-stream health;
-- commercial analytics и Customer Intelligence D1/D7/D30;
-- Owner Control Tower;
-- organizer, staff, partner, participant и sales/demo roles;
-- sales presentation mode для демонстрации руководству;
-- Apple Wallet boundary без генерации неподписанного fake pass.
+- iPhone-first participant journey;
+- 42 события / 7 пространств;
+- Smart Route, booking/waitlist, QR/check-in;
+- live/replay;
+- venue/staff/incident/speaker operations;
+- Partner Cockpit / Appointment Desk;
+- native community and learning tracks;
+- Customer Intelligence and Owner Control Tower.
 
-## Структура
+Интеграционная волна добавляет:
 
-- `server.py` — API, SQLite authority, auth/demo roles, operational state, analytics и static server.
-- `public/index.html` — полный responsive web/iPhone интерфейс v1.3.
-- `render.yaml` — Render Blueprint для web service.
-- `docs/ARCHITECTURE.md` — текущая архитектура и authority boundaries.
-- `docs/IMPLEMENTED_SCOPE.md` — карта реализованного функционала.
+- PostgreSQL 17 authority + migrations + durable sessions/consent/audit;
+- editorial/medical/compliance publication workflow;
+- evidence/citation/claim lineage;
+- search + semantic retrieval adapters;
+- explainable personalisation;
+- live/replay media provider boundary + Video.js;
+- evidence-first transcript/takeaway pipeline;
+- Expert Rooms;
+- Programme Production Desk;
+- Expert Authority;
+- Partner Commercial Workspace;
+- notification delivery adapter;
+- MapLibre venue rendering;
+- explicit scale/clinical gates;
+- anonymous public acquisition analytics.
 
-## Локальный запуск
+## Architecture
+
+New integration code lives under `app/` and is routed through `app/integration_api.py`. External products are replaceable providers, never silent second authorities.
+
+`DATABASE_URL` selects PostgreSQL. SQLite remains a demo/dev fallback. Production admission is fail-closed through:
+
+- `GET /health` — runtime/backend/migration visibility;
+- `GET /ready` — 200 only for durable PostgreSQL with no pending migrations.
+
+See `docs/ARCHITECTURE.md`.
+
+## External provider boundaries
+
+Supported adapters/boundaries:
+
+- Directus — controlled authoring snapshot import;
+- Zotero-pattern evidence metadata import;
+- Meilisearch — rebuildable full-text/faceted index;
+- semantic retrieval provider — derived similarity only;
+- Metarank — ranking only, allow-listed reason codes;
+- Owncast — live media transport/state;
+- Video.js — playback UI;
+- Jitsi — Expert Room media transport;
+- pretalx — approved programme snapshot import;
+- Novu — delivery orchestration;
+- MapLibre — venue renderer;
+- Umami — optional anonymous acquisition telemetry.
+
+The presence of an adapter does **not** mean the external service is connected in production.
+
+## Safety and trust boundary
+
+СОСТОЯНИЕ is not a diagnostic/prescribing service. Personalisation may rank existing reviewed content but cannot generate diagnosis, individual treatment advice, drug recommendation or health-risk classification.
+
+Demo content, profiles, geometry, programme details, partners and performance indicators may be illustrative and must not be represented as factual Promomed performance data.
+
+## Development
+
+Install:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run demo/dev:
 
 ```bash
 python server.py
 ```
 
-По умолчанию приложение слушает `PORT=8000`. SQLite-файл задаётся через `SQLITE_PATH`; без переменной используется временная БД.
+Run with PostgreSQL:
+
+```bash
+DATABASE_URL=postgresql://... python server.py
+```
+
+CI verifies PostgreSQL migrations/seed, backup/restore, integration contracts, SQLite fallback and iPhone inline JavaScript.
 
 ## Render
 
-Build command:
+Blueprint build:
 
 ```bash
-python -m py_compile server.py
+pip install -r requirements.txt && python -m compileall -q server.py app
 ```
 
-Start command:
+Start:
 
 ```bash
 python server.py
 ```
 
-Health endpoint: `/health`.
+The authoritative deployment ledger is `docs/DEPLOYMENT_STATE.md`.
 
-## Важно
+## Source of truth
 
-Данные, программа, партнёры, эксперты и показатели в демонстрации могут быть иллюстративными. Они не должны интерпретироваться как фактические результаты Промомед или медицинские рекомендации.
+- canonical repository: `PetrFedin/promomed`;
+- canonical production branch: `main`;
+- integration implementation plan: `docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md`;
+- architecture: `docs/ARCHITECTURE.md`;
+- implemented code scope: `docs/IMPLEMENTED_SCOPE.md`;
+- deployment evidence: `docs/DEPLOYMENT_STATE.md`;
+- release history: `CHANGELOG.md`.
 
-## Source of truth и релизы
-
-- Код проекта: только `PetrFedin/promomed/main`.
-- Текущее состояние Render: `docs/DEPLOYMENT_STATE.md`.
-- История завершённых волн: `CHANGELOG.md`.
-- Правила дальнейшей разработки и релизов: `docs/RELEASE_PROTOCOL.md`.
-
-После каждого live-деплоя фиксируются exact Git SHA, Render deploy ID, URL, smoke-test и оставшиеся блокеры. Это обязательная часть завершения каждой следующей волны.
-
-## Current live
-
-Authoritative Render service: https://sostoyanie-promomed-live.onrender.com
-
-Current verified application release: **v1.4**, 42 conference events across seven parallel venues plus year-round Media/Product/Partner surfaces. Exact deployment evidence is maintained in `docs/DEPLOYMENT_STATE.md`.
-
-## План интеграционного развития
-
-Канонический документ для следующих волн развития и внешних интеграций:
-
-- [docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md](./docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md)
-
-Это **план внедрения**, а не утверждение о том, что перечисленные возможности уже реализованы. В документе зафиксированы последовательность работ, границы authority, внешние референсы, зависимости и критерии приёмки. Для запуска полной запланированной волны следует явно ссылаться на это имя файла.
+No release is called production-complete until exact Git SHA, durable datastore, Render deploy and runtime evidence are recorded.
