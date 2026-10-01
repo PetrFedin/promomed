@@ -91,7 +91,7 @@ def run_device(browser, name: str, width: int, height: int):
     expect(page.locator("#overlay")).to_have_class(re.compile(r"\bon\b"))
     expect(page.locator("#sheet")).to_contain_text("Настоящие demo-роли")
     page.locator("#sheet .card").filter(has_text="Участник").get_by_role("button", name="Войти").click()
-    page.wait_for_selector("#overlay:not(.on)")
+    expect(page.locator("#overlay")).to_be_hidden()
     page.locator('#nav button[data-s="me"]').click()
     page.wait_for_selector("#me.on")
     expect(page.locator("#me")).to_contain_text("Сообщения")
