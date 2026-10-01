@@ -8,6 +8,7 @@ from app.venue import ensure_demo_asset
 from app.gates import ensure_defaults as ensure_integration_gates
 from app.content import ensure_legacy_demo_publications
 from app.search import rebuild as rebuild_search_projection
+from app.observability import configure_observability, http_handler_trace, set_response_status
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 
@@ -427,8 +428,9 @@ class H(SimpleHTTPRequestHandler):
   self.send_header("Access-Control-Allow-Headers","Authorization, Content-Type")
   self.send_header("Access-Control-Allow-Methods","GET, POST, OPTIONS")
  def out(self,obj,status=200):
-  b=json.dumps(obj,ensure_ascii=False).encode(); self.send_response(status)
+  b=json.dumps(obj,ensure_ascii=False).encode(); set_response_status(status); self.send_response(status)
   self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors()
+  self.send_header("X-Correlation-ID",getattr(self,"_correlation_id",""))
   self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_OPTIONS(self):
   self.send_response(204); self.cors(); self.end_headers()
@@ -994,5 +996,8 @@ class H(SimpleHTTPRequestHandler):
    finally: c.close()
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
 
+H.do_GET=http_handler_trace(H.do_GET)
+H.do_POST=http_handler_trace(H.do_POST)
+
 if __name__=="__main__":
- init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v2.0 integration authority listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
+ configure_observability(); init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v2.0 integration authority listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
