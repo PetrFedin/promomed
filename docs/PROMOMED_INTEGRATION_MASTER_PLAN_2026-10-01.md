@@ -764,3 +764,141 @@ Store the normalized metadata and claim-evidence decision in Promomed; generated
 
 **Sequencing:** observability follows PostgreSQL migration; passkeys follow production auth; citation rendering follows the Evidence Library schema.
 
+## 13. Additional integration wave — scientific claims, disclosure and research evidence
+
+This wave strengthens the platform's most important differentiator: health content that can show **who said what, on what evidence, under which disclosure and review state**.
+
+### 13.1 Scientific Claim Registry — ADOPT
+
+Create a native claim-level authority separate from article prose.
+
+Entity:
+
+- claim ID;
+- normalized claim text;
+- topic;
+- intended audience/context;
+- source publication/content version;
+- evidence links;
+- evidence role (supports / contextual / contradicts / insufficient);
+- reviewer;
+- review status;
+- review date;
+- validity/review-until date;
+- correction/retraction state.
+
+Flow:
+
+`draft content -> candidate claims -> evidence link -> scientific/medical review -> approved claim version -> published content`
+
+A citation attached to an article does not automatically mean it supports every statement in the article. The Claim Registry records the reviewed relationship.
+
+Public UI may expose a compact "evidence" panel for claims where this materially improves trust.
+
+### 13.2 DOI / PubMed metadata adapters — ADOPT/ADAPT
+
+Add bounded metadata adapters for authoritative identifiers such as DOI and PMID using official Crossref and NCBI/PubMed interfaces.
+
+Import only bibliographic metadata:
+
+- title;
+- authors;
+- journal/source;
+- publication date;
+- DOI/PMID;
+- abstract where legally/API-permitted;
+- correction/retraction indicators where available;
+- source URL/identifier.
+
+Flow:
+
+`identifier -> provider lookup -> normalized evidence source -> editorial review -> claim linkage`
+
+Provider metadata is evidence metadata, not a medical conclusion. A successful DOI/PMID resolution must never auto-mark a claim as proven.
+
+Cache/provider records should retain fetched_at + provider/version/source so bibliographic changes are auditable.
+
+### 13.3 Conflict-of-Interest / Disclosure Authority — ADOPT
+
+Extend Expert Authority with versioned declarations:
+
+- expert;
+- organisation/employment;
+- advisory/consulting relationship;
+- research/speaking support;
+- partner/product relationship;
+- declaration period;
+- disclosed_at;
+- reviewer/status;
+- public-display text;
+- superseded version.
+
+Link disclosures to:
+
+- expert profile;
+- article;
+- session;
+- Studio episode;
+- product-context content.
+
+If a disclosure changes after publication, public content should resolve to the applicable disclosure version rather than silently rewriting history.
+
+The system records disclosure facts; it does not infer impropriety from the existence of a commercial relationship.
+
+### 13.4 Structured research / survey sidecar — CONDITIONAL SIDECAR
+
+Reference: https://github.com/LimeSurvey/LimeSurvey
+
+Use only for structured research where current lightweight feedback forms are insufficient, for example:
+
+- pre/post conference research;
+- health-literacy surveys;
+- expert/community research;
+- programme evaluation;
+- sponsor-funded research with explicit disclosure.
+
+Boundary:
+
+`Promomed study definition + consent/eligibility -> survey provider -> response dataset -> reviewed import/aggregate -> research output`
+
+Promomed remains source for:
+
+- study purpose/version;
+- eligibility;
+- participant consent;
+- linkage permissions;
+- publication/disclosure status.
+
+Do not send unnecessary profile/health context to the survey provider. Pseudonymous participant keys are preferred where linkage is required.
+
+### 13.5 Expert Q&A moderation and publication workflow — ADOPT
+
+Build on current expert/community entities:
+
+`question -> moderation -> assigned expert -> draft answer -> evidence/disclosure check where needed -> approved answer -> publish -> correction/version`
+
+Required:
+
+- question source;
+- moderator status;
+- expert;
+- evidence references;
+- answer version;
+- disclosure snapshot;
+- publication status.
+
+Q&A remains educational/general-information content. Do not turn it into individual diagnosis, prescription or treatment advice.
+
+### 13.6 Additional acceptance
+
+- every published reviewed claim can resolve to its evidence and reviewer state;
+- DOI/PMID adapters cannot auto-promote evidence quality;
+- expert disclosure is versioned and linked to the content/session context;
+- research exports identify study/consent version;
+- Q&A publication requires explicit moderation/review state;
+- no research/survey tool becomes participant identity or health-record authority.
+
+**Sequencing:** Claim Registry + disclosure extend the existing Evidence/Expert phases; DOI/PubMed adapters follow the Evidence Library schema; LimeSurvey remains conditional until a real structured-research need exists.
+
+**Dependency hygiene:** before runtime adoption, pin versions and review current LICENSE/security/data-processing requirements of any sidecar. External evidence APIs and survey tools must remain replaceable.
+
