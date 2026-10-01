@@ -1,0 +1,94 @@
+from app.domain import audit, dump, hash_text, now, uid
+
+STATES = (
+    "draft","editorial_review","medical_review","compliance_review",
+    "approved","scheduled","published","corrected","retracted"
+)
+TRANSITIONS = {
+    "draft": {"editorial_review"},
+    "editorial_review": {"medical_review","draft"},
+    "medical_review": {"compliance_review","editorial_review"},
+    "compliance_review": {"approved","medical_review"},
+    "approved": {"scheduled","published"},
+    "scheduled": {"published","approved"},
+    "published": {"corrected","retracted"},
+    "corrected": {"published","retracted"},
+    "retracted": set(),
+}
+
+def create_publication(c, data, actor):
+    key = str(data.get("publication_key") or uid("publication"))[:80]
+    version = int(data.get("version") or 1)
+    pid = f"{key}:v{version}"
+    title = str(data.get("title") or "").strip()[:240]
+    if not title:
+        raise ValueError("title_required")
+    body = str(data.get("body") or "")
+    disclosure = str(data.get("disclosure") or "")
+    ts = now()
+    c.execute(
+        """INSERT INTO publication_versions(
+            id,publication_key,version,source_type,source_ref,title,body,author,disclosure,state,
+            snapshot_hash,scheduled_at,published_at,corrected_at,created_at,updated_at
+        ) VALUES(?,?,?,?,?,?,?,?,?,'draft',NULL,NULL,NULL,NULL,?,?)""",
+        (pid,key,version,str(data.get("source_type") or "native"),str(data.get("source_ref") or ""),
+         title,body,str(data.get("author") or actor),disclosure,ts,ts)
+    )
+    audit(c,"publication_created",actor,{"publication_id":pid,"version":version})
+    return get_publication(c,pid)
+
+def get_publication(c, pid):
+    row=c.execute("SELECT * FROM publication_versions WHERE id=?",(pid,)).fetchone()
+    return dict(row) if row else None
+
+def list_publications(c, public_only=False):
+    if public_only:
+        rows=c.execute("SELECT * FROM publication_versions WHERE state IN ('published','corrected') ORDER BY published_at DESC,updated_at DESC").fetchall()
+    else:
+        rows=c.execute("SELECT * FROM publication_versions ORDER BY updated_at DESC").fetchall()
+    return [dict(r) for r in rows]
+
+def transition(c, pid, target, actor, review_kind=None, notes=""):
+    row=get_publication(c,pid)
+    if not row:
+        raise LookupError("publication_not_found")
+    target=str(target)
+    if target not in TRANSITIONS.get(row["state"],set()):
+        raise ValueError("invalid_transition")
+    ts=now()
+    snapshot_hash=row.get("snapshot_hash")
+    published_at=row.get("published_at")
+    corrected_at=row.get("corrected_at")
+    if target in ("approved","published","corrected"):
+        snapshot_hash=hash_text(dump({
+            "publication_key":row["publication_key"],"version":row["version"],"title":row["title"],
+            "body":row["body"],"author":row["author"],"disclosure":row["disclosure"],"state":target
+        }))
+    if target=="published": published_at=ts
+    if target=="corrected": corrected_at=ts
+    c.execute(
+        "UPDATE publication_versions SET state=?,snapshot_hash=?,published_at=?,corrected_at=?,updated_at=? WHERE id=?",
+        (target,snapshot_hash,published_at,corrected_at,ts,pid)
+    )
+    if review_kind:
+        c.execute(
+            "INSERT INTO editorial_reviews(id,publication_id,review_kind,reviewer,decision,notes,created_at) VALUES(?,?,?,?,?,?,?)",
+            (uid("review"),pid,str(review_kind),actor,target,str(notes or ""),ts)
+        )
+    audit(c,"publication_transition",actor,{"publication_id":pid,"from":row["state"],"to":target})
+    return get_publication(c,pid)
+
+def import_snapshot(c, payload, actor="provider"):
+    provider=str(payload.get("provider") or "directus")
+    external_id=str(payload.get("external_id") or "")
+    version=int(payload.get("version") or 1)
+    key=f"{provider}:{external_id}"
+    existing=c.execute("SELECT id FROM publication_versions WHERE publication_key=? AND version=?",(key,version)).fetchone()
+    if existing:
+        return get_publication(c,existing["id"])
+    data=dict(payload)
+    data["publication_key"]=key
+    data["source_type"]=provider
+    data["source_ref"]=external_id
+    pub=create_publication(c,data,actor)
+    return pub
