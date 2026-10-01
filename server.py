@@ -1,4 +1,7 @@
-import json, os, sqlite3, threading, secrets, time
+import json, os, threading, secrets, time
+from app.db.core import connect as db_connect, db_status
+from app.db.migrate import migrate, migration_status
+from app.auth.security import authenticate_headers, authenticate_password, create_session, ensure_demo_accounts
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 
@@ -33,9 +36,10 @@ DEMO_STEPS=[
 ]
 
 def conn():
- c=sqlite3.connect(DB,timeout=10,check_same_thread=False); c.row_factory=sqlite3.Row; return c
+ return db_connect()
 
 def init():
+ migrate()
  with LOCK:
   c=conn()
   c.executescript("""CREATE TABLE IF NOT EXISTS state(k TEXT PRIMARY KEY,v TEXT NOT NULL);
@@ -238,6 +242,7 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
   for e in ("participant@demo.ru","participant2@demo.ru","participant3@demo.ru"):
    c.execute("INSERT OR IGNORE INTO attendee_profiles(email,intent,interests,networking,visibility,updated) VALUES(?, 'Понять полезное для себя','сон,наука,движение',1,'event_only',?)",(e,int(time.time())))
    c.execute("INSERT OR IGNORE INTO passport(email,updated) VALUES(?,?)",(e,int(time.time())))
+  ensure_demo_accounts(c)
   c.commit(); c.close()
 
 def sval(c,k,default=""):
@@ -397,7 +402,9 @@ def run_demo_step(c,step,actor):
  setv(c,"demo_step",step)
 
 def auth(h):
- token=h.headers.get("Authorization","").replace("Bearer ","").strip(); return TOKENS.get(token)
+ c=conn()
+ try: return authenticate_headers(c,h.headers)
+ finally: c.close()
 
 def body(h):
  n=int(h.headers.get("Content-Length","0") or 0); return json.loads(h.rfile.read(n) or b"{}")
@@ -416,7 +423,12 @@ class H(SimpleHTTPRequestHandler):
   self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
-  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v16-continuity","authority":"shared-sqlite-demo","golden_demo":True})
+  if p=="/health":
+   ds=db_status(); ms=migration_status()
+   return self.out({"ok":True,"app":"sostoyanie-v20-integration","authority":ds["backend"],"durable":ds["durable"],"golden_demo":True,"migrations_pending":ms["pending"]})
+  if p=="/ready":
+   ds=db_status(); ms=migration_status(); ready=bool(ds["durable"] and not ms["pending"])
+   return self.out({"ready":ready,"database":ds,"migrations":ms},200 if ready else 503)
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/product-quality-proof":
@@ -544,9 +556,14 @@ class H(SimpleHTTPRequestHandler):
   try: data=body(self)
   except Exception: return self.out({"error":"bad_json"},400)
   if p=="/api/login":
-   email=str(data.get("email","")).lower(); pw=str(data.get("password","")); rec=ACCOUNTS.get(email)
-   if not rec or not secrets.compare_digest(rec[0],pw): return self.out({"error":"invalid_credentials"},401)
-   token=secrets.token_urlsafe(24); TOKENS[token]=(rec[1],rec[2],email); return self.out({"token":token,"role":rec[1],"name":rec[2]})
+   email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
+   c=conn()
+   try:
+    rec=authenticate_password(c,email,pw)
+    if not rec: return self.out({"error":"invalid_credentials"},401)
+    token=create_session(c,rec[2],rec[0],rec[1]); c.commit()
+    return self.out({"token":token,"role":rec[0],"name":rec[1]})
+   finally: c.close()
   a=auth(self)
   if not a: return self.out({"error":"unauthorized"},401)
   role,name,email=a
@@ -899,7 +916,9 @@ class H(SimpleHTTPRequestHandler):
      if data.get("consent") is not True: return self.out({"error":"consent_required"},422)
      track=str(data.get("track","metabolic_health"))[:80]; context=str(data.get("context","official_product_information"))[:120]
      consent_version=str(data.get("consent_version","product-interest-v1"))[:40]
-     c.execute("INSERT INTO product_interests(email,track,context,consent_version,status,ts) VALUES(?,?,?,?, 'requested',?)",(email,track,context,consent_version,int(time.time())))
+     now=int(time.time())
+     c.execute("INSERT INTO product_interests(email,track,context,consent_version,status,ts) VALUES(?,?,?,?, 'requested',?)",(email,track,context,consent_version,now))
+     c.execute("INSERT INTO consent_records(email,purpose,consent_version,granted,source,business_ref,ts) VALUES(?,?,?,?,?,?,?)",(email,"product_interest",consent_version,1,"participant_action",track,now))
      notify(c,email,"product_interest_saved","Интерес сохранён","Мы сохранили запрос на официальный материал. Это не медицинская рекомендация и не назначение.")
      audit(c,"product_interest",email,{"track":track,"context":context,"consent_version":consent_version})
     elif p=="/api/followup-enroll":
@@ -912,7 +931,9 @@ class H(SimpleHTTPRequestHandler):
     elif p=="/api/lead":
      if role!="participant": return self.out({"error":"forbidden"},403)
      if data.get("consent") is not True: return self.out({"error":"consent_required"},422)
-     kind=str(data.get("kind","materials")); c.execute("INSERT INTO leads(kind,status,ts) VALUES(?,'new',?)",(kind,int(time.time())))
+     kind=str(data.get("kind","materials")); now=int(time.time())
+     c.execute("INSERT INTO leads(kind,status,ts) VALUES(?,'new',?)",(kind,now))
+     c.execute("INSERT INTO consent_records(email,purpose,consent_version,granted,source,business_ref,ts) VALUES(?,?,?,?,?,?,?)",(email,"partner_lead",str(data.get("consent_version","lead-v1"))[:40],1,"participant_action",kind,now))
      c.execute("UPDATE placements SET leads=leads+1 WHERE id=1"); audit(c,"voluntary_lead",email,{"kind":kind,"consent":True})
     elif p=="/api/question":
      if role!="participant": return self.out({"error":"forbidden"},403)
@@ -929,4 +950,4 @@ class H(SimpleHTTPRequestHandler):
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
 
 if __name__=="__main__":
- init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.5 product quality listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
+ init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v2.0 integration authority listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
