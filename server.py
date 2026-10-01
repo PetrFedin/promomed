@@ -418,7 +418,7 @@ class H(SimpleHTTPRequestHandler):
   self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
-  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v16-continuity","authority":"shared-sqlite-demo","golden_demo":True})
+  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v17-responsive-inbox","authority":"shared-sqlite-demo","golden_demo":True,"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/product-quality-proof":
