@@ -4,6 +4,8 @@ from app.db.migrate import migrate, migration_status
 from app.auth.security import authenticate_headers, authenticate_password, create_session, ensure_demo_accounts
 from app.integration_api import handle_get as integration_get, handle_post as integration_post, handle_public_post as integration_public_post
 from app import notifications as notification_delivery
+from app.venue import ensure_demo_asset
+from app.gates import ensure_defaults as ensure_integration_gates
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 
@@ -245,6 +247,8 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
    c.execute("INSERT OR IGNORE INTO attendee_profiles(email,intent,interests,networking,visibility,updated) VALUES(?, 'Понять полезное для себя','сон,наука,движение',1,'event_only',?)",(e,int(time.time())))
    c.execute("INSERT OR IGNORE INTO passport(email,updated) VALUES(?,?)",(e,int(time.time())))
   ensure_demo_accounts(c)
+  ensure_integration_gates(c)
+  ensure_demo_asset(c)
   c.commit(); c.close()
 
 def sval(c,k,default=""):
