@@ -154,7 +154,6 @@ function toggleBooking(b){if(b.textContent.includes('Отменить')){b.textC
 async function scanTicket(){return apiCheckin()}
 function redeemGift(b){if(b.dataset.done){b.textContent='Уже получен · duplicate blocked';return}b.dataset.done=1;b.textContent='Получено ✓';b.className='btn green'}
 async function moveSession(){return apiMoveSession()}
-async function api(path,data){const o={headers:{'Content-Type':'application/json'}};if(token)o.headers.Authorization='Bearer '+token;if(data!==undefined){o.method='POST';o.body=JSON.stringify(data)}try{const r=await fetch(path,o);const j=await r.json();if(!r.ok)j.error=j.error||('HTTP '+r.status);return j}catch(e){return {error:'network'}}}
 async function demoLogin(email){const r=await api('/api/login',{method:'POST',body:JSON.stringify({email,password:'demo2027'})});apiToken=r.token;currentEmail=email;localStorage.setItem('sostoyanie_token',apiToken);localStorage.setItem('sostoyanie_role',r.role);localStorage.setItem('sostoyanie_email',email);role=r.role;closeSheet();routeRole();await syncState(true)}
 function logout(){apiToken='';localStorage.removeItem('sostoyanie_token');localStorage.removeItem('sostoyanie_role');localStorage.removeItem('sostoyanie_email');currentEmail='participant@demo.ru';role='participant';closeSheet();show('today');updateTag()}
 function routeRole(){document.getElementById('nav').classList.toggle('hidden',role!=='participant');if(role==='organizer')show('organizer');else if(role==='partner')show('partnerDash');else if(role==='staff')show('staff');else if(role==='editor')show('editor');else if(role==='moderator')show('moderator');else show('today');updateTag()}
@@ -341,7 +340,14 @@ async function apiCheckin(){
 async function apiCMS(b,status){try{const s=await api('/api/cms',{method:'POST',body:JSON.stringify({status})});b.textContent=status==='approved'?'Approved ✓':'Возвращено ✓';document.getElementById('medReview').textContent=s.cms_status+' · v'+s.cms_version}catch(e){alert(e.message)}}
 async function apiLead(b){try{const s=await api('/api/lead',{method:'POST',body:JSON.stringify({kind:'materials'})});b.textContent='Lead создан на сервере · '+s.leads+' ✓'}catch(e){alert(e.message)}}
 async function apiQuestion(b){try{const s=await api('/api/question',{method:'POST',body:JSON.stringify({text:'Как отличать корреляцию от причинности?'})});b.textContent='Отправлено на сервер ✓';document.getElementById('qStatus').textContent='Статус: на модерации · вопросов в authority: '+s.questions}catch(e){alert(e.message)}}
-(async()=>{const r=localStorage.getItem('sostoyanie_role')||'participant';await switchRole(r);setInterval(()=>syncState(false),2000)})();
+(async()=>{
+ const savedRole=localStorage.getItem('sostoyanie_role')||'participant';
+ if(apiToken){
+  try{const me=await api('/api/me');if(me.authenticated){role=me.role||savedRole;routeRole();await syncState(true)}else{apiToken='';localStorage.removeItem('sostoyanie_token');show('today');updateTag()}}
+  catch(e){show('today');updateTag()}
+ }else{role='participant';show('today');updateTag();await syncState(true)}
+ setInterval(()=>syncState(false),3000)
+})();
 </script><div id="guidedDemo" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(4,18,38,.72);backdrop-filter:blur(12px);padding:24px;align-items:flex-end">
 <div style="max-width:520px;margin:auto auto 18px;background:#fff;border-radius:28px;padding:24px;box-shadow:0 24px 80px rgba(0,0,0,.28)">
 <div class="ey blue">GUIDED COMMERCIAL PROOF · <span id="demoStepNo">1 / 8</span></div>
@@ -403,6 +409,28 @@ async function ownerShow(){
  openSheet('ownerGuide')
 }
 async function ownerNext(){closeSheet();ownerStep++;if(ownerStep>=ownerScreens.length){ownerStep=ownerScreens.length-1;return}await ownerShow()}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function contactLabel(email){return email==='organizer@demo.ru'?'Команда СОСТОЯНИЯ':email==='participant2@demo.ru'?'Елена К.':email==='participant3@demo.ru'?'Михаил В.':email}
+function renderInbox(s){
+ const root=document.getElementById('accountInbox');if(!root)return;
+ const messages=s.direct_messages||[],notifications=s.notifications||[],confirmed=(s.mutual_meetings||[]).filter(x=>x.status==='confirmed');
+ const recent=[...messages].slice(0,4);
+ const recentHtml=recent.length?recent.map(m=>'<div class="listrow"><div class="badge">'+(m.sender===currentEmail?'↗':'↙')+'</div><div style="flex:1"><b>'+esc(contactLabel(m.sender===currentEmail?m.recipient:m.sender))+'</b><div class="tiny muted">'+esc(m.body)+'</div></div></div>').join(''):(notifications.length?notifications.slice(0,3).map(n=>'<div class="listrow"><div class="badge">●</div><div><b>'+esc(n.title)+'</b><div class="tiny muted">'+esc(n.body)+'</div></div></div>').join(''):'<p class="small muted">Пока пусто. Здесь появятся только разрешённые диалоги и важные сервисные сообщения.</p>');
+ const peers=confirmed.map(m=>({email:m.requester===currentEmail?m.target_email:m.requester,slot:m.slot,place:m.place})).filter((x,i,a)=>a.findIndex(y=>y.email===x.email)===i);
+ root.innerHTML='<div class="card"><div class="ey blue">INBOX</div><h3>Последние сообщения и сервисные события</h3>'+recentHtml+'</div>'+
+  (peers.length?'<div class="card"><div class="ey blue">ПОДТВЕРЖДЁННЫЕ КОНТАКТЫ</div><h3>Можно продолжить разговор</h3>'+peers.map(p=>'<div class="listrow"><div class="badge">↔</div><div style="flex:1"><b>'+esc(contactLabel(p.email))+'</b><div class="tiny muted">'+esc(p.slot+' · '+p.place)+'</div></div><button class="btn soft" data-peer="'+esc(p.email)+'">Написать</button></div>').join('')+'</div>':'');
+ root.querySelectorAll('[data-peer]').forEach(b=>b.onclick=()=>openConversation(b.dataset.peer,contactLabel(b.dataset.peer),'confirmed_meeting'));
+}
+function openConversation(recipient,label,context='inbox'){
+ if(!apiToken){openSheet('login');return}
+ const messages=(serverState?.direct_messages||[]).filter(m=>(m.sender===currentEmail&&m.recipient===recipient)||(m.sender===recipient&&m.recipient===currentEmail)).reverse();
+ sheets.conversation='<div class="ey blue">ЛИЧНЫЙ ДИАЛОГ</div><h2>'+esc(label)+'</h2><p class="small muted">Диалог доступен в рамках выбранного вами взаимодействия. Его нельзя начать с произвольным участником без взаимного согласия.</p><div style="margin:16px 0">'+(messages.length?messages.map(m=>'<div class="messageBubble '+(m.sender===currentEmail?'mine':'')+'">'+esc(m.body)+'</div>').join(''):'<div class="notice">Сообщений пока нет.</div>')+'</div><div class="field"><label>СООБЩЕНИЕ</label><input id="directMessageInput" maxlength="500" placeholder="Напишите сообщение"></div><div class="actions"><button class="btn" id="directMessageSend">Отправить</button></div>';
+ openSheet('conversation');const send=document.getElementById('directMessageSend');if(send)send.onclick=()=>sendDirectMessage(recipient,context)
+}
+async function sendDirectMessage(recipient,context){
+ const input=document.getElementById('directMessageInput'),body=(input?.value||'').trim();if(!body)return;
+ try{const s=await api('/api/direct-message',{method:'POST',body:JSON.stringify({recipient,context,body})});serverState=s;renderInbox(s);openConversation(recipient,contactLabel(recipient),context)}catch(e){alert(e.status===403?'Личный диалог доступен только после взаимного подтверждения контакта.':e.message)}
+}
 async function openNotifications(){
  try{
   if(role!=='participant'){sheets.notifications='<div class="ey blue">IN-APP NOTIFICATIONS</div><h2>Participant notification center</h2><div class="notice">Переключитесь на участника: центр показывает адресные server-side уведомления его аккаунта.</div>';openSheet('notifications');return}
