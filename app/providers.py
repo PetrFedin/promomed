@@ -2,17 +2,22 @@ import json
 import os
 from urllib import request, error
 
+from app.observability import provider_span
+
 def request_json(url,payload=None,method="POST",headers=None,timeout=4):
     if not url:
         return {"ok":False,"error":"provider_not_configured"}
     data=None if payload is None else json.dumps(payload,ensure_ascii=False).encode("utf-8")
     req=request.Request(url,data=data,method=method,headers={"Content-Type":"application/json",**(headers or {})})
     try:
-        with request.urlopen(req,timeout=timeout) as res:
-            raw=res.read().decode("utf-8","replace")
-            try: body=json.loads(raw) if raw else {}
-            except Exception: body={"raw":raw[:500]}
-            return {"ok":200<=res.status<300,"status":res.status,"body":body}
+        with provider_span(url,method) as span:
+            with request.urlopen(req,timeout=timeout) as res:
+                raw=res.read().decode("utf-8","replace")
+                try: body=json.loads(raw) if raw else {}
+                except Exception: body={"raw":raw[:500]}
+                span.set_attribute("http.response.status_code",int(res.status))
+                span.set_attribute("promomed.provider_result","success" if 200<=res.status<300 else "error")
+                return {"ok":200<=res.status<300,"status":res.status,"body":body}
     except error.HTTPError as exc:
         return {"ok":False,"status":exc.code,"error":"provider_http_error"}
     except Exception:
