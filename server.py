@@ -752,10 +752,26 @@ class H(SimpleHTTPRequestHandler):
      item=c.execute("SELECT id,title,venue,track,partner,replay FROM program_items WHERE id=?",(item_id,)).fetchone()
      if not item: return self.out({"error":"program_item_not_found"},404)
      chapters=[dict(r) for r in c.execute("SELECT offset_sec,title,kind FROM replay_chapters WHERE item_id=? ORDER BY offset_sec",(item_id,))]
+     broadcast=c.execute("SELECT * FROM media_broadcasts WHERE item_id=? ORDER BY updated_at DESC LIMIT 1",(item_id,)).fetchone()
+     transcript_segments=[]; approved_takeaways=[]; transcript_status="not_available"
+     if broadcast:
+      job=c.execute("SELECT * FROM transcript_jobs WHERE media_id=? ORDER BY updated_at DESC LIMIT 1",(broadcast["id"],)).fetchone()
+      if job:
+       transcript_segments=[dict(r) for r in c.execute("SELECT start_ms,end_ms,speaker,text,source_hash FROM transcript_segments WHERE job_id=? ORDER BY start_ms",(job["id"],))]
+       approved_takeaways=[dict(r) for r in c.execute("SELECT start_ms,end_ms,text,reviewed_by,reviewed_at FROM generated_takeaways WHERE job_id=? AND state='approved' ORDER BY start_ms",(job["id"],))]
+       transcript_status=job["state"]
      if role=="participant":
       c.execute("INSERT OR IGNORE INTO journeys(email,updated) VALUES(?,?)",(email,int(time.time())))
       c.execute("UPDATE journeys SET replay=1,updated=? WHERE email=?",(int(time.time()),email)); audit(c,"replay_opened",email,{"item_id":item_id})
-     c.commit(); return self.out({"item":dict(item),"chapters":chapters,"transcript":"Демо-транскрипт: полный текст будет поступать из media provider и проходить редакционную проверку.","related":["A-014","next_live_demo"]})
+     c.commit(); return self.out({
+      "item":dict(item),"chapters":chapters,
+      "media":dict(broadcast) if broadcast else None,
+      "transcript_segments":transcript_segments,
+      "approved_takeaways":approved_takeaways,
+      "transcript_status":transcript_status,
+      "transcript_notice":"Транскрипт и тезисы публикуются только после source-lineage и human review.",
+      "related":["A-014","next_live_demo"]
+     })
     elif p=="/api/session-attendance":
      if role not in ("participant","staff","organizer"): return self.out({"error":"forbidden"},403)
      item_id=str(data.get("item_id",""))[:20]; action=str(data.get("action","checkin"))
