@@ -122,6 +122,13 @@ def handle_public_post(raw_path,data,headers,c):
             if not event_id:return _result(422,{"error":"event_id_required"})
             if provider in ("owncast","media"):
                 return _result(200,media.media_webhook(c,provider,event_id,data))
+            if provider=="directus":
+                from app.domain import record_webhook
+                receipt=record_webhook(c,provider,event_id,data)
+                if not receipt["accepted"]:
+                    return _result(200,{"duplicate":True,**receipt})
+                publication=import_snapshot(c,data.get("publication") or data,"directus")
+                return _result(200,{"duplicate":False,"publication":publication,**receipt})
             from app.domain import record_webhook
             return _result(200,record_webhook(c,provider,event_id,data))
         return None
@@ -194,6 +201,9 @@ def handle_post(raw_path,data,auth,c):
         if path=="/api/programme/revision":
             if role!="organizer": return _result(403,{"error":"forbidden"})
             return _result(201,programme.create_revision(c,actor))
+        if path=="/api/programme/import":
+            if role not in ("editor","organizer"): return _result(403,{"error":"forbidden"})
+            return _result(201,programme.import_pretalx_snapshot(c,data,actor))
         if path=="/api/expert/qualification":
             if role not in ("editor","organizer"): return _result(403,{"error":"forbidden"})
             return _result(201,{"id":programme.add_qualification(c,str(data.get("speaker_id") or ""),data,actor)})
@@ -212,6 +222,12 @@ def handle_post(raw_path,data,auth,c):
         if path=="/api/partner/evidence":
             if role not in ("partner","organizer","sales"): return _result(403,{"error":"forbidden"})
             return _result(201,{"id":partners.add_evidence(c,str(data.get("partner_id") or ""),data,actor)})
+        if path=="/api/partner/deliverable":
+            if role not in ("partner","organizer","sales"): return _result(403,{"error":"forbidden"})
+            return _result(200,{"id":partners.upsert_deliverable(c,str(data.get("partner_id") or ""),data,actor)})
+        if path=="/api/partner/renewal":
+            if role not in ("partner","organizer","sales"): return _result(403,{"error":"forbidden"})
+            return _result(200,{"id":partners.upsert_renewal(c,str(data.get("partner_id") or ""),data,actor)})
         if path=="/api/partner/lead":
             if role!="participant": return _result(403,{"error":"forbidden"})
             if data.get("consent") is not True:return _result(422,{"error":"consent_required"})
