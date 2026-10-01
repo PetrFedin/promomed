@@ -1,3 +1,5 @@
+import os
+from app.providers import post_json
 from app.domain import now, uid
 
 REASON_PRIORITY={
@@ -17,6 +19,24 @@ def _interests(c,email):
     return topics
 
 def recommend(c,email,limit=16,record=True):
+    metarank_url=os.environ.get("METARANK_RANK_URL","").strip()
+    if metarank_url:
+        payload={"user":email,"limit":max(1,min(int(limit),40)),"allowed_reason_codes":list(REASON_PRIORITY)}
+        external=post_json(metarank_url,payload)
+        body=external.get("body") if external.get("ok") else None
+        if isinstance(body,dict) and isinstance(body.get("items"),list):
+            safe=[]
+            for item in body["items"]:
+                if item.get("reason_code") in REASON_PRIORITY and item.get("entity_id") and item.get("entity_kind"):
+                    safe.append({
+                        "entity_kind":str(item["entity_kind"]),
+                        "entity_id":str(item["entity_id"]),
+                        "title":str(item.get("title") or ""),
+                        "reason_code":str(item["reason_code"]),
+                        "topic":str(item.get("topic") or ""),
+                    })
+            if safe:
+                return safe[:max(1,min(int(limit),40))]
     candidates={}
     def add(kind,eid,title,reason,topic=""):
         key=(kind,eid)
