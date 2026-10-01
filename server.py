@@ -2,6 +2,8 @@ import json, os, threading, secrets, time
 from app.db.core import connect as db_connect, db_status
 from app.db.migrate import migrate, migration_status
 from app.auth.security import authenticate_headers, authenticate_password, create_session, ensure_demo_accounts
+from app.integration_api import handle_get as integration_get, handle_post as integration_post, handle_public_post as integration_public_post
+from app import notifications as notification_delivery
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 
@@ -255,7 +257,8 @@ def audit(c,kind,actor,payload=None):
  c.execute("INSERT INTO events(kind,actor,payload,ts) VALUES(?,?,?,?)",(kind,actor,json.dumps(payload or {},ensure_ascii=False),int(time.time())))
 
 def notify(c,email,kind,title,body):
- c.execute("INSERT INTO notifications(email,kind,title,body,seen,ts) VALUES(?,?,?,?,0,?)",(email,kind,title,body,int(time.time())))
+ row=c.execute("INSERT INTO notifications(email,kind,title,body,seen,ts) VALUES(?,?,?,?,0,?) RETURNING id",(email,kind,title,body,int(time.time()))).fetchone()
+ if row: notification_delivery.queue(c,row["id"],email,kind)
  audit(c,"notification_created","system",{"email":email,"kind":kind,"title":title})
 
 def promote_waitlist(c,sid="S2"):
@@ -429,6 +432,13 @@ class H(SimpleHTTPRequestHandler):
   if p=="/ready":
    ds=db_status(); ms=migration_status(); ready=bool(ds["durable"] and not ms["pending"])
    return self.out({"ready":ready,"database":ds,"migrations":ms},200 if ready else 503)
+  ic=conn()
+  try:
+   ir=integration_get(self.path,a,ic)
+   if ir is not None:
+    ic.commit()
+    return self.out(ir["payload"],ir["status"])
+  finally: ic.close()
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/product-quality-proof":
@@ -564,12 +574,23 @@ class H(SimpleHTTPRequestHandler):
     token=create_session(c,rec[2],rec[0],rec[1]); c.commit()
     return self.out({"token":token,"role":rec[0],"name":rec[1]})
    finally: c.close()
+  pc=conn()
+  try:
+   pir=integration_public_post(self.path,data,self.headers,pc)
+   if pir is not None:
+    pc.commit()
+    return self.out(pir["payload"],pir["status"])
+  finally: pc.close()
   a=auth(self)
   if not a: return self.out({"error":"unauthorized"},401)
   role,name,email=a
   with LOCK:
    c=conn()
    try:
+    ir=integration_post(self.path,data,a,c)
+    if ir is not None:
+     c.commit()
+     return self.out(ir["payload"],ir["status"])
     if p=="/api/demo/reset":
      if role not in ("sales","organizer"): return self.out({"error":"forbidden"},403)
      reset_demo(c,email)
