@@ -1,0 +1,55 @@
+name: Promomed live Render proof
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  live-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Wait for exact main SHA on Render
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+          LIVE_URL: https://sostoyanie-promomed-live.onrender.com
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, time, sys
+          expected=os.environ["EXPECTED_SHA"]
+          base=os.environ["LIVE_URL"].rstrip("/")
+          last=""
+          for attempt in range(1, 31):
+              try:
+                  p=subprocess.run(
+                      ["curl","-fsS","--max-time","20",base+"/health"],
+                      capture_output=True,text=True,timeout=25
+                  )
+                  if p.returncode==0:
+                      last=p.stdout.strip()
+                      data=json.loads(last)
+                      live=data.get("git_commit")
+                      print(f"attempt={attempt} live={live} expected={expected}")
+                      if live==expected:
+                          page=subprocess.run(
+                              ["curl","-fsS","--max-time","20",base+"/"],
+                              capture_output=True,text=True,timeout=25,check=True
+                          ).stdout
+                          required=[
+                              "<b>⌂</b>Главная",
+                              'id="accountInbox"',
+                              'id="goldenDemoLauncher"',
+                              "Написать организатору",
+                          ]
+                          missing=[x for x in required if x not in page]
+                          if missing:
+                              raise SystemExit("Live SHA matched but UI markers are missing: "+repr(missing))
+                          print("LIVE PROOF PASS: exact SHA and responsive Inbox UI markers verified")
+                          sys.exit(0)
+              except Exception as exc:
+                  last=repr(exc)
+                  print(f"attempt={attempt} error={exc!r}")
+              time.sleep(10)
+          raise SystemExit(f"Render did not reach exact expected SHA. Last response: {last}")
+          PY
