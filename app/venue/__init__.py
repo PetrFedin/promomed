@@ -33,3 +33,26 @@ def get_asset(c,asset_id=None):
     d["live"]=[dict(r) for r in c.execute("SELECT venue,capacity,occupied,status,next_change,updated FROM venue_state ORDER BY venue")]
     d["incidents"]=[dict(r) for r in c.execute("SELECT id,venue,severity,title,status,recovery,ts,resolved FROM incidents WHERE status='open' ORDER BY severity,ts")]
     return d
+
+def ensure_demo_asset(c):
+    row=c.execute("SELECT id FROM venue_assets ORDER BY version DESC LIMIT 1").fetchone()
+    if row:
+        return row["id"]
+    labels=["Главная сцена","Наука","Beauty Lab","Business Club","Partner Studio","Recovery Lab","Клуб"]
+    coords=[
+        [-0.0018,0.0012],[-0.0006,0.0015],[0.0007,0.0011],[0.0018,0.0005],
+        [0.0012,-0.0008],[0.0000,-0.0014],[-0.0015,-0.0008]
+    ]
+    features=[]
+    for label,coord in zip(labels,coords):
+        features.append({
+            "type":"Feature",
+            "properties":{"label":label,"demo_geometry":True},
+            "geometry":{"type":"Point","coordinates":coord},
+        })
+    asset=create_asset(c,{
+        "id":"venue-demo-v1",
+        "state":"approved",
+        "geojson":{"type":"FeatureCollection","features":features},
+    },"system")
+    return asset["id"]
