@@ -9,7 +9,15 @@ def _files():
 
 def migrate():
     if backend_name() != "postgres":
-        return {"backend": "sqlite", "applied": [], "pending": []}
+        c = connect()
+        try:
+            integration = MIGRATIONS / "0003_integration_authorities.sql"
+            if integration.exists():
+                c.executescript(integration.read_text(encoding="utf-8"))
+            c.commit()
+        finally:
+            c.close()
+        return {"backend": "sqlite", "applied": ["demo-integration-schema"], "pending": []}
     c = connect()
     applied_now = []
     try:
