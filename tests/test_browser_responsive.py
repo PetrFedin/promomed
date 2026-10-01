@@ -81,22 +81,18 @@ def run_device(browser, name: str, width: int, height: int):
     assert_readable_text(page, f"{name}/home")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-home.png"), full_page=True)
 
-    for tab, screen_id in [
-        ("Медиа", "media"),
-        ("События", "events"),
-        ("Сообщество", "community"),
-    ]:
-        page.get_by_role("button", name=tab, exact=True).click()
+    for screen_id in ["media", "events", "community"]:
+        page.locator(f'#nav button[data-s="{screen_id}"]').click()
         page.wait_for_selector(f"#{screen_id}.on")
         assert_no_page_overflow(page, width, f"{name}/{screen_id}")
 
     # Account is the boundary: guest browsing remains open, personal data asks for login.
-    page.get_by_role("button", name="Моё", exact=True).click()
+    page.locator('#nav button[data-s="me"]').click()
     expect(page.locator("#overlay")).to_have_class(re.compile(r"\bon\b"))
     expect(page.locator("#sheet")).to_contain_text("Настоящие demo-роли")
     page.locator("#sheet .card").filter(has_text="Участник").get_by_role("button", name="Войти").click()
     page.wait_for_selector("#overlay:not(.on)")
-    page.get_by_role("button", name="Моё", exact=True).click()
+    page.locator('#nav button[data-s="me"]').click()
     page.wait_for_selector("#me.on")
     expect(page.locator("#me")).to_contain_text("Сообщения")
     expect(page.locator("#accountInbox")).to_be_visible()
