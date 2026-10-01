@@ -1,7 +1,7 @@
 # СОСТОЯНИЕ × Promomed — Integration Master Plan
 
 **Document:** `docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md`  
-**Status:** PLANNED — implementation source for future integration waves  
+**Status:** IMPLEMENTED IN CODE — integration candidate; production admission pending exact-head durable PostgreSQL deployment  
 **Date:** 2026-10-01  
 **Repository:** `PetrFedin/promomed`  
 **Canonical branch:** `main`
@@ -703,3 +703,39 @@ The plan is complete only when:
 ---
 
 **Implementation instruction:** integrate capabilities around the existing СОСТОЯНИЕ product graph; do not replace working participant, event, operations, partner or intelligence authorities with third-party products merely because those products have broader feature sets.
+
+
+## 12. Implementation status — 2026-10-01
+
+The implementation described below is present on the integration candidate. This section distinguishes **implemented code** from **live provider activation** and **production admission**.
+
+| Phase | Code status | Production/provider status |
+|---|---|---|
+| 0 PostgreSQL authority | IMPLEMENTED + CI PROVEN | durable production `DATABASE_URL` still must be admitted on authoritative Render |
+| 1 Editorial/medical review | IMPLEMENTED | Directus adapter present; provider is not claimed connected |
+| 2 Evidence/citations | IMPLEMENTED | native Promomed authority; external Zotero use optional |
+| 3 Search/semantic discovery | IMPLEMENTED | Meilisearch/semantic adapters present with deterministic fallback |
+| 4 Personalised Home/Continue | IMPLEMENTED | Metarank adapter optional; deterministic reason-coded fallback active |
+| 5 Studio LIVE/replay | IMPLEMENTED | Owncast boundary + Video.js UI; live provider requires configuration |
+| 6 Transcript intelligence | IMPLEMENTED | Promomed-local timecoded evidence model; no ChatX DB sharing |
+| 7 Virtual Expert Room | IMPLEMENTED | Jitsi transport boundary; not telemedicine |
+| 8 Programme Production Desk | IMPLEMENTED | pretalx approved-snapshot adapter available |
+| 9 Expert Authority | IMPLEMENTED | qualifications/disclosures require reviewed human-entered evidence |
+| 10 Partner CRM workspace | IMPLEMENTED | Promomed owns consent/event facts |
+| 11 Notification delivery | IMPLEMENTED | Novu optional; in-app fallback |
+| 12 Venue map | IMPLEMENTED | MapLibre renderer + versioned GeoJSON/live overlays |
+| 13 Community scale | GATE ENFORCED | Discourse deferred |
+| 14 Learning/LMS | GATE ENFORCED | full Moodle integration deferred |
+| 15 Wellness routines | REFERENCE GATE | native challenges/actions remain canonical |
+| 16 FHIR/clinical | GATE ENFORCED | Medplum/FHIR deferred until authorised clinical use case |
+| 17 Public analytics | IMPLEMENTED AS OPTIONAL BOUNDARY | anonymous acquisition only; Umami optional |
+
+### Acceptance evidence in repository
+
+The candidate CI verifies PostgreSQL 17 migrations and seed, role-negative checks, consent recording, replay-safe webhook receipts, provider-unavailable fallback, deterministic recommendation reasons, transcript source-time lineage and human review, SQLite demo fallback, iPhone frontend contract/inline JavaScript syntax, and PostgreSQL backup/restore.
+
+### What remains before the roadmap can be called production-complete
+
+The original definition of complete remains authoritative: merge the candidate to `main`, configure a dedicated durable PostgreSQL `DATABASE_URL` on the authoritative Render service, deploy the exact merged SHA, prove `/ready == 200`, smoke the existing journeys, and record the exact Render deploy evidence in `docs/DEPLOYMENT_STATE.md`.
+
+External sidecars are replaceable and failure-safe. Their adapters being implemented is not evidence that a provider account or credential has been activated.
