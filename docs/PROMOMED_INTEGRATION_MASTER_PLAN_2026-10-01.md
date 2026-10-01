@@ -722,7 +722,7 @@ Use traces to support incident response for booking, waitlist, stream, content p
 
 ### 12.2 Passkeys for privileged operators — ADOPT
 
-Reference: https://github.com/MasterKale/SimpleWebAuthn
+Server reference: https://github.com/duo-labs/py_webauthn
 
 Add passkeys first to:
 
