@@ -80,7 +80,9 @@ def transition(c, pid, target, actor, review_kind=None, notes=""):
 
 def import_snapshot(c, payload, actor="provider"):
     provider=str(payload.get("provider") or "directus")
-    external_id=str(payload.get("external_id") or "")
+    external_id=str(payload.get("external_id") or "").strip()
+    if not external_id:
+        raise ValueError("external_id_required")
     version=int(payload.get("version") or 1)
     key=f"{provider}:{external_id}"
     existing=c.execute("SELECT id FROM publication_versions WHERE publication_key=? AND version=?",(key,version)).fetchone()
@@ -91,4 +93,20 @@ def import_snapshot(c, payload, actor="provider"):
     data["source_type"]=provider
     data["source_ref"]=external_id
     pub=create_publication(c,data,actor)
+    target=str(payload.get("state") or "draft")
+    review_chain=payload.get("review_chain") or []
+    if target in ("approved","scheduled","published"):
+        required=("editorial","medical","compliance")
+        kinds={str(x.get("kind") or "") for x in review_chain if isinstance(x,dict)}
+        missing=[x for x in required if x not in kinds]
+        if missing:
+            raise ValueError("review_chain_required:"+",".join(missing))
+        pub=transition(c,pub["id"],"editorial_review",actor,"editorial","external reviewed snapshot")
+        pub=transition(c,pub["id"],"medical_review",actor,"medical","external reviewed snapshot")
+        pub=transition(c,pub["id"],"compliance_review",actor,"compliance","external reviewed snapshot")
+        pub=transition(c,pub["id"],"approved",actor,"compliance","review chain complete")
+        if target=="scheduled":
+            pub=transition(c,pub["id"],"scheduled",actor)
+        elif target=="published":
+            pub=transition(c,pub["id"],"published",actor)
     return pub
