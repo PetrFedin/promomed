@@ -2,11 +2,11 @@ import json
 import os
 from urllib import request, error
 
-def post_json(url,payload,headers=None,timeout=4):
+def request_json(url,payload=None,method="POST",headers=None,timeout=4):
     if not url:
         return {"ok":False,"error":"provider_not_configured"}
-    data=json.dumps(payload,ensure_ascii=False).encode("utf-8")
-    req=request.Request(url,data=data,method="POST",headers={"Content-Type":"application/json",**(headers or {})})
+    data=None if payload is None else json.dumps(payload,ensure_ascii=False).encode("utf-8")
+    req=request.Request(url,data=data,method=method,headers={"Content-Type":"application/json",**(headers or {})})
     try:
         with request.urlopen(req,timeout=timeout) as res:
             raw=res.read().decode("utf-8","replace")
@@ -17,6 +17,9 @@ def post_json(url,payload,headers=None,timeout=4):
         return {"ok":False,"status":exc.code,"error":"provider_http_error"}
     except Exception:
         return {"ok":False,"error":"provider_unavailable"}
+
+def post_json(url,payload,headers=None,timeout=4):
+    return request_json(url,payload,"POST",headers,timeout)
 
 def env_status():
     return {
