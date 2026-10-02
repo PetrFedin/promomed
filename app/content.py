@@ -7,6 +7,6 @@ def snapshot(c):
         "studio_episodes": [dict(r) for r in c.execute(
             "SELECT e.*,s.name speaker_name,s.role speaker_role FROM studio_episodes e LEFT JOIN speakers s ON s.id=e.speaker_id ORDER BY e.id"
         )],
-        "cms_status": row["status"],
-        "cms_version": row["version"],
+        "cms_status": row["status"] if row else "unconfigured",
+        "cms_version": row["version"] if row else 0,
     }
