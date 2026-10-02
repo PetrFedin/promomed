@@ -30,6 +30,10 @@ MODULES = {
     "learning_commands.py",
     "participant_commands.py",
     "programme_commands.py",
+    "operations_commands.py",
+    "partner_commands.py",
+    "editorial_commands.py",
+    "demo_commands.py",
 }
 
 
@@ -70,6 +74,11 @@ class ArchitectureContractTests(unittest.TestCase):
             "/api/profile", "/api/meeting", "/api/mutual-meeting", "/api/takeaway",
             "/api/meeting-action", "/api/feedback", "/api/passport", "/api/product-interest",
             "/api/followup-enroll",
+            "/api/demo/reset", "/api/demo/next", "/api/move-session", "/api/live", "/api/checkin",
+            "/api/appointment-booking", "/api/appointment-manage", "/api/staff-assignment",
+            "/api/speaker-readiness", "/api/broadcast", "/api/venue-state", "/api/incident",
+            "/api/stream-control", "/api/venue", "/api/placement", "/api/lead", "/api/question",
+            "/api/cms", "/api/phase",
         }
         for route in extracted_routes:
             self.assertNotIn(f'p=="{route}"', SERVER)
@@ -77,9 +86,13 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("handle_learning_command", SERVER)
         self.assertIn("handle_participant_command", SERVER)
         self.assertIn("handle_programme_command", SERVER)
+        self.assertIn("handle_operations_command", SERVER)
+        self.assertIn("handle_partner_command", SERVER)
+        self.assertIn("handle_editorial_command", SERVER)
+        self.assertIn("handle_demo_command", SERVER)
 
     def test_server_size_moves_down_not_up(self):
-        self.assertLessEqual(len(SERVER.splitlines()), 550)
+        self.assertLessEqual(len(SERVER.splitlines()), 400)
 
 
 if __name__ == "__main__":
