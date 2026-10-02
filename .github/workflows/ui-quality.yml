@@ -20,5 +20,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Run UI and server contract tests
-        run: python -m unittest -v tests/test_ui_contract.py
+      - name: Run UI and architecture contract tests
+        run: python -m unittest -v tests/test_ui_contract.py tests/test_architecture_contract.py
