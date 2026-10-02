@@ -1,0 +1,92 @@
+import os
+import unittest
+
+from app import db
+import server
+
+
+class Header:
+    def __init__(self, token):
+        self.headers = {"Authorization": "Bearer " + token}
+
+
+class PersistenceContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        server.init()
+
+    def test_schema_migrations_are_clean(self):
+        status = db.migration_status()
+        self.assertTrue(status["schema_ready"], status)
+        self.assertEqual(status["missing"], [])
+        self.assertEqual(status["checksum_drift"], [])
+        self.assertIn("001_baseline", status["applied"])
+
+    def test_seed_is_deterministic(self):
+        c = server.conn()
+        try:
+            before = {
+                "program": c.execute("SELECT COUNT(*) n FROM program_items").fetchone()["n"],
+                "speakers": c.execute("SELECT COUNT(*) n FROM speakers").fetchone()["n"],
+                "content": c.execute("SELECT COUNT(*) n FROM content_catalog").fetchone()["n"],
+                "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
+            }
+        finally:
+            c.close()
+        server.init()
+        c = server.conn()
+        try:
+            after = {
+                "program": c.execute("SELECT COUNT(*) n FROM program_items").fetchone()["n"],
+                "speakers": c.execute("SELECT COUNT(*) n FROM speakers").fetchone()["n"],
+                "content": c.execute("SELECT COUNT(*) n FROM content_catalog").fetchone()["n"],
+                "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
+            }
+        finally:
+            c.close()
+        self.assertEqual(before, after)
+        self.assertGreaterEqual(after["program"], 42)
+
+    def test_session_is_database_backed(self):
+        c = server.conn()
+        try:
+            token, expires = server.issue_session(c, "participant@demo.ru", "participant", "Участник")
+        finally:
+            c.close()
+        self.assertGreater(expires, 0)
+        self.assertEqual(server.auth(Header(token)), ("participant", "Участник", "participant@demo.ru"))
+        c = server.conn()
+        try:
+            row = c.execute(
+                "SELECT email,role FROM auth_sessions WHERE token_hash=?",
+                (server.token_hash(token),),
+            ).fetchone()
+        finally:
+            c.close()
+        self.assertEqual(row["email"], "participant@demo.ru")
+        self.assertEqual(row["role"], "participant")
+
+    def test_state_queries_work_on_selected_backend(self):
+        c = server.conn()
+        try:
+            state = server.state(c, "participant@demo.ru")
+        finally:
+            c.close()
+        self.assertGreaterEqual(len(state["program"]), 42)
+        self.assertIn("notifications", state)
+        self.assertIn("direct_messages", state)
+        self.assertIn("profile", state)
+
+    def test_readiness_backend_contract(self):
+        status = db.readiness()
+        self.assertTrue(status["schema_ready"])
+        if db.backend_name() == "postgres":
+            self.assertTrue(status["durable"])
+            self.assertTrue(status["production_ready"])
+        else:
+            self.assertFalse(status["durable"])
+            self.assertFalse(status["production_ready"])
+
+
+if __name__ == "__main__":
+    unittest.main()
