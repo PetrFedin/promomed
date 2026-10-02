@@ -1,0 +1,12 @@
+{
+  "name": "СОСТОЯНИЕ",
+  "short_name": "СОСТОЯНИЕ",
+  "description": "Health media, события, эксперты и персональный маршрут участия.",
+  "lang": "ru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f7fb",
+  "theme_color": "#071b31"
+}
