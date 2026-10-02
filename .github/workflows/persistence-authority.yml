@@ -96,27 +96,64 @@ jobs:
           print("POSTGRES RESTORE PASS")
           PY
 
-      - name: Run production-style admission probe on source
+      - name: Prepare clean Phase 0 admission source and restore databases
         env:
-          PROMOMED_SEED_DEMO: "false"
-        run: python ops/phase0_postgres_admission.py
-
-      - name: Run production-style admission probe on restored target
-        env:
-          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore
-          PROMOMED_SEED_DEMO: "false"
-        run: python ops/phase0_postgres_admission.py
-
-      - name: Prove privacy-safe source and restore fingerprints match
+          PGPASSWORD: promomed
         run: |
-          DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed PROMOMED_SEED_DEMO=false python ops/db_catalog_fingerprint.py > /tmp/source-catalog.json
-          DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore PROMOMED_SEED_DEMO=false python ops/db_catalog_fingerprint.py > /tmp/restore-catalog.json
+          psql -h 127.0.0.1 -U promomed -d postgres -c "DROP DATABASE IF EXISTS promomed_admission;"
+          psql -h 127.0.0.1 -U promomed -d postgres -c "DROP DATABASE IF EXISTS promomed_admission_restore;"
+          psql -h 127.0.0.1 -U promomed -d postgres -c "CREATE DATABASE promomed_admission;"
+          psql -h 127.0.0.1 -U promomed -d postgres -c "CREATE DATABASE promomed_admission_restore;"
+
+      - name: Admit clean source PostgreSQL
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
+          PROMOMED_REQUIRE_POSTGRES: "true"
+          PROMOMED_SEED_DEMO: "false"
+        run: python ops/phase0_postgres_admission.py
+
+      - name: Fingerprint clean source catalog
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
+          PROMOMED_SEED_DEMO: "false"
+        run: python ops/db_catalog_fingerprint.py > /tmp/admission-source.json
+
+      - name: Backup clean admitted source
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
+          PROMOMED_REQUIRE_POSTGRES: "true"
+          PROMOMED_SEED_DEMO: "false"
+        run: python ops/db_backup_restore.py backup --output /tmp/promomed-admission.dump
+
+      - name: Restore clean admitted source
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
+          RESTORE_DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission_restore
+          PROMOMED_REQUIRE_POSTGRES: "true"
+          PROMOMED_SEED_DEMO: "false"
+        run: python ops/db_backup_restore.py restore --input /tmp/promomed-admission.dump
+
+      - name: Admit isolated restore PostgreSQL
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission_restore
+          PROMOMED_REQUIRE_POSTGRES: "true"
+          PROMOMED_SEED_DEMO: "false"
+        run: python ops/phase0_postgres_admission.py
+
+      - name: Fingerprint restored clean catalog
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission_restore
+          PROMOMED_SEED_DEMO: "false"
+        run: python ops/db_catalog_fingerprint.py > /tmp/admission-restore.json
+
+      - name: Prove clean source and restore fingerprints match
+        run: |
           python - <<'PY'
           import json
-          source=json.load(open("/tmp/source-catalog.json"))
-          restored=json.load(open("/tmp/restore-catalog.json"))
+          source=json.load(open("/tmp/admission-source.json"))
+          restored=json.load(open("/tmp/admission-restore.json"))
           assert source["catalog_sha256"] == restored["catalog_sha256"], (source, restored)
           assert source["counts"] == restored["counts"], (source, restored)
           assert source["migration_versions"] == restored["migration_versions"], (source, restored)
-          print("POSTGRES ADMISSION + RESTORE FINGERPRINT PASS")
+          print("CLEAN POSTGRES ADMISSION + RESTORE FINGERPRINT PASS")
           PY
