@@ -902,3 +902,104 @@ Q&A remains educational/general-information content. Do not turn it into individ
 
 **Dependency hygiene:** before runtime adoption, pin versions and review current LICENSE/security/data-processing requirements of any sidecar. External evidence APIs and survey tools must remain replaceable.
 
+## 14. Additional integration wave — editorial evidence annotation and evidence freshness watch
+
+This wave strengthens scientific review without moving medical/editorial authority into an annotation product.
+
+### 14.1 Evidence Annotation Workspace — ADAPT/SIDECAR
+
+Reference: https://github.com/hypothesis/h
+
+Use Hypothesis-style web annotation, or a bounded deployment of Hypothesis, for internal editorial/scientific review of:
+
+- journal articles;
+- guidelines;
+- evidence-source web pages;
+- PDF/text extracts where supported;
+- Promomed article drafts;
+- session/replay transcript segments.
+
+An annotation should reference:
+
+- evidence source ID/version;
+- source selector or quoted region;
+- reviewer;
+- annotation purpose;
+- visibility;
+- created/updated time;
+- resolution/status;
+- linked claim ID where applicable.
+
+Useful annotation purposes:
+
+- supports claim;
+- contradicts/qualifies;
+- methodology concern;
+- disclosure concern;
+- outdated source;
+- editorial note;
+- needs re-review.
+
+Annotations are review evidence and discussion. They do not themselves approve a claim for publication.
+
+### 14.2 Evidence Freshness Watch — ADOPT
+
+Build a durable background job over the existing DOI/PMID/evidence-source adapters.
+
+Watch for:
+
+- correction/erratum;
+- retraction/withdrawal status where source providers expose it;
+- source metadata change;
+- publication replaced/superseded;
+- evidence review-until date;
+- broken/unresolvable source;
+- material guideline/source version change.
+
+Flow:
+
+scheduled watch -> provider refresh -> normalized source-status delta -> affected claim/content lookup -> re-review queue -> editor/reviewer decision -> public correction/retraction if required
+
+Never silently remove a historical source or rewrite old approved content.
+
+### 14.3 Claim Coverage Matrix — ADOPT
+
+For reviewed health content, provide an internal matrix:
+
+claim -> supporting/contextual/contradicting sources -> reviewer -> disclosure state -> last reviewed -> next review due
+
+This makes it visible when:
+
+- a strong claim has weak/no reviewed support;
+- all sources are old;
+- a source was corrected/retracted;
+- a disclosure changed;
+- content needs re-review.
+
+The matrix is a governance surface, not an automated medical truth score.
+
+### 14.4 Review Queue Prioritisation — ADOPT
+
+Prioritise re-review based on explicit product rules such as:
+
+- source status changed;
+- high-audience content;
+- product-related content;
+- old review date;
+- expert disclosure changed;
+- frequently viewed claim with weak evidence coverage.
+
+Do not infer medical risk or individual patient risk from content popularity.
+
+### 14.5 Additional acceptance
+
+- every annotation resolves to an exact source/claim/version;
+- annotations can be exported/reconciled if the sidecar is replaced;
+- source-status changes generate review work rather than silent publication changes;
+- corrected/retracted sources remain visible in history;
+- public claim status changes require authorised editorial/scientific review.
+
+**Sequencing:** Evidence Library + Claim Registry first -> annotation workspace -> scheduled evidence watch -> claim coverage/review queue.
+
+**Dependency note:** Hypothesis remains a replaceable editorial sidecar; current license/security/privacy behavior must be reviewed before deployment with non-public evidence.
+
