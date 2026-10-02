@@ -95,3 +95,28 @@ jobs:
           c.close()
           print("POSTGRES RESTORE PASS")
           PY
+
+      - name: Run production-style admission probe on source
+        env:
+          PROMOMED_SEED_DEMO: "false"
+        run: python ops/phase0_postgres_admission.py
+
+      - name: Run production-style admission probe on restored target
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore
+          PROMOMED_SEED_DEMO: "false"
+        run: python ops/phase0_postgres_admission.py
+
+      - name: Prove privacy-safe source and restore fingerprints match
+        run: |
+          DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed PROMOMED_SEED_DEMO=false python ops/db_catalog_fingerprint.py > /tmp/source-catalog.json
+          DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore PROMOMED_SEED_DEMO=false python ops/db_catalog_fingerprint.py > /tmp/restore-catalog.json
+          python - <<'PY'
+          import json
+          source=json.load(open("/tmp/source-catalog.json"))
+          restored=json.load(open("/tmp/restore-catalog.json"))
+          assert source["catalog_sha256"] == restored["catalog_sha256"], (source, restored)
+          assert source["counts"] == restored["counts"], (source, restored)
+          assert source["migration_versions"] == restored["migration_versions"], (source, restored)
+          print("POSTGRES ADMISSION + RESTORE FINGERPRINT PASS")
+          PY
