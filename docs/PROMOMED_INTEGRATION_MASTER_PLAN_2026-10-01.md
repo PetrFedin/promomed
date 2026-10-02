@@ -1020,3 +1020,108 @@ Do not infer medical risk or individual patient risk from content popularity.
 
 **Dependency note:** Hypothesis remains a replaceable editorial sidecar; current license/security/privacy behavior must be reviewed before deployment with non-public evidence.
 
+## 15. Additional integration wave — scientific entity tagging and controlled health-topic vocabulary
+
+This wave improves discovery, evidence linking and editorial consistency. It is an NLP-assisted editorial layer, not a diagnostic or clinical inference system.
+
+### Scientific Entity Tagging Worker — ADAPT
+
+Candidate references:
+
+- https://github.com/allenai/scispacy
+- https://github.com/medspacy/medspacy
+
+Use a bounded offline/worker pipeline over **approved editorial text, evidence metadata and transcripts** to generate candidate entities such as:
+
+- condition/disease term;
+- anatomy;
+- procedure;
+- drug/substance mention;
+- organisation;
+- study/publication concept;
+- general biomedical topic.
+
+Every candidate record stores:
+
+- content/source ID;
+- source text span;
+- model/pipeline version;
+- candidate normalized term;
+- confidence/score where available;
+- reviewer state;
+- accepted/rejected mapping.
+
+No candidate entity is automatically published into an expert profile, medical claim or participant profile.
+
+### Controlled Topic Vocabulary — ADOPT
+
+Create a Promomed-owned topic vocabulary:
+
+- topic ID;
+- RU/EN preferred label;
+- synonyms;
+- broader/narrower/related relationships;
+- domain category;
+- deprecated/replacement mapping;
+- editorial status/version.
+
+Use it consistently across:
+
+- content;
+- sessions;
+- experts;
+- learning tracks;
+- evidence sources;
+- search;
+- recommendation reasons.
+
+External NLP tools suggest mappings; the vocabulary remains human-governed.
+
+### Evidence / Claim Entity Link — ADOPT
+
+Allow reviewed claims/evidence to carry normalized topic/entity references.
+
+Use cases:
+
+- find all reviewed content concerning one topic;
+- identify evidence sources connected to the same normalized concept;
+- route content into re-review when a guideline/source changes;
+- improve search/faceting and personalised topic continuation.
+
+Do not imply causation or recommendation from entity co-occurrence.
+
+### Product / Partner Mention Disclosure Check — ADOPT
+
+If NLP detects a product/substance/company mention in an article/session transcript that also has a partner/commercial relationship, create an editorial **review flag**.
+
+The flag means:
+
+"check disclosure/context"
+
+It must not assert conflict, bias or wrongdoing automatically.
+
+### Terminology QA — ADOPT
+
+Use the controlled vocabulary to identify:
+
+- inconsistent RU/EN naming;
+- obsolete/deprecated terms;
+- ambiguous abbreviations;
+- article/session tag drift;
+- duplicate topic labels.
+
+Corrections require editorial review and versioning.
+
+### Additional acceptance
+
+- every accepted NLP tag traces to exact content version + model version;
+- model output cannot create a medical claim or participant-health fact;
+- topic vocabulary is versioned and human-governed;
+- deprecated terms preserve historical mappings;
+- disclosure flags require human review;
+- search/recommendation can rebuild from accepted topic mappings.
+
+**Sequencing:** Evidence/Claim/Expert authorities first -> controlled vocabulary -> NLP candidate worker -> review UI -> search/recommendation integration.
+
+**Dependency note:** scispaCy and medspaCy are actively maintained upstream as of this research wave; pin versions and benchmark on RU/EN content because model coverage/language support may differ.
+
