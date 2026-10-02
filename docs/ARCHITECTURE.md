@@ -91,3 +91,17 @@ Additional bounded command modules:
 `server.py::do_POST` now owns only HTTP parsing, login/authentication, transaction scope, ordered bounded-context dispatch and response formatting. It no longer contains domain POST business branches.
 
 This remains one deployable service; the split is a modular-monolith boundary, not a microservice expansion.
+
+
+## Durable account and admission authority — Phase 0 hardening
+
+Authentication identity is no longer a Python constant in the HTTP layer.
+
+- migration `003_account_authority` creates durable `accounts`;
+- passwords are stored as salted scrypt hashes;
+- demo identities are inserted only when `PROMOMED_SEED_DEMO=true`;
+- login resolves account role/name/status from the database;
+- consent-first direct messaging resolves recipient authority from `accounts`;
+- production readiness requires PostgreSQL, clean migrations, demo seed disabled and zero `@demo.ru` accounts.
+
+The production admission path is implemented by `ops/phase0_postgres_admission.py`, privacy-safe catalog fingerprints and an isolated backup/restore proof. See `docs/PHASE0_POSTGRES_ADMISSION.md`.
