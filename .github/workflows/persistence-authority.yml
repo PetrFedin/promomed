@@ -1,0 +1,90 @@
+name: Promomed persistence authority
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  sqlite-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime dependencies
+        run: pip install -r requirements.txt
+      - name: Run SQLite migration and persistence contract
+        env:
+          SQLITE_PATH: /tmp/promomed-phase0.sqlite
+          PROMOMED_SEED_DEMO: "true"
+        run: python -m unittest -v tests/test_persistence_contract.py
+      - name: Prove SQLite backup and restore
+        env:
+          SQLITE_PATH: /tmp/promomed-phase0.sqlite
+        run: |
+          python ops/db_backup_restore.py backup --output /tmp/promomed-phase0-backup.sqlite
+          python ops/db_backup_restore.py restore --input /tmp/promomed-phase0-backup.sqlite --sqlite-path /tmp/promomed-phase0-restored.sqlite
+          SQLITE_PATH=/tmp/promomed-phase0-restored.sqlite PROMOMED_SEED_DEMO=false python - <<'PY'
+          from app import db
+          c=db.connect()
+          assert c.execute("SELECT COUNT(*) n FROM program_items").fetchone()["n"] >= 42
+          assert db.migration_status(c)["schema_ready"]
+          c.close()
+          print("SQLITE RESTORE PASS")
+          PY
+
+  postgres-contract:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: promomed
+          POSTGRES_PASSWORD: promomed
+          POSTGRES_DB: promomed
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U promomed -d promomed"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed
+      PROMOMED_REQUIRE_POSTGRES: "true"
+      PROMOMED_SEED_DEMO: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime and PostgreSQL client
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Run real PostgreSQL migration and API-state contract
+        run: python -m unittest -v tests/test_persistence_contract.py
+      - name: Prove PostgreSQL backup and restore
+        env:
+          PGPASSWORD: promomed
+        run: |
+          python ops/db_backup_restore.py backup --output /tmp/promomed-phase0.dump
+          psql -h 127.0.0.1 -U promomed -d postgres -c "DROP DATABASE IF EXISTS promomed_restore;"
+          psql -h 127.0.0.1 -U promomed -d postgres -c "CREATE DATABASE promomed_restore;"
+          RESTORE_DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore python ops/db_backup_restore.py restore --input /tmp/promomed-phase0.dump
+          DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore PROMOMED_REQUIRE_POSTGRES=true PROMOMED_SEED_DEMO=false python - <<'PY'
+          from app import db
+          c=db.connect()
+          assert c.execute("SELECT COUNT(*) n FROM program_items").fetchone()["n"] >= 42
+          assert c.execute("SELECT COUNT(*) n FROM auth_sessions").fetchone()["n"] >= 1
+          status=db.migration_status(c)
+          assert status["schema_ready"], status
+          c.close()
+          print("POSTGRES RESTORE PASS")
+          PY
