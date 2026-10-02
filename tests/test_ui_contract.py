@@ -33,6 +33,10 @@ class UIContractTests(unittest.TestCase):
         self.assertIn(".icon{min-width:44px;min-height:44px}", INDEX)
         self.assertIn("viewport-fit=cover", INDEX)
         self.assertIn("env(safe-area-inset-bottom)", INDEX)
+        self.assertIn("100dvh", INDEX)
+        self.assertIn("@media(max-height:520px) and (orientation:landscape)", INDEX)
+        self.assertIn("@media(min-width:1440px)", INDEX)
+        self.assertIn('role="dialog" aria-modal="true"', INDEX)
 
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)

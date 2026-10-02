@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-02 — Responsive shell hardening
+
+Hardened the existing product shell without advancing gated Phase 1 authority: dynamic mobile viewport handling, iPhone landscape mode, tablet grid tuning, desktop/monitor top navigation, viewport-safe modal sheets, and expanded Playwright evidence across portrait/landscape/wide monitor sizes.
+
+
 ## 2026-10-02 — Phase 0 live admission checkpoint
 
 Exact-main deployment restored and externally proven for `c87aa79d775e15ac3ea46f829732ea9d5abe92a5` on `sostoyanie-promomed-live`.
