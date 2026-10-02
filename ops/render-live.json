@@ -1,19 +1,19 @@
 {
-  "captured_at": "2026-10-02T18:21:00+03:00",
+  "captured_at": "2026-10-02T19:17:00+03:00",
   "source_of_truth": {
     "repository": "PetrFedin/promomed",
     "branch": "main",
-    "main_sha": "c87aa79d775e15ac3ea46f829732ea9d5abe92a5"
+    "main_sha": "3c012531174a2aff6f9fed682aaf142d7c2b474d"
   },
   "authoritative_live": {
     "service": "sostoyanie-promomed-live",
     "service_id": "srv-daug7pnlot8c73b1aja0",
     "url": "https://sostoyanie-promomed-live.onrender.com",
-    "deploy_id": "dep-davsmbhmgk9c73c6tdn0",
-    "application_git_sha": "c87aa79d775e15ac3ea46f829732ea9d5abe92a5",
+    "deploy_id": "dep-davti3rncjis73fn52hg",
+    "application_git_sha": "3c012531174a2aff6f9fed682aaf142d7c2b474d",
     "status": "live",
     "exact_main_verified": true,
-    "exact_main_proof_run": 37025984463,
+    "exact_main_proof_run": 37031945141,
     "region": "frankfurt",
     "plan": "free",
     "runtime": "python",
@@ -34,5 +34,36 @@
     "railway": "europe_west_amsterdam_trial_credit_not_permanent_free_frankfurt",
     "destructive_reallocation_performed": false
   },
-  "phase0_status": "code_ci_exact_main_live_pass_postgres_live_blocked"
+  "phase0_status": "code_ci_exact_main_responsive_live_pass_postgres_live_blocked_only",
+  "postgres_admission": {
+    "service": "sostoyanie-promomed-pg-admission",
+    "service_id": "srv-davsqk942hec73e1vcr0",
+    "url": "https://sostoyanie-promomed-pg-admission.onrender.com",
+    "deploy_id": "dep-davti4jncjis73fn54mg",
+    "application_git_sha": "3c012531174a2aff6f9fed682aaf142d7c2b474d",
+    "status": "live",
+    "region": "frankfurt",
+    "plan": "free",
+    "auto_deploy": "off",
+    "build_command": "pip install -r requirements.txt && python -m py_compile server.py app/db.py",
+    "psycopg_installed": "3.2.10",
+    "backend": "sqlite_pending_durable_postgres",
+    "production_ready": false
+  },
+  "responsive_proof": {
+    "browser_run": 37031945373,
+    "ui_run": 37031945504,
+    "artifact_id": 11238230861,
+    "artifact_sha256": "96c98454142d38bd507949427d6cb4c648d95b75d34294d416c483029b01f751",
+    "viewports": [
+      "375x667",
+      "393x852",
+      "852x393",
+      "820x1180",
+      "1180x820",
+      "1440x900",
+      "1728x1117"
+    ],
+    "visual_evidence_reviewed": true
+  }
 }

@@ -139,3 +139,31 @@ The Neon account/connector is not connected in the current execution context, so
 Required continuation after connection:
 
 `create isolated Promomed PostgreSQL in eu-central-1 -> obtain DATABASE_URL securely -> reconcile Render build command/dependency install -> set DATABASE_URL + PROMOMED_REQUIRE_POSTGRES=true -> migrations -> /ready production_ready=true -> smoke -> backup/restore proof`.
+
+
+## Responsive live checkpoint — 2026-10-02
+
+- GitHub `main`: `3c012531174a2aff6f9fed682aaf142d7c2b474d`
+- Authoritative live service: `sostoyanie-promomed-live` / `srv-daug7pnlot8c73b1aja0`
+- Authoritative live deploy: `dep-davti3rncjis73fn52hg` — **LIVE**
+- PostgreSQL admission service: `sostoyanie-promomed-pg-admission` / `srv-davsqk942hec73e1vcr0`
+- Admission deploy: `dep-davti4jncjis73fn54mg` — **LIVE**
+- Responsive browser QA run: `37031945373` — **PASS**
+- UI quality run: `37031945504` — **PASS**
+- Persistence authority run: `37031945258` — **PASS**
+- Exact-SHA public live proof run `37031945141` rerun after explicit Render deploy — **PASS**
+- Browser evidence artifact: `promomed-browser-qa`, artifact `11238230861`, SHA-256 `96c98454142d38bd507949427d6cb4c648d95b75d34294d416c483029b01f751`
+
+Responsive matrix now covers:
+
+- iPhone SE portrait — 375×667;
+- iPhone 15 Pro portrait — 393×852;
+- iPhone 15 Pro landscape — 852×393;
+- iPad Air portrait — 820×1180;
+- iPad Air landscape — 1180×820;
+- desktop — 1440×900;
+- wide monitor — 1728×1117.
+
+The admission service installs `psycopg==3.2.10` from `requirements.txt` and therefore is ready to receive an isolated PostgreSQL `DATABASE_URL` without changing the current public SQLite service.
+
+**Phase 0 is still not complete:** both current Render services remain on SQLite until an isolated zero-cost durable PostgreSQL contour is attached and `/ready` proves `production_ready=true`. Phase 1 remains gated.
