@@ -1,0 +1,65 @@
+import ast
+import subprocess
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SERVER_PATH = ROOT / "server.py"
+SERVER = SERVER_PATH.read_text(encoding="utf-8")
+APP = ROOT / "app"
+
+EXTRACTED = {
+    "sval", "setv", "audit", "notify", "promote_waitlist",
+    "commercial", "state", "reset_demo", "run_demo_step",
+    "token_hash", "issue_session", "auth", "body",
+}
+MODULES = {
+    "auth.py",
+    "core.py",
+    "analytics.py",
+    "demo.py",
+    "programme.py",
+    "content.py",
+    "community.py",
+    "learning.py",
+    "partners.py",
+    "operations.py",
+    "participant.py",
+}
+
+
+class ArchitectureContractTests(unittest.TestCase):
+    def test_server_is_composition_layer_for_extracted_contexts(self):
+        tree = ast.parse(SERVER)
+        top_defs = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
+        self.assertTrue(EXTRACTED.isdisjoint(top_defs), top_defs & EXTRACTED)
+        self.assertIn("from app.analytics import commercial, state", SERVER)
+        self.assertIn("from app.auth import auth, body, issue_session, token_hash", SERVER)
+        self.assertIn("from app.core import audit, notify, promote_waitlist, setv, sval", SERVER)
+        self.assertIn("from app.demo import DEMO_STEPS, reset_demo, run_demo_step", SERVER)
+
+    def test_bounded_context_modules_exist(self):
+        present = {p.name for p in APP.glob("*.py")}
+        self.assertTrue(MODULES.issubset(present), MODULES - present)
+
+    def test_analytics_composes_domain_projections(self):
+        analytics = (APP / "analytics.py").read_text(encoding="utf-8")
+        for module in ("content", "programme", "community", "learning", "partners", "operations", "participant"):
+            self.assertIn(f"{module}.snapshot(", analytics)
+
+    def test_all_runtime_modules_compile(self):
+        files = [str(SERVER_PATH)] + [str(p) for p in sorted(APP.glob("*.py"))]
+        proc = subprocess.run(
+            ["python", "-m", "py_compile", *files],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+
+    def test_server_size_moves_down_not_up(self):
+        self.assertLessEqual(len(SERVER.splitlines()), 800)
+
+
+if __name__ == "__main__":
+    unittest.main()
