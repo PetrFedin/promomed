@@ -60,3 +60,23 @@ GitHub live-proof runs against `https://sostoyanie-promomed-live.onrender.com/he
 This supersedes any assumption that repository `main` automatically equals public live. No later wave may be labelled LIVE until exact-SHA verification passes again.
 
 Phase 0 production admission requires a separate durable PostgreSQL contour and `/ready -> production_ready=true`. Current public SQLite runtime remains demo-only.
+
+
+## Phase 0 repository proof — 2026-10-02
+
+- Main SHA: `adeb0e6e9db24900af33ac96026a4029840b97b2`
+- Release state: **REPOSITORY PASS / LIVE BLOCKED**
+- UI quality run: `36949486434` — PASS
+- Responsive browser run: `36949486534` — PASS
+- Persistence authority run: `36949486415`
+  - SQLite migration + backup/restore — PASS
+  - PostgreSQL 17 migration + API-state + durable session + backup/restore — PASS
+- Exact-SHA live proof run: `36949486423` — FAIL
+
+The live-proof polled the public `/health` endpoint 30 times and consistently received:
+
+`{"ok": true, "app": "sostoyanie-v15-product-quality", "authority": "shared-sqlite-demo", "golden_demo": true}`
+
+The public service therefore did **not** reach main SHA `adeb0e6e...`. No `git_commit` field was present.
+
+Next admission action requires Render workspace confirmation, inspection of service `srv-daug7pnlot8c73b1aja0`, restoration of exact-main deployment, then a dedicated free PostgreSQL attachment and `/ready -> production_ready=true`.
