@@ -1,5 +1,11 @@
 # Release Ledger
 
+## 2026-10-02 — Phase 0 live admission checkpoint
+
+Exact-main deployment restored and externally proven for `c87aa79d775e15ac3ea46f829732ea9d5abe92a5` on `sostoyanie-promomed-live`.
+
+Phase 0 remains **not complete**: durable PostgreSQL live admission is blocked by available free capacity, and the existing Render service still needs its live build configuration reconciled with `render.yaml` before PostgreSQL can be enabled safely.
+
 ## 2026-10-02 — v1.8 Phase 0 Persistence Authority — REPOSITORY READY / NOT LIVE
 
 Implemented the repository foundation required by Phase 0 of `docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md`.
