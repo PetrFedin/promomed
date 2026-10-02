@@ -9,6 +9,60 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-behavior:smooth}
 @media(max-width:379px){.app{padding-left:12px;padding-right:12px}.premiumHero{margin-left:-12px;margin-right:-12px;padding-left:18px;padding-right:18px;min-height:450px}.premiumHero h1{font-size:35px;letter-spacing:-1.6px}.coverCard{min-width:calc(100vw - 42px);height:320px}.hubgrid,.topicgrid,.stagegrid{grid-template-columns:1fr}.passport{grid-template-columns:repeat(2,1fr)}.top{height:58px}.brand{font-size:11px}.brand b{font-size:25px}.nav button{font-size:7px}.nav button b{font-size:17px}}
 @media(min-width:640px) and (max-width:1023px){.roleTag{right:18px}.app{max-width:920px;padding:24px 28px 104px}.premiumHero{margin:0;border-radius:30px;min-height:430px}.premiumHero h1{font-size:52px;max-width:520px}.premiumHero p{max-width:520px}.hubgrid{grid-template-columns:repeat(4,1fr)}.topicgrid{grid-template-columns:repeat(3,1fr)}.profilegrid,.streamgrid{grid-template-columns:repeat(2,1fr)}.coverCard{min-width:360px}.nav{left:50%;right:auto;width:min(720px,calc(100vw - 48px));transform:translateX(-50%);border:1px solid var(--l);border-bottom:0;border-radius:20px 20px 0 0}.sheet{width:min(640px,calc(100% - 32px));border-radius:25px}.accountGrid{grid-template-columns:repeat(2,1fr)}}
 @media(min-width:1024px){.app{max-width:1180px;padding:28px 44px 104px}.premiumHero{margin:0;border-radius:34px;min-height:470px}.premiumHero h1{font-size:60px;max-width:620px}.premiumHero p{max-width:560px;font-size:13px}.hubgrid{grid-template-columns:repeat(4,1fr)}.topicgrid{grid-template-columns:repeat(4,1fr)}.profilegrid{grid-template-columns:repeat(3,1fr)}.streamgrid{grid-template-columns:repeat(3,1fr)}.coverCard{min-width:380px}.storyCard{min-width:290px;max-width:290px}.nav{left:50%;right:auto;width:760px;transform:translateX(-50%);border:1px solid var(--l);border-bottom:0;border-radius:20px 20px 0 0}.sheet{width:min(720px,calc(100% - 48px));border-radius:25px}.accountGrid{grid-template-columns:repeat(2,1fr)}.desktopOnly{display:block}.roleTag{right:24px}}
+
+/* v1.9 responsive shell hardening: phone / tablet / monitor */
+html{min-width:0;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{min-height:100vh;min-height:100dvh;overflow-x:clip}
+.app{width:100%;min-height:100vh;min-height:100dvh}
+.hscroll,.chiprow,.heroRail{scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.hscroll::-webkit-scrollbar,.chiprow::-webkit-scrollbar,.heroRail::-webkit-scrollbar{display:none}
+.overlay{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+.sheet{max-height:min(88vh,calc(100dvh - 12px - env(safe-area-inset-top)));overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@media(max-width:639px){
+  .premiumHero h1{font-size:clamp(35px,10.7vw,44px)}
+  .nav button{font-size:9px;padding:6px 2px}
+  .nav button b{font-size:18px}
+  .feedTitle{align-items:flex-start}
+  .feedTitle>.chip{max-width:44%;white-space:normal;line-height:1.25}
+  .sheet{width:100%;border-radius:25px 25px 0 0}
+}
+@media(max-height:520px) and (orientation:landscape){
+  .app{padding-top:max(8px,env(safe-area-inset-top));padding-bottom:76px}
+  .top{height:48px}
+  .premiumHero{min-height:300px;padding:20px 24px;border-radius:24px}
+  .premiumHero h1{font-size:38px;line-height:.98;margin-top:18px;max-width:470px}
+  .premiumHero p{max-width:470px}
+  .premiumHero:before{width:235px;height:235px;right:-60px;top:20px}
+  .heroRail{margin-top:12px}
+  .nav{padding-top:4px;padding-bottom:calc(4px + env(safe-area-inset-bottom))}
+  .nav button{min-height:44px}
+  .nav button b{font-size:16px;margin-bottom:1px}
+  .sheet{max-height:calc(100dvh - 8px - env(safe-area-inset-top));border-radius:20px 20px 0 0}
+}
+@media(min-width:640px) and (max-width:1023px){
+  .hubgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topicgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .stagegrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .sheet{max-height:min(90vh,calc(100dvh - 32px))}
+}
+@media(min-width:1024px){
+  .app{padding-top:96px;padding-bottom:54px}
+  .top{height:58px}
+  .nav{top:18px;bottom:auto;left:50%;right:auto;width:min(760px,calc(100vw - 96px));transform:translateX(-50%);border:1px solid var(--l);border-radius:18px;padding:6px;background:#fffffff2;box-shadow:0 12px 34px #102f5417}
+  .nav button{border-radius:12px;padding:7px 8px}
+  .nav button.on{background:#eef3ff}
+  .sheet{max-height:min(86vh,calc(100dvh - 48px))}
+}
+@media(min-width:1440px){
+  .app{max-width:1280px;padding-left:56px;padding-right:56px}
+  .premiumHero{min-height:500px;padding:44px 48px}
+  .premiumHero h1{font-size:64px;max-width:680px}
+  .premiumHero p{max-width:620px}
+  .profilegrid,.streamgrid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .accountGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .section{margin-top:34px}
+}
+
 </style></head><body>
 <main class="app"><header class="top"><div class="brand"><b>с.</b>СОСТОЯНИЕ</div><div class="topActions"><button class="icon" aria-label="Поиск" onclick="openSheet('search')">⌕</button><button class="icon" aria-label="Уведомления" onclick="openNotifications()">●</button><button class="icon" aria-label="Аккаунт и управление" onclick="openSheet('control')">•••</button></div></header>
 
@@ -117,13 +171,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-behavior:smooth}
 <div class="roleTag" id="roleTag" onclick="openSheet('control')">Не авторизован · подключение…</div>
 <nav class="nav" id="nav" aria-label="Основная навигация"><button class="on" data-s="today"><b>⌂</b>Главная</button><button data-s="media"><b>▤</b>Медиа</button><button data-s="events"><b>◫</b>События</button><button data-s="community"><b>◎</b>Сообщество</button><button data-s="me"><b>○</b>Моё</button></nav>
 
-<div class="overlay" id="overlay" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet"></div></div>
+<div class="overlay" id="overlay" role="presentation" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Диалог"></div></div>
 <script>
 let role='participant',phase='before',checkedIn=false,sessionMoved=false,currentEmail='participant@demo.ru';
 let serverState=null;
 const sheets={
-login:`<div class="ey blue">V1.5 DEMO LOGIN</div><h2>Настоящие demo-роли</h2><p class="small muted">Откройте разные аккаунты на двух телефонах. Они работают с одной серверной authority.</p><div class="card"><b>Участник</b><p class="tiny muted">participant@demo.ru · demo2027</p><button class="btn soft" onclick="demoLogin('participant@demo.ru')">Войти</button></div><div class="card"><b>Организатор</b><p class="tiny muted">organizer@demo.ru · demo2027</p><button class="btn soft" onclick="demoLogin('organizer@demo.ru')">Войти</button></div><div class="card"><b>Партнёр / staff / editor / moderator</b><p class="tiny muted">partner@demo.ru · staff@demo.ru · editor@demo.ru · moderator@demo.ru<br>Пароль: demo2027</p></div>`,
-control:`<div class="ey blue">DEMO CONTROL CENTER</div><h2>v1.5 Brand & Product Proof</h2><p class="small muted">Роли теперь определяются серверной авторизацией. Для смены роли войдите другим demo-аккаунтом.</p><div class="actions"><button class="btn" onclick="logout()">Сменить аккаунт</button></div><hr style="border:0;border-top:1px solid #dde6ef;margin:18px 0"><h3>Presentation shortcuts</h3><p class="small muted">Переключайте роль и фазу без перезагрузки. Это изолированный sales-demo.</p><div class="field"><label>РОЛЬ</label><div class="actions"><button class="btn" onclick="switchRole('participant');closeSheet()">Участник</button><button class="btn ghost" onclick="switchRole('organizer');closeSheet()">Организатор</button><button class="btn ghost" onclick="switchRole('partner');closeSheet()">Партнёр</button><button class="btn ghost" onclick="switchRole('staff');closeSheet()">Check-in</button><button class="btn ghost" onclick="switchRole('editor');closeSheet()">Редактор</button><button class="btn ghost" onclick="switchRole('moderator');closeSheet()">Модератор</button></div></div><div class="field"><label>ФАЗА</label><div class="actions"><button class="btn ghost" onclick="setPhase('before');closeSheet()">До</button><button class="btn ghost" onclick="setPhase('during');closeSheet()">Во время</button><button class="btn ghost" onclick="setPhase('after');closeSheet()">После</button></div></div><div class="actions"><button class="btn soft" onclick="show('sales');closeSheet()">Sales mode</button><button class="btn ghost" onclick="resetDemo()">Reset demo</button></div>`,
+login:`<div class="ey blue">DEMO ACCESS</div><h2>Настоящие demo-роли</h2><p class="small muted">Откройте разные аккаунты на двух телефонах. Они работают с одной серверной authority.</p><div class="card"><b>Участник</b><p class="tiny muted">participant@demo.ru · demo2027</p><button class="btn soft" onclick="demoLogin('participant@demo.ru')">Войти</button></div><div class="card"><b>Организатор</b><p class="tiny muted">organizer@demo.ru · demo2027</p><button class="btn soft" onclick="demoLogin('organizer@demo.ru')">Войти</button></div><div class="card"><b>Партнёр / staff / editor / moderator</b><p class="tiny muted">partner@demo.ru · staff@demo.ru · editor@demo.ru · moderator@demo.ru<br>Пароль: demo2027</p></div>`,
+control:`<div class="ey blue">DEMO CONTROL CENTER</div><h2>Platform Control</h2><p class="small muted">Роли теперь определяются серверной авторизацией. Для смены роли войдите другим demo-аккаунтом.</p><div class="actions"><button class="btn" onclick="logout()">Сменить аккаунт</button></div><hr style="border:0;border-top:1px solid #dde6ef;margin:18px 0"><h3>Presentation shortcuts</h3><p class="small muted">Переключайте роль и фазу без перезагрузки. Это изолированный sales-demo.</p><div class="field"><label>РОЛЬ</label><div class="actions"><button class="btn" onclick="switchRole('participant');closeSheet()">Участник</button><button class="btn ghost" onclick="switchRole('organizer');closeSheet()">Организатор</button><button class="btn ghost" onclick="switchRole('partner');closeSheet()">Партнёр</button><button class="btn ghost" onclick="switchRole('staff');closeSheet()">Check-in</button><button class="btn ghost" onclick="switchRole('editor');closeSheet()">Редактор</button><button class="btn ghost" onclick="switchRole('moderator');closeSheet()">Модератор</button></div></div><div class="field"><label>ФАЗА</label><div class="actions"><button class="btn ghost" onclick="setPhase('before');closeSheet()">До</button><button class="btn ghost" onclick="setPhase('during');closeSheet()">Во время</button><button class="btn ghost" onclick="setPhase('after');closeSheet()">После</button></div></div><div class="actions"><button class="btn soft" onclick="show('sales');closeSheet()">Sales mode</button><button class="btn ghost" onclick="resetDemo()">Reset demo</button></div>`,
 onboarding:`<div class="ey blue">ONBOARDING</div><h2>Настроить СОСТОЯНИЕ под себя</h2><p class="small muted">Просматривать можно без регистрации. Аккаунт нужен в момент полезного действия.</p><div class="field"><label>ЧТО ВАМ ИНТЕРЕСНО</label><div class="chiprow"><button class="chip on">Сон</button><button class="chip">Питание</button><button class="chip on">Движение</button><button class="chip">Долголетие</button></div></div><div class="field"><label>КАК УДОБНЕЕ</label><div class="chiprow"><button class="chip on">Короткие видео</button><button class="chip">Статьи</button><button class="chip on">События</button></div></div><div class="actions"><button class="btn" onclick="saveSmartProfile()">Сохранить и собрать маршрут</button></div>`,
 registration:`<div class="ey blue">REGISTRATION FLOW</div><h2>СОСТОЯНИЕ / 2027</h2><div class="timeline"><div><b>Формат участия</b><p class="tiny muted">Очный участник · DEMO</p></div><div><b>Данные участника</b><p class="tiny muted">Покупатель и участник — разные сущности при групповой покупке</p></div><div><b>Условия и согласия</b><p class="tiny muted">Отдельно сервисные и маркетинговые коммуникации</p></div><div><b>Подтверждение</b><p class="tiny muted">Ticket ID + QR + программа</p></div></div><div class="actions"><button class="btn" onclick="apiRegister(this)">Получить demo-билет →</button></div>`,
 map:`<div class="ey blue">SMART WAYFINDING · DEMO</div><h2>Следующая точка без поиска по карте</h2><div class="card" style="background:#09233f;color:#fff"><div class="ey" style="color:#82c7ff">ВАШ МАРШРУТ · 4 МИН</div><h3>Регистрация → Лекторий</h3><p class="small" style="color:#c4d7e9">Прямо до центрального атриума → направо к зоне 02 → вход B.</p><div class="progress"><i style="width:58%"></i></div></div><div class="stagegrid"><div class="stage"><div class="num">01</div><b>Главная</b><p class="tiny muted">2 мин</p></div><div class="stage"><div class="num">02</div><b>Лекторий</b><p class="tiny muted">4 мин</p></div><div class="stage"><div class="num">03</div><b>Практика</b><p class="tiny muted">5 мин</p></div><div class="stage"><div class="num">04</div><b>Клуб</b><p class="tiny muted">3 мин</p></div></div><div class="notice">MVP использует понятную интерактивную схему и event-aware маршрут. Indoor positioning добавляется только при доказанной необходимости.</div>`,
