@@ -1273,3 +1273,112 @@ Provide an expert/editor cockpit showing:
 
 **Source rule:** use official ClinicalTrials.gov / Europe PMC / PubMed-compatible programmatic sources rather than scraping public pages.
 
+## 17. Premium commercial wave — Medical Information Request Desk
+
+This wave creates a sellable Medical Affairs / scientific-information workflow on top of the existing Evidence Library, Claim Registry, Expert Authority and disclosure controls.
+
+It is **not** individual diagnosis or treatment advice.
+
+### Medical / Scientific Information Request — ADOPT
+
+Create a structured request:
+
+- requester/role where appropriate;
+- topic/question;
+- source surface: event/article/product-context/expert page;
+- country/language;
+- urgency;
+- product/partner context if relevant;
+- consent/contact state;
+- status;
+- assigned medical/editorial reviewer;
+- due/SLA;
+- final response ID.
+
+Possible states:
+
+submitted -> triaged -> evidence review -> draft -> medical/scientific review -> approved -> delivered -> follow-up / closed
+
+### Triage Authority — ADOPT
+
+Classify requests into bounded categories:
+
+- general scientific information;
+- evidence/source request;
+- content clarification;
+- product-context information;
+- speaker/session follow-up;
+- adverse-event/product-complaint routing flag;
+- out-of-scope individual medical advice.
+
+The platform must route safety/regulatory-sensitive categories according to an explicitly configured partner process; it must not pretend to be a pharmacovigilance system unless that scope is separately implemented and validated.
+
+### Evidence-grounded Response Draft — ADAPT
+
+Use existing:
+
+- Claim Registry;
+- Evidence Library;
+- scientific topic vocabulary;
+- evidence freshness;
+- disclosures;
+- approved content.
+
+A typed AI layer may draft a response from approved sources, but the output must include source IDs/citations and remain DRAFT until authorised review.
+
+PydanticAI-style structured tool/output patterns may be reused.
+
+### Approved Response Library — ADOPT
+
+After review, reusable responses can become versioned approved scientific-information assets:
+
+- question/topic scope;
+- response body;
+- evidence/version;
+- reviewer;
+- disclosure;
+- approved/effective dates;
+- expiry/review-until;
+- superseded_by.
+
+Do not reuse a response outside its approved scope/language/context.
+
+### SLA / Quality Cockpit — ADOPT
+
+Provide enterprise metrics:
+
+- request volume;
+- time to triage;
+- time to approved response;
+- open/overdue;
+- source/evidence freshness;
+- reused vs newly authored response;
+- topics generating repeated requests.
+
+These metrics evaluate service/process, not medical outcomes.
+
+### Partner Boundary — ADOPT
+
+For a Promomed partner:
+
+- partner can receive scoped request categories;
+- partner may supply approved response material;
+- Promomed maintains platform/audit state;
+- public/participant identity data is minimized;
+- disclosure remains visible.
+
+No partner may silently alter published evidence/claims outside editorial authority.
+
+### Additional acceptance
+
+- every delivered scientific response resolves to reviewed evidence;
+- AI-generated text cannot be delivered without configured approval;
+- individual diagnosis/treatment requests are clearly out of scope/routed;
+- partner/product context is disclosed where relevant;
+- response versions/effective dates are immutable/auditable;
+- repeated questions feed editorial planning without exposing requester identity unnecessarily.
+
+**Sequencing:** Evidence/Claim/Disclosure authorities -> structured request -> triage -> reviewed response -> approved response library -> SLA cockpit.
+
+**Commercial framing:** this can be offered to strategic partners as a governed Medical Information / scientific-engagement module rather than generic sponsored content.
+
