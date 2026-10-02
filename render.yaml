@@ -1,3 +1,4 @@
+# Existing live service was created through Public Git and currently requires explicit deploy API triggering until the Git provider webhook is reconnected.
 services:
   - type: web
     name: sostoyanie-promomed-live
