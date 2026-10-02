@@ -1,34 +1,38 @@
 {
-  "captured_at": "2026-10-02T04:13:48+03:00",
+  "captured_at": "2026-10-02T18:21:00+03:00",
   "source_of_truth": {
     "repository": "PetrFedin/promomed",
     "branch": "main",
-    "main_sha": "adeb0e6e9db24900af33ac96026a4029840b97b2"
+    "main_sha": "c87aa79d775e15ac3ea46f829732ea9d5abe92a5"
   },
   "authoritative_live": {
     "service": "sostoyanie-promomed-live",
     "service_id": "srv-daug7pnlot8c73b1aja0",
     "url": "https://sostoyanie-promomed-live.onrender.com",
+    "deploy_id": "dep-davsmbhmgk9c73c6tdn0",
+    "application_git_sha": "c87aa79d775e15ac3ea46f829732ea9d5abe92a5",
+    "status": "live",
+    "exact_main_verified": true,
+    "exact_main_proof_run": 37025984463,
     "region": "frankfurt",
     "plan": "free",
-    "verification_status": "deployment_drift",
-    "observed_health": {
-      "ok": true,
-      "app": "sostoyanie-v15-product-quality",
-      "authority": "shared-sqlite-demo",
-      "golden_demo": true,
-      "git_commit": null
-    },
-    "exact_main_verified": false
+    "runtime": "python",
+    "backend": "sqlite",
+    "production_ready": false
   },
-  "repository_phase0": {
-    "status": "repository_pass_live_blocked",
-    "ui_quality_run": 36949486434,
-    "browser_qa_run": 36949486534,
-    "persistence_run": 36949486415,
-    "live_proof_run": 36949486423,
-    "sqlite_restore": "pass",
-    "postgres17_restore": "pass"
+  "render_service_drift": {
+    "build_command_live": "python -m py_compile server.py",
+    "build_command_intended": "pip install -r requirements.txt && python -m py_compile server.py app/db.py",
+    "health_check_live": "",
+    "health_check_intended": "/health",
+    "git_mode": "public_git_clone_explicit_api_deploy"
   },
-  "production_boundary": "Durable PostgreSQL is implemented and proven in CI but is not yet admitted on the public Render contour."
+  "durable_postgres_capacity": {
+    "render_free_slot": "occupied_by_mfw_postgres",
+    "render_second_free_create": "rejected_cannot_have_more_than_one_active_free_tier_database",
+    "supabase_free_slots": "2_of_2_occupied_antiqua_flashin",
+    "railway": "europe_west_amsterdam_trial_credit_not_permanent_free_frankfurt",
+    "destructive_reallocation_performed": false
+  },
+  "phase0_status": "code_ci_exact_main_live_pass_postgres_live_blocked"
 }
