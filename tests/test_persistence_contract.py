@@ -22,6 +22,7 @@ class PersistenceContractTests(unittest.TestCase):
         self.assertEqual(status["checksum_drift"], [])
         self.assertIn("001_baseline", status["applied"])
         self.assertIn("002_staff_seed_identity", status["applied"])
+        self.assertIn("003_account_authority", status["applied"])
 
     def test_seed_is_deterministic(self):
         c = server.conn()
@@ -32,6 +33,8 @@ class PersistenceContractTests(unittest.TestCase):
                 "content": c.execute("SELECT COUNT(*) n FROM content_catalog").fetchone()["n"],
                 "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
                 "staff": c.execute("SELECT COUNT(*) n FROM staff_assignments").fetchone()["n"],
+                "accounts": c.execute("SELECT COUNT(*) n FROM accounts").fetchone()["n"],
+                "accounts": c.execute("SELECT COUNT(*) n FROM accounts").fetchone()["n"],
             }
         finally:
             c.close()
@@ -44,11 +47,24 @@ class PersistenceContractTests(unittest.TestCase):
                 "content": c.execute("SELECT COUNT(*) n FROM content_catalog").fetchone()["n"],
                 "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
                 "staff": c.execute("SELECT COUNT(*) n FROM staff_assignments").fetchone()["n"],
+                "accounts": c.execute("SELECT COUNT(*) n FROM accounts").fetchone()["n"],
             }
         finally:
             c.close()
         self.assertEqual(before, after)
         self.assertGreaterEqual(after["program"], 42)
+        self.assertGreaterEqual(after["accounts"], 9)
+
+    def test_demo_account_authentication_is_database_backed(self):
+        c = server.conn()
+        try:
+            account = server.authenticate(c, "participant@demo.ru", "demo2027")
+            denied = server.authenticate(c, "participant@demo.ru", "wrong-password")
+        finally:
+            c.close()
+        self.assertEqual(account["role"], "participant")
+        self.assertEqual(account["name"], "Участник")
+        self.assertIsNone(denied)
 
     def test_session_is_database_backed(self):
         c = server.conn()
@@ -85,7 +101,11 @@ class PersistenceContractTests(unittest.TestCase):
         self.assertTrue(status["schema_ready"])
         if db.backend_name() == "postgres":
             self.assertTrue(status["durable"])
-            self.assertTrue(status["production_ready"])
+            if db.demo_seed_enabled():
+                self.assertFalse(status["production_ready"])
+                self.assertGreater(status["demo_accounts"], 0)
+            else:
+                self.assertTrue(status["production_ready"])
         else:
             self.assertFalse(status["durable"])
             self.assertFalse(status["production_ready"])

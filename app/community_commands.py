@@ -14,7 +14,7 @@ ROUTES = {
 }
 
 
-def handle_command(c, route, role, email, data, accounts):
+def handle_command(c, route, role, email, data):
     if route not in ROUTES:
         return None
 
@@ -84,16 +84,26 @@ def handle_command(c, route, role, email, data, accounts):
         recipient = str(data.get("recipient", "")).lower()[:120].strip()
         text = str(data.get("body", "")).strip()[:500]
         context = str(data.get("context", "inbox"))[:80]
-        if recipient not in accounts or recipient == email:
+        if recipient == email:
+            return error("recipient_not_allowed", 403)
+        recipient_account = c.execute(
+            "SELECT email,role,name,status FROM accounts WHERE email=?",
+            (recipient,),
+        ).fetchone()
+        sender_account = c.execute(
+            "SELECT email,role,name,status FROM accounts WHERE email=?",
+            (email,),
+        ).fetchone()
+        if not recipient_account or recipient_account["status"] != "active":
             return error("recipient_not_allowed", 403)
         if len(text) < 1:
             return error("message_required", 422)
         allowed = False
         if role == "organizer":
-            allowed = accounts[recipient][1] == "participant"
-        elif recipient == "organizer@demo.ru":
+            allowed = recipient_account["role"] == "participant"
+        elif recipient_account["role"] == "organizer":
             allowed = True
-        elif accounts[recipient][1] == "participant":
+        elif recipient_account["role"] == "participant":
             rel = c.execute(
                 """SELECT 1 FROM mutual_meetings
                    WHERE status='confirmed' AND ((requester=? AND target_email=?) OR (requester=? AND target_email=?))
@@ -107,7 +117,8 @@ def handle_command(c, route, role, email, data, accounts):
             "INSERT INTO direct_messages(sender,recipient,context,body,status,ts) VALUES(?,?,?,?, 'delivered',?)",
             (email, recipient, context, text, int(time.time())),
         )
-        notify(c, recipient, "direct_message", "Новое сообщение", accounts[email][2] + " · " + text[:120])
+        sender_name = sender_account["name"] if sender_account else email
+        notify(c, recipient, "direct_message", "Новое сообщение", sender_name + " · " + text[:120])
         audit(c, "direct_message_sent", email, {"recipient": recipient, "context": context})
         return ok()
 
@@ -134,7 +145,13 @@ def handle_command(c, route, role, email, data, accounts):
             target_email = str(data.get("target_email", "participant2@demo.ru")).lower()[:120]
             if target_email == email:
                 return error("self_meeting", 409)
-            target_name = str(data.get("target_name", "Участник"))[:120]
+            target_account = c.execute(
+                "SELECT email,role,name,status FROM accounts WHERE email=?",
+                (target_email,),
+            ).fetchone()
+            if not target_account or target_account["status"] != "active" or target_account["role"] != "participant":
+                return error("target_not_found", 404)
+            target_name = str(data.get("target_name") or target_account["name"])[:120]
             slot = str(data.get("slot", "14:20"))[:20]
             place = str(data.get("place", "Клуб СОСТОЯНИЯ"))[:80]
             overlap = c.execute(

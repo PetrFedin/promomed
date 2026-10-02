@@ -25,7 +25,8 @@ class UIContractTests(unittest.TestCase):
         self.assertIn('"/api/direct-message"', COMMUNITY_COMMANDS)
         self.assertIn("conversation_requires_mutual_consent", COMMUNITY_COMMANDS)
         self.assertIn("mutual_meetings", COMMUNITY_COMMANDS)
-        self.assertIn("organizer@demo.ru", COMMUNITY_COMMANDS)
+        self.assertIn("SELECT email,role,name,status FROM accounts", COMMUNITY_COMMANDS)
+        self.assertIn('recipient_account["role"] == "organizer"', COMMUNITY_COMMANDS)
 
     def test_responsive_breakpoints_and_touch_targets_exist(self):
         self.assertIn("@media(max-width:379px)", INDEX)

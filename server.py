@@ -1,9 +1,9 @@
-import json, os, threading, secrets, time
+import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 from app import db
 from app.analytics import commercial, state
-from app.auth import auth, body, issue_session, token_hash
+from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval
 from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 from app.community_commands import handle_command as handle_community_command
@@ -17,17 +17,6 @@ from app.demo_commands import handle_command as handle_demo_command
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
 LOCK=threading.RLock()
-ACCOUNTS={
- "participant@demo.ru":("demo2027","participant","Участник"),
- "participant2@demo.ru":("demo2027","participant","Участник 2"),
- "participant3@demo.ru":("demo2027","participant","Участник 3"),
- "organizer@demo.ru":("demo2027","organizer","Организатор"),
- "partner@demo.ru":("demo2027","partner","Партнёр"),
- "staff@demo.ru":("demo2027","staff","Check-in"),
- "editor@demo.ru":("demo2027","editor","Редактор"),
- "moderator@demo.ru":("demo2027","moderator","Модератор"),
- "sales@demo.ru":("demo2027","sales","Demo Director"),
-}
 def conn():
  return db.connect()
 
@@ -38,6 +27,7 @@ def init():
   if not db.demo_seed_enabled():
    c.close(); return
   # Deterministic demo seed. Production PostgreSQL requires explicit PROMOMED_SEED_DEMO=true.
+  seed_demo_accounts(c)
   defaults={"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"-1","demo_run":"0"}
   for k,v in defaults.items(): c.execute("INSERT OR IGNORE INTO state(k,v) VALUES(?,?)",(k,v))
   c.execute("INSERT OR IGNORE INTO cms(id,status,version,updated) VALUES('A-014','medical_review',1,?)",(int(time.time()),))
@@ -209,12 +199,14 @@ class H(SimpleHTTPRequestHandler):
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
   if p=="/health":
-   return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
+   return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"demo_seed":db.demo_seed_enabled(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
   if p=="/ready":
    try:
     r=db.readiness(); c=conn()
-    try:r["data_ready"]=bool(c.execute("SELECT 1 FROM state LIMIT 1").fetchone() and c.execute("SELECT 1 FROM cms LIMIT 1").fetchone())
+    try:
+     seeded_data=bool(c.execute("SELECT 1 FROM state LIMIT 1").fetchone() and c.execute("SELECT 1 FROM cms LIMIT 1").fetchone())
     finally:c.close()
+    r["data_ready"]=seeded_data if r["demo_seed_enabled"] else True
     r["ready"]=bool(r["ready"] and r["data_ready"]); r["production_ready"]=bool(r["production_ready"] and r["data_ready"])
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
@@ -347,19 +339,21 @@ class H(SimpleHTTPRequestHandler):
   try: data=body(self)
   except Exception: return self.out({"error":"bad_json"},400)
   if p=="/api/login":
-   email=str(data.get("email","")).lower(); pw=str(data.get("password","")); rec=ACCOUNTS.get(email)
-   if not rec or not secrets.compare_digest(rec[0],pw): return self.out({"error":"invalid_credentials"},401)
+   email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
    c=conn()
-   try:token,expires=issue_session(c,email,rec[1],rec[2])
+   try:
+    rec=authenticate(c,email,pw)
+    if not rec: return self.out({"error":"invalid_credentials"},401)
+    token,expires=issue_session(c,rec["email"],rec["role"],rec["name"])
    finally:c.close()
-   return self.out({"token":token,"role":rec[1],"name":rec[2],"expires_at":expires})
+   return self.out({"token":token,"role":rec["role"],"name":rec["name"],"expires_at":expires})
   a=auth(self)
   if not a: return self.out({"error":"unauthorized"},401)
   role,name,email=a
   with LOCK:
    c=conn()
    try:
-    outcome=handle_community_command(c,p,role,email,data,ACCOUNTS)
+    outcome=handle_community_command(c,p,role,email,data)
     if outcome is None: outcome=handle_learning_command(c,p,role,email,data)
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
     if outcome is None: outcome=handle_programme_command(c,p,role,email,data)

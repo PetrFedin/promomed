@@ -280,10 +280,19 @@ def readiness():
         c.execute("SELECT 1").fetchone()
         status = migration_status(c)
         status["require_postgres"] = require_postgres()
+        status["demo_seed_enabled"] = demo_seed_enabled()
+        demo_accounts = 0
+        if "003_account_authority" in status["applied"]:
+            demo_accounts = int(
+                c.execute("SELECT COUNT(*) n FROM accounts WHERE email LIKE ?", ("%@demo.ru",)).fetchone()["n"]
+            )
+        status["demo_accounts"] = demo_accounts
         status["production_ready"] = bool(
             status["schema_ready"]
             and status["durable"]
             and not status["checksum_drift"]
+            and not status["demo_seed_enabled"]
+            and status["demo_accounts"] == 0
         )
         status["ready"] = bool(
             status["schema_ready"]
