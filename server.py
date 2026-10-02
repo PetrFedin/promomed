@@ -1,11 +1,11 @@
-import json, os, sqlite3, threading, secrets, time
+import hashlib, json, os, threading, secrets, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
+from app import db
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
-DB=os.environ.get("SQLITE_PATH","/tmp/sostoyanie-v06.db")
 LOCK=threading.RLock()
-TOKENS={}
+SESSION_TTL=int(os.environ.get("PROMOMED_SESSION_TTL_SECONDS","43200"))
 ACCOUNTS={
  "participant@demo.ru":("demo2027","participant","Участник"),
  "participant2@demo.ru":("demo2027","participant","Участник 2"),
@@ -33,58 +33,15 @@ DEMO_STEPS=[
 ]
 
 def conn():
- c=sqlite3.connect(DB,timeout=10,check_same_thread=False); c.row_factory=sqlite3.Row; return c
+ return db.connect()
 
 def init():
  with LOCK:
   c=conn()
-  c.executescript("""CREATE TABLE IF NOT EXISTS state(k TEXT PRIMARY KEY,v TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS checkins(ticket TEXT PRIMARY KEY,ts INTEGER,staff TEXT);
-CREATE TABLE IF NOT EXISTS leads(id INTEGER PRIMARY KEY AUTOINCREMENT,kind TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS registrations(email TEXT PRIMARY KEY,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS bookings(email TEXT,session_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,session_id));
-CREATE TABLE IF NOT EXISTS questions(id INTEGER PRIMARY KEY AUTOINCREMENT,text TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS placements(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,status TEXT,leads INTEGER DEFAULT 0,ts INTEGER);
-CREATE TABLE IF NOT EXISTS deliverables(id TEXT PRIMARY KEY,label TEXT,status TEXT,evidence TEXT,updated INTEGER);\nCREATE TABLE IF NOT EXISTS attendee_profiles(email TEXT PRIMARY KEY,intent TEXT,interests TEXT,networking INTEGER DEFAULT 0,visibility TEXT DEFAULT 'event_only',updated INTEGER);\nCREATE TABLE IF NOT EXISTS meetings(id INTEGER PRIMARY KEY AUTOINCREMENT,requester TEXT,target TEXT,slot TEXT,place TEXT,status TEXT,ts INTEGER);\nCREATE TABLE IF NOT EXISTS session_feedback(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,session_id TEXT,rating INTEGER,useful INTEGER,comment TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS takeaways(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,session_id TEXT,note TEXT,source TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS product_interests(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,track TEXT,context TEXT,consent_version TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS followups(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,day INTEGER,track TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS program_items(id TEXT PRIMARY KEY,start TEXT,end TEXT,venue TEXT,track TEXT,format TEXT,title TEXT,audience TEXT,capacity INTEGER,stream INTEGER,replay INTEGER,partner TEXT);
-CREATE TABLE IF NOT EXISTS activity_bookings(email TEXT,item_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,item_id));
-CREATE TABLE IF NOT EXISTS challenges(email TEXT,challenge_id TEXT,status TEXT,days_required INTEGER,started INTEGER,verified INTEGER,reward TEXT,PRIMARY KEY(email,challenge_id));
-CREATE TABLE IF NOT EXISTS challenge_actions(email TEXT,challenge_id TEXT,action_id TEXT,label TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,challenge_id,action_id));
-CREATE TABLE IF NOT EXISTS speakers(id TEXT PRIMARY KEY,name TEXT,role TEXT,org TEXT,bio TEXT,topics TEXT,kind TEXT);
-CREATE TABLE IF NOT EXISTS partners(id TEXT PRIMARY KEY,name TEXT,category TEXT,description TEXT,status TEXT);
-CREATE TABLE IF NOT EXISTS product_catalog(id TEXT PRIMARY KEY,name TEXT,inn TEXT,company TEXT,theme TEXT,kind TEXT,summary TEXT,source_label TEXT,source_url TEXT,disclosure TEXT);
-CREATE TABLE IF NOT EXISTS content_catalog(id TEXT PRIMARY KEY,kind TEXT,theme TEXT,title TEXT,dek TEXT,duration TEXT,author TEXT,reviewer TEXT,partner TEXT,status TEXT);
-CREATE TABLE IF NOT EXISTS partner_packages(id TEXT PRIMARY KEY,name TEXT,tier TEXT,summary TEXT,deliverables TEXT,measurement TEXT,disclosure TEXT);
-CREATE TABLE IF NOT EXISTS studio_episodes(id TEXT PRIMARY KEY,topic TEXT,title TEXT,dek TEXT,duration TEXT,speaker_id TEXT,content_id TEXT,item_id TEXT,thread_id TEXT,track_id TEXT,status TEXT);
-CREATE TABLE IF NOT EXISTS community_threads(id TEXT PRIMARY KEY,topic TEXT,title TEXT,summary TEXT,moderator TEXT,status TEXT,related_item TEXT);
-CREATE TABLE IF NOT EXISTS community_posts(id INTEGER PRIMARY KEY AUTOINCREMENT,thread_id TEXT,email TEXT,body TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS topic_subscriptions(email TEXT,topic TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,topic));
-CREATE TABLE IF NOT EXISTS expert_follows(email TEXT,speaker_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,speaker_id));
-CREATE TABLE IF NOT EXISTS learning_tracks(id TEXT PRIMARY KEY,topic TEXT,title TEXT,summary TEXT,duration_days INTEGER,level TEXT);
-CREATE TABLE IF NOT EXISTS learning_steps(track_id TEXT,step_no INTEGER,kind TEXT,ref_id TEXT,title TEXT,PRIMARY KEY(track_id,step_no));
-CREATE TABLE IF NOT EXISTS learning_enrollments(email TEXT,track_id TEXT,status TEXT,current_step INTEGER DEFAULT 0,started INTEGER,updated INTEGER,PRIMARY KEY(email,track_id));
-CREATE TABLE IF NOT EXISTS session_speakers(item_id TEXT,speaker_id TEXT,PRIMARY KEY(item_id,speaker_id));
-CREATE TABLE IF NOT EXISTS appointment_slots(id TEXT PRIMARY KEY,item_id TEXT,start TEXT,end TEXT,capacity INTEGER,partner_id TEXT);
-CREATE TABLE IF NOT EXISTS appointment_bookings(email TEXT,slot_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,slot_id));
-CREATE TABLE IF NOT EXISTS replay_chapters(id TEXT PRIMARY KEY,item_id TEXT,offset_sec INTEGER,title TEXT,kind TEXT);
-CREATE TABLE IF NOT EXISTS mutual_meetings(id INTEGER PRIMARY KEY AUTOINCREMENT,requester TEXT,target_email TEXT,target_name TEXT,slot TEXT,place TEXT,status TEXT,requester_ok INTEGER DEFAULT 1,target_ok INTEGER DEFAULT 0,ts INTEGER);
-CREATE TABLE IF NOT EXISTS venue_state(venue TEXT PRIMARY KEY,capacity INTEGER,occupied INTEGER,status TEXT,next_change TEXT,updated INTEGER);
-CREATE TABLE IF NOT EXISTS incidents(id INTEGER PRIMARY KEY AUTOINCREMENT,venue TEXT,severity TEXT,title TEXT,status TEXT,recovery TEXT,ts INTEGER,resolved INTEGER);
-CREATE TABLE IF NOT EXISTS stream_state(item_id TEXT PRIMARY KEY,status TEXT,health TEXT,delay_sec INTEGER,updated INTEGER);
-CREATE TABLE IF NOT EXISTS appointment_history(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,slot_id TEXT,action TEXT,from_slot TEXT,to_slot TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS session_attendance(email TEXT,item_id TEXT,status TEXT,checkin_ts INTEGER,checkout_ts INTEGER,source TEXT,PRIMARY KEY(email,item_id));
-CREATE TABLE IF NOT EXISTS partner_engagement(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,partner TEXT,kind TEXT,ref_id TEXT,consent INTEGER DEFAULT 0,ts INTEGER);
-CREATE TABLE IF NOT EXISTS staff_assignments(id INTEGER PRIMARY KEY AUTOINCREMENT,staff_name TEXT,role TEXT,venue TEXT,shift_start TEXT,shift_end TEXT,status TEXT,updated INTEGER);
-CREATE TABLE IF NOT EXISTS speaker_readiness(speaker_id TEXT,item_id TEXT,status TEXT,checkin INTEGER DEFAULT 0,briefed INTEGER DEFAULT 0,mic INTEGER DEFAULT 0,slides INTEGER DEFAULT 0,updated INTEGER,PRIMARY KEY(speaker_id,item_id));
-CREATE TABLE IF NOT EXISTS ops_broadcasts(id INTEGER PRIMARY KEY AUTOINCREMENT,audience TEXT,venue TEXT,title TEXT,body TEXT,status TEXT,ts INTEGER);\nCREATE TABLE IF NOT EXISTS passport(email TEXT PRIMARY KEY,content INTEGER DEFAULT 0,event INTEGER DEFAULT 0,network INTEGER DEFAULT 0,partner INTEGER DEFAULT 0,updated INTEGER);
-CREATE TABLE IF NOT EXISTS journeys(email TEXT PRIMARY KEY,attended INTEGER DEFAULT 0,replay INTEGER DEFAULT 0,club INTEGER DEFAULT 0,updated INTEGER);
-CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,kind TEXT,title TEXT,body TEXT,seen INTEGER DEFAULT 0,ts INTEGER);
-CREATE TABLE IF NOT EXISTS direct_messages(id INTEGER PRIMARY KEY AUTOINCREMENT,sender TEXT,recipient TEXT,context TEXT,body TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT,kind TEXT,actor TEXT,payload TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,updated INTEGER);""")
+  db.migrate(c)
+  if not db.demo_seed_enabled():
+   c.close(); return
+  # Deterministic demo seed. Production PostgreSQL requires explicit PROMOMED_SEED_DEMO=true.
   defaults={"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"-1","demo_run":"0"}
   for k,v in defaults.items(): c.execute("INSERT OR IGNORE INTO state(k,v) VALUES(?,?)",(k,v))
   c.execute("INSERT OR IGNORE INTO cms(id,status,version,updated) VALUES('A-014','medical_review',1,?)",(int(time.time()),))
@@ -239,7 +196,7 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
   for e in ("participant@demo.ru","participant2@demo.ru","participant3@demo.ru"):
    c.execute("INSERT OR IGNORE INTO attendee_profiles(email,intent,interests,networking,visibility,updated) VALUES(?, 'Понять полезное для себя','сон,наука,движение',1,'event_only',?)",(e,int(time.time())))
    c.execute("INSERT OR IGNORE INTO passport(email,updated) VALUES(?,?)",(e,int(time.time())))
-  c.commit(); c.close()
+  c.commit(); db.sync_sequences(c); c.close()
 
 def sval(c,k,default=""):
  r=c.execute("SELECT v FROM state WHERE k=?",(k,)).fetchone(); return r["v"] if r else default
@@ -398,8 +355,25 @@ def run_demo_step(c,step,actor):
   raise ValueError("bad_step")
  setv(c,"demo_step",step)
 
+def token_hash(token):
+ return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+def issue_session(c,email,role,name):
+ token=secrets.token_urlsafe(32); now=int(time.time()); expires=now+SESSION_TTL
+ c.execute("DELETE FROM auth_sessions WHERE expires_at<? OR revoked_at IS NOT NULL",(now,))
+ c.execute("INSERT INTO auth_sessions(token_hash,email,role,name,created_at,expires_at,revoked_at) VALUES(?,?,?,?,?,?,NULL)",(token_hash(token),email,role,name,now,expires))
+ c.commit()
+ return token,expires
+
 def auth(h):
- token=h.headers.get("Authorization","").replace("Bearer ","").strip(); return TOKENS.get(token)
+ token=h.headers.get("Authorization","").replace("Bearer ","").strip()
+ if not token:return None
+ c=conn()
+ try:
+  row=c.execute("SELECT role,name,email,expires_at,revoked_at FROM auth_sessions WHERE token_hash=?",(token_hash(token),)).fetchone()
+  if not row or row["revoked_at"] is not None or int(row["expires_at"])<=int(time.time()):return None
+  return (row["role"],row["name"],row["email"])
+ finally:c.close()
 
 def body(h):
  n=int(h.headers.get("Content-Length","0") or 0); return json.loads(h.rfile.read(n) or b"{}")
@@ -418,7 +392,17 @@ class H(SimpleHTTPRequestHandler):
   self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
-  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v17-responsive-inbox","authority":"shared-sqlite-demo","golden_demo":True,"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
+  if p=="/health":
+   return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
+  if p=="/ready":
+   try:
+    r=db.readiness(); c=conn()
+    try:r["data_ready"]=bool(c.execute("SELECT 1 FROM state LIMIT 1").fetchone() and c.execute("SELECT 1 FROM cms LIMIT 1").fetchone())
+    finally:c.close()
+    r["ready"]=bool(r["ready"] and r["data_ready"]); r["production_ready"]=bool(r["production_ready"] and r["data_ready"])
+    return self.out(r,200 if r["ready"] else 503)
+   except Exception as e:
+    return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/product-quality-proof":
@@ -549,7 +533,10 @@ class H(SimpleHTTPRequestHandler):
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password","")); rec=ACCOUNTS.get(email)
    if not rec or not secrets.compare_digest(rec[0],pw): return self.out({"error":"invalid_credentials"},401)
-   token=secrets.token_urlsafe(24); TOKENS[token]=(rec[1],rec[2],email); return self.out({"token":token,"role":rec[1],"name":rec[2]})
+   c=conn()
+   try:token,expires=issue_session(c,email,rec[1],rec[2])
+   finally:c.close()
+   return self.out({"token":token,"role":rec[1],"name":rec[2],"expires_at":expires})
   a=auth(self)
   if not a: return self.out({"error":"unauthorized"},401)
   role,name,email=a
@@ -629,7 +616,7 @@ class H(SimpleHTTPRequestHandler):
      if role!="staff": return self.out({"error":"forbidden"},403)
      ticket=str(data.get("ticket","DEMO-2027-001"))
      try: c.execute("INSERT INTO checkins(ticket,ts,staff) VALUES(?,?,?)",(ticket,int(time.time()),email)); audit(c,"checkin",email,{"ticket":ticket}); result="valid"
-     except sqlite3.IntegrityError: result="duplicate"
+     except db.INTEGRITY_ERRORS: result="duplicate"
      c.commit(); d=state(c,email); d["scan_result"]=result; return self.out(d,200 if result=="valid" else 409)
     elif p=="/api/register":
      if role!="participant": return self.out({"error":"forbidden"},403)
@@ -951,4 +938,4 @@ class H(SimpleHTTPRequestHandler):
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
 
 if __name__=="__main__":
- init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.5 product quality listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
+ init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.8 persistence admission",db.backend_name(),"listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
