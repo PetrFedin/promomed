@@ -67,3 +67,21 @@ New CI coverage checks:
 - existing responsive/browser and PostgreSQL contracts remain mandatory.
 
 Remaining PROMO-INT-01 work: operations, partner/commercial, editor/CMS and demo write-route extraction.
+
+
+## Command boundary wave 2 — PROMO-INT-01 complete in repository
+
+Extracted the remaining operations, partner/commercial, editorial-demo and demo-control POST routes from `server.py`.
+
+Repository state now has:
+
+- bounded read projections by domain;
+- bounded write handlers by domain;
+- normalized command outcomes;
+- centralized auth/transaction/HTTP composition;
+- architecture regression gates;
+- representative role, permission and consent negative tests.
+
+`server.py` is ~379 lines versus 942 before PROMO-INT-01.
+
+This is repository completion only. Durable PostgreSQL live admission remains required before Phase 1.
