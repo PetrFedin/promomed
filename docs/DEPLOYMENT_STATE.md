@@ -167,3 +167,22 @@ Responsive matrix now covers:
 The admission service installs `psycopg==3.2.10` from `requirements.txt` and therefore is ready to receive an isolated PostgreSQL `DATABASE_URL` without changing the current public SQLite service.
 
 **Phase 0 is still not complete:** both current Render services remain on SQLite until an isolated zero-cost durable PostgreSQL contour is attached and `/ready` proves `production_ready=true`. Phase 1 remains gated.
+
+
+## PROMO-INT-01 repository completion live checkpoint — 2026-10-03
+
+- GitHub `main`: `bfb9e12a391326a40d295d57424d6de25df95b80`
+- Public service: `sostoyanie-promomed-live` / `srv-daug7pnlot8c73b1aja0`
+- Public deploy: `dep-db043fmgekts7383tigg` — **LIVE**
+- PostgreSQL admission service: `sostoyanie-promomed-pg-admission` / `srv-davsqk942hec73e1vcr0`
+- Admission deploy: `dep-db043ggu01pc738plqig` — **LIVE**
+- UI/architecture workflow: `37078516176` — **PASS**
+- Responsive browser QA: `37078516164` — **PASS**
+- Persistence authority: `37078516147` — **PASS**
+- Exact-SHA live Render proof: `37078516177` — **PASS**
+
+PROMO-INT-01 is complete in repository scope: bounded read projections and bounded write-command handlers are separated by domain, while `server.py` is the HTTP/auth/transaction/dispatch composition layer.
+
+Responsive/browser authority remains green across the required phone/tablet/desktop matrix.
+
+**Phase 0 remains incomplete:** both Render contours still require an isolated durable PostgreSQL `DATABASE_URL` and live `/ready -> production_ready=true` plus live PostgreSQL smoke and restore evidence before Phase 1 may begin.
