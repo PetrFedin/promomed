@@ -199,12 +199,14 @@ class H(SimpleHTTPRequestHandler):
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
   if p=="/health":
-   return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
+   return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"demo_seed":db.demo_seed_enabled(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
   if p=="/ready":
    try:
     r=db.readiness(); c=conn()
-    try:r["data_ready"]=bool(c.execute("SELECT 1 FROM state LIMIT 1").fetchone() and c.execute("SELECT 1 FROM cms LIMIT 1").fetchone())
+    try:
+     seeded_data=bool(c.execute("SELECT 1 FROM state LIMIT 1").fetchone() and c.execute("SELECT 1 FROM cms LIMIT 1").fetchone())
     finally:c.close()
+    r["data_ready"]=seeded_data if r["demo_seed_enabled"] else True
     r["ready"]=bool(r["ready"] and r["data_ready"]); r["production_ready"]=bool(r["production_ready"] and r["data_ready"])
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
