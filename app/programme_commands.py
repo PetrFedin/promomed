@@ -71,8 +71,8 @@ def handle_command(c, route, role, email, data):
             audit(c, "activity_cancelled", email, {"item_id": item_id})
         else:
             conflict = c.execute(
-                'SELECT p.id,p.start,p."end",p.title,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id '
-                'WHERE b.email=? AND b.status='booked' AND p.id<>? AND p.start<? AND p."end">?',
+                "SELECT p.id,p.start,p.\"end\",p.title,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id "
+                "WHERE b.email=? AND b.status='booked' AND p.id<>? AND p.start<? AND p.\"end\">?",
                 (email, item_id, item["end"], item["start"]),
             ).fetchone()
             if conflict:
