@@ -12,6 +12,7 @@ from app import db
 TABLES = (
     "_schema_migrations",
     "state",
+    "accounts",
     "auth_sessions",
     "program_items",
     "content_catalog",
