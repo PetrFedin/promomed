@@ -1,7 +1,7 @@
 # СОСТОЯНИЕ × Promomed — Integration Master Plan
 
 **Document:** `docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md`  
-**Status:** PLANNED — implementation source for future integration waves  
+**Status:** IN PROGRESS — Phase 0 persistence authority implementation underway  
 **Date:** 2026-10-01  
 **Repository:** `PetrFedin/promomed`  
 **Canonical branch:** `main`
@@ -94,6 +94,21 @@ Legend:
 ## 5. Required implementation sequence
 
 ### Phase 0 — Production persistence decision
+
+#### Implementation checkpoint — 2026-10-02
+
+Repository implementation now includes:
+
+- dual SQLite/PostgreSQL database adapter;
+- versioned migrations with checksum-drift detection;
+- PostgreSQL 17 CI contract;
+- deterministic seed boundary;
+- database-backed hashed sessions;
+- `/ready` fail-closed admission state;
+- backup/restore proof workflow.
+
+This checkpoint is **not** production admission. Public Render was independently observed serving an older runtime without `git_commit`, and no durable Promomed PostgreSQL has yet been admitted. Phase 0 completes only after exact-SHA live deployment, PostgreSQL `DATABASE_URL`, migrations, `production_ready=true`, and restore evidence on the admitted contour.
+
 
 **Preferred path: PostgreSQL.**
 
