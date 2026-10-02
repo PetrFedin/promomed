@@ -85,3 +85,20 @@ Repository state now has:
 `server.py` is ~379 lines versus 942 before PROMO-INT-01.
 
 This is repository completion only. Durable PostgreSQL live admission remains required before Phase 1.
+
+
+## Phase 0 admission authority — repository scope
+
+Added:
+
+- durable account table migration for SQLite/PostgreSQL;
+- salted scrypt password authority;
+- database-backed login role/name/status;
+- demo identities seeded only in demo mode;
+- production readiness rejects demo seed and demo accounts;
+- clean PostgreSQL admission probe;
+- privacy-safe source/restore catalog fingerprint;
+- provider-neutral manual admission workflow;
+- clean PostgreSQL 17 admission + backup/restore proof in PR CI.
+
+External durable PostgreSQL is still required before Phase 0 can be marked COMPLETE.
