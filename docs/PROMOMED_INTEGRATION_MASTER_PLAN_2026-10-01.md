@@ -150,6 +150,27 @@ Durable PostgreSQL remains blocked under the current zero-cost constraint: Rende
 
 The existing Render service also retains an old build command that does not install `requirements.txt`. Therefore Phase 0 is **not complete** until a separate durable PostgreSQL is admitted and the live service build config installs `psycopg`, followed by `/ready -> production_ready=true`, live PostgreSQL smoke and restore evidence.
 
+##### Preferred zero-cost capacity resolution — Neon
+
+Verified 2026-10-02 from Neon public documentation:
+
+- Neon keeps a Free plan suitable for early production/prototype workloads;
+- Free supports PostgreSQL 17;
+- Neon exposes AWS Europe Central 1 (Frankfurt / `eu-central-1`);
+- no existing Promomed-related project must be deleted or paused to use this path.
+
+References:
+
+- https://neon.com/blog/new-usage-based-pricing
+- https://neon.com/blog/postgres-17
+- https://neon.com/demos/regional-latency
+
+Target admission path:
+
+`Neon Free / eu-central-1 -> DATABASE_URL -> live Render dependency/build admission -> migrations -> /ready production_ready=true -> live PostgreSQL smoke -> backup/restore evidence`
+
+Neon remains an infrastructure provider only. Promomed retains database schema, migration, auth/session/consent and audit authority.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  
