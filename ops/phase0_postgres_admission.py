@@ -33,6 +33,8 @@ def main():
         fail("schema_not_ready", migration=migration)
     if migration["checksum_drift"]:
         fail("migration_checksum_drift", drift=migration["checksum_drift"])
+    if ready.get("demo_accounts", 0):
+        fail("demo_accounts_present", count=ready["demo_accounts"])
     if not ready["ready"] or not ready["production_ready"]:
         fail("production_readiness_failed", readiness=ready)
 
@@ -64,6 +66,7 @@ def main():
         "production_ready": ready["production_ready"],
         "ready": ready["ready"],
         "migration_count": len(migration["applied"]),
+        "demo_accounts": ready.get("demo_accounts", 0),
         "write_probe": "pass",
     }, ensure_ascii=False))
 
