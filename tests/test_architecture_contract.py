@@ -91,6 +91,14 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("handle_editorial_command", SERVER)
         self.assertIn("handle_demo_command", SERVER)
 
+    def test_http_layer_has_no_hardcoded_account_credentials(self):
+        self.assertNotIn("demo2027", SERVER)
+        self.assertNotIn("ACCOUNTS={", SERVER)
+        self.assertIn("authenticate(c,email,pw)", SERVER)
+        auth = (APP / "auth.py").read_text(encoding="utf-8")
+        self.assertIn("hashlib.scrypt", auth)
+        self.assertIn("SELECT email,password_hash,role,name,status FROM accounts", auth)
+
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 400)
 
