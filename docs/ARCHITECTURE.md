@@ -23,3 +23,18 @@
 ## Production boundaries
 
 Текущий runtime — pilot/demo authority. Для production admission требуются persistent PostgreSQL, migrations, durable auth/session store, rate limiting, secrets management, signed QR/pass authority, provider integrations, observability и backup/restore policy.
+
+
+## Persistence admission v1.8
+
+Runtime storage is selected through `app/db.py`.
+
+- SQLite remains a demo/local compatibility backend.
+- PostgreSQL is the only backend eligible for `production_ready=true`.
+- schema authority lives in versioned `migrations/sqlite` and `migrations/postgres`;
+- applied migration checksums are recorded in `_schema_migrations`;
+- authentication sessions are database-backed as token hashes;
+- `/health` is liveness; `/ready` is schema/data/backend admission;
+- backup/restore evidence is part of CI.
+
+The service remains one deployable application; this is a bounded persistence layer, not a microservice split.
