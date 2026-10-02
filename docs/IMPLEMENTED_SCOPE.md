@@ -24,3 +24,18 @@ See `docs/DEPLOYMENT_STATE.md`.
 
 ## Production boundaries
 Durable PostgreSQL/migrations; production auth/session/consent; real push; signed QR/Wallet; streaming provider; analytics governance; legal/medical review workflow and backup/restore.
+
+
+## Persistence admission layer — repository scope
+
+Implemented in code, pending production infrastructure admission:
+
+- database adapter for SQLite/PostgreSQL;
+- versioned/checksummed migrations;
+- durable hashed sessions;
+- liveness vs readiness split;
+- deterministic seed controls;
+- backup/restore utility;
+- SQLite and PostgreSQL CI authority tests.
+
+Not yet claimed: public Render exact-SHA deployment or admitted production PostgreSQL.
