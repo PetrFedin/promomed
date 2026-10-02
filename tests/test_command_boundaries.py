@@ -3,7 +3,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app import (\n    community_commands, learning_commands, participant_commands, programme_commands,\n    operations_commands, partner_commands, editorial_commands, demo_commands,\n)
+from app import (
+    community_commands,
+    learning_commands,
+    participant_commands,
+    programme_commands,
+    operations_commands,
+    partner_commands,
+    editorial_commands,
+    demo_commands,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
