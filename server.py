@@ -66,7 +66,7 @@ def init():
    ("P17","18:00","18:40","Клуб","Community","closing","Что я забираю с собой: 30 дней продолжения","все",240,1,1,"СОСТОЯНИЕ"),
    ("P18","19:00","20:00","Клуб","Community","club","Closing club & partner encounters","участники / спикеры / бренды",180,0,0,"СОСТОЯНИЕ")
   ]
-  c.executemany("INSERT OR IGNORE INTO program_items(id,start,end,venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",program)
+  c.executemany("INSERT OR IGNORE INTO program_items(id,start,\"end\",venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",program)
   extended_program=[
    ("P19","09:30","10:10","Partner Studio","Диагностика","workshop","Чекап без перегруза: как выбирать действительно нужное","участники",45,1,1,"Diagnostics partner · demo"),
    ("P20","09:45","10:30","Recovery Lab","Восстановление","practice","Утро, энергия, ритм: настройка дня","по записи",32,0,1,"Recovery partner · demo"),
@@ -93,7 +93,7 @@ def init():
    ("P41","18:45","19:25","Главная сцена","Итоги","closing","СОСТОЯНИЕ: 10 идей, которые стоит забрать в следующий год","все",600,1,1,"Промомед + СОСТОЯНИЕ"),
    ("P42","19:20","20:00","Business Club","B2B","reception","Client & Partner Salon: разговоры без сцены","клиенты / партнёры / спикеры",100,0,0,"Промомед")
   ]
-  c.executemany("INSERT OR IGNORE INTO program_items(id,start,end,venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",extended_program)
+  c.executemany("INSERT OR IGNORE INTO program_items(id,start,\"end\",venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",extended_program)
   speakers=[
    ("SP01","Анна Миронова","Медицинский редактор","СОСТОЯНИЕ","Демо-профиль. Переводит исследования в понятный редакционный язык; профиль не представляет реального специалиста.","научная грамотность,сон","expert"),
    ("SP02","Ирина Волкова","R&D / стратегический спикер","Промомед","Демо-профиль представителя компании для показа будущей структуры карточки: роль, компетенции, выступления, материалы и disclosure.","разработка,метаболическое здоровье","promomed"),
@@ -121,7 +121,7 @@ def init():
    ("SL01","P06","11:00","11:10",1,"BR02"),("SL02","P06","11:10","11:20",1,"BR02"),("SL03","P06","11:20","11:30",1,"BR02"),
    ("SL04","P12","15:00","15:15",2,"BR02"),("SL05","P12","15:15","15:30",2,"BR02"),("SL06","P12","15:30","15:45",2,"BR02")
   ]
-  c.executemany("INSERT OR IGNORE INTO appointment_slots(id,item_id,start,end,capacity,partner_id) VALUES(?,?,?,?,?,?)",slots)
+  c.executemany("INSERT OR IGNORE INTO appointment_slots(id,item_id,start,\"end\",capacity,partner_id) VALUES(?,?,?,?,?,?)",slots)
   products=[
    ("PR01","Тирзетта®","тирзепатид","ПРОМОМЕД","Метаболическое здоровье","real","Официальный продуктовый контекст внутри темы метаболического здоровья. Не является назначением лечения.","Годовой отчёт ПРОМОМЕД 2024","https://promomed.ru/","Реальный бренд ПРОМОМЕД; показ в MVP требует medical/legal review перед публичным запуском."),
    ("PR02","Велгия®","семаглутид","ПРОМОМЕД","Управление весом","real","Препарат ПРОМОМЕД, представленный в официальных материалах компании для терапии избыточной массы тела и ожирения.","ПРОМОМЕД · официальный пресс-релиз","https://promomed.ru/","Информационная карточка; не медицинская рекомендация и не механизм стимулирования покупки."),
@@ -265,8 +265,8 @@ def state(c,email=None):
   d["mutual_meetings"]=[dict(r) for r in c.execute("SELECT id,requester,target_email,target_name,slot,place,status,requester_ok,target_ok,ts FROM mutual_meetings WHERE requester=? OR target_email=? ORDER BY id DESC LIMIT 12",(email,email))]
   d["product_interests"]=[dict(r) for r in c.execute("SELECT id,track,context,consent_version,status,ts FROM product_interests WHERE email=? ORDER BY id DESC LIMIT 8",(email,))]
   d["followups"]=[dict(r) for r in c.execute("SELECT day,track,status,ts FROM followups WHERE email=? ORDER BY day,id",(email,))]
-  d["activity_bookings"]=[dict(r) for r in c.execute("SELECT b.item_id,b.status,p.start,p.end,p.venue,p.title,p.format FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? ORDER BY p.start",(email,))]
-  d["appointment_bookings"]=[dict(r) for r in c.execute("SELECT b.slot_id,b.status,a.item_id,a.start,a.end,p.name partner_name FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id LEFT JOIN partners p ON p.id=a.partner_id WHERE b.email=? ORDER BY a.start",(email,))]
+  d["activity_bookings"]=[dict(r) for r in c.execute("SELECT b.item_id,b.status,p.start,p.\"end\",p.venue,p.title,p.format FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? ORDER BY p.start",(email,))]
+  d["appointment_bookings"]=[dict(r) for r in c.execute("SELECT b.slot_id,b.status,a.item_id,a.start,a.\"end\",p.name partner_name FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id LEFT JOIN partners p ON p.id=a.partner_id WHERE b.email=? ORDER BY a.start",(email,))]
   d["appointment_history"]=[dict(r) for r in c.execute("SELECT action,from_slot,to_slot,ts FROM appointment_history WHERE email=? ORDER BY id DESC LIMIT 10",(email,))]
   d["session_attendance"]=[dict(r) for r in c.execute("SELECT a.item_id,a.status,a.checkin_ts,a.checkout_ts,a.source,p.title,p.venue,p.track FROM session_attendance a JOIN program_items p ON p.id=a.item_id WHERE a.email=? ORDER BY a.checkin_ts DESC",(email,))]
   d["partner_engagement"]=[dict(r) for r in c.execute("SELECT partner,kind,ref_id,consent,ts FROM partner_engagement WHERE email=? ORDER BY id DESC LIMIT 12",(email,))]
@@ -462,7 +462,7 @@ class H(SimpleHTTPRequestHandler):
     i["sla_minutes"]=limit; i["age_minutes"]=age; i["sla_status"]="breached" if i["status"]=="open" and age>limit else ("resolved" if i["status"]!="open" else "within_sla")
    streams=[dict(r) for r in c.execute("SELECT item_id,status,health,delay_sec,updated FROM stream_state ORDER BY item_id")]
    broadcasts=[dict(r) for r in c.execute("SELECT id,audience,venue,title,body,status,ts FROM ops_broadcasts ORDER BY id DESC LIMIT 12")]
-   partner_desk=[dict(r) for r in c.execute("SELECT pr.name partner,a.id slot_id,a.start,a.end,p.venue,p.title,COUNT(CASE WHEN b.status='booked' THEN 1 END) booked,COUNT(CASE WHEN b.status='waitlist' THEN 1 END) waitlist,a.capacity FROM appointment_slots a JOIN program_items p ON p.id=a.item_id LEFT JOIN partners pr ON pr.id=a.partner_id LEFT JOIN appointment_bookings b ON b.slot_id=a.id GROUP BY pr.name,a.id,a.start,a.end,p.venue,p.title,a.capacity ORDER BY a.start")]
+   partner_desk=[dict(r) for r in c.execute("SELECT pr.name partner,a.id slot_id,a.start,a.\"end\",p.venue,p.title,COUNT(CASE WHEN b.status='booked' THEN 1 END) booked,COUNT(CASE WHEN b.status='waitlist' THEN 1 END) waitlist,a.capacity FROM appointment_slots a JOIN program_items p ON p.id=a.item_id LEFT JOIN partners pr ON pr.id=a.partner_id LEFT JOIN appointment_bookings b ON b.slot_id=a.id GROUP BY pr.name,a.id,a.start,a.\"end\",p.venue,p.title,a.capacity ORDER BY a.start")]
    c.close()
    return self.out({"venues":venues,"staff":staff,"speakers":speakers,"incidents":incidents,"streams":streams,"broadcasts":broadcasts,"partner_desk":partner_desk})
   if p=="/api/intelligence":
@@ -652,7 +652,7 @@ class H(SimpleHTTPRequestHandler):
         audit(c,"activity_waitlist_promoted",waiter["email"],{"item_id":item_id})
       audit(c,"activity_cancelled",email,{"item_id":item_id})
      else:
-      conflict=c.execute("SELECT p.id,p.start,p.end,p.title,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.id<>? AND p.start<? AND p.end>?",(email,item_id,item["end"],item["start"])).fetchone()
+      conflict=c.execute("SELECT p.id,p.start,p.\"end\",p.title,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.id<>? AND p.start<? AND p.\"end\">?",(email,item_id,item["end"],item["start"])).fetchone()
       if conflict: return self.out({"error":"schedule_conflict","conflict":dict(conflict),"requested":{"id":item["id"],"start":item["start"],"end":item["end"],"title":item["title"],"venue":item["venue"]}},409)
       current=c.execute("SELECT COUNT(*) n FROM activity_bookings WHERE item_id=? AND status='booked'",(item_id,)).fetchone()["n"]
       status="booked" if current<int(item["capacity"]) else "waitlist"
@@ -686,7 +686,7 @@ class H(SimpleHTTPRequestHandler):
      slot_id=str(data.get("slot_id",""))[:20]
      slot=c.execute("SELECT a.*,p.title,p.venue FROM appointment_slots a JOIN program_items p ON p.id=a.item_id WHERE a.id=?",(slot_id,)).fetchone()
      if not slot: return self.out({"error":"slot_not_found"},404)
-     conflict=c.execute("SELECT 1 FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.end>?",(email,slot["end"],slot["start"])).fetchone()
+     conflict=c.execute("SELECT 1 FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.\"end\">?",(email,slot["end"],slot["start"])).fetchone()
      if conflict: return self.out({"error":"schedule_conflict"},409)
      used=c.execute("SELECT COUNT(*) n FROM appointment_bookings WHERE slot_id=? AND status='booked'",(slot_id,)).fetchone()["n"]
      status="booked" if used<int(slot["capacity"]) else "waitlist"
@@ -722,7 +722,7 @@ class H(SimpleHTTPRequestHandler):
     elif p=="/api/appointment-manage":
      if role!="participant": return self.out({"error":"forbidden"},403)
      action=str(data.get("action","cancel")); slot_id=str(data.get("slot_id",""))[:20]
-     row=c.execute("SELECT b.status,a.start,a.end,a.item_id FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id WHERE b.email=? AND b.slot_id=?",(email,slot_id)).fetchone()
+     row=c.execute("SELECT b.status,a.start,a.\"end\",a.item_id FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id WHERE b.email=? AND b.slot_id=?",(email,slot_id)).fetchone()
      if not row: return self.out({"error":"appointment_not_found"},404)
      if action=="cancel":
       was_booked=row["status"]=="booked"
@@ -739,7 +739,7 @@ class H(SimpleHTTPRequestHandler):
       to_slot=str(data.get("to_slot",""))[:20]
       target=c.execute("SELECT * FROM appointment_slots WHERE id=?",(to_slot,)).fetchone()
       if not target: return self.out({"error":"slot_not_found"},404)
-      conflict=c.execute("SELECT p.id,p.title,p.start,p.end,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.end>?",(email,target["end"],target["start"])).fetchone()
+      conflict=c.execute("SELECT p.id,p.title,p.start,p.\"end\",p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.\"end\">?",(email,target["end"],target["start"])).fetchone()
       if conflict:return self.out({"error":"schedule_conflict","conflict":dict(conflict),"requested":{"slot_id":to_slot,"start":target["start"],"end":target["end"]}},409)
       used=c.execute("SELECT COUNT(*) n FROM appointment_bookings WHERE slot_id=? AND status='booked'",(to_slot,)).fetchone()["n"]
       if used>=int(target["capacity"]): return self.out({"error":"slot_full"},409)
