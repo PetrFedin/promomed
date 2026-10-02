@@ -1,11 +1,14 @@
-import hashlib, json, os, threading, secrets, time
+import json, os, threading, secrets, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 from app import db
+from app.analytics import commercial, state
+from app.auth import auth, body, issue_session, token_hash
+from app.core import audit, notify, promote_waitlist, setv, sval
+from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
 LOCK=threading.RLock()
-SESSION_TTL=int(os.environ.get("PROMOMED_SESSION_TTL_SECONDS","43200"))
 ACCOUNTS={
  "participant@demo.ru":("demo2027","participant","Участник"),
  "participant2@demo.ru":("demo2027","participant","Участник 2"),
@@ -17,21 +20,6 @@ ACCOUNTS={
  "moderator@demo.ru":("demo2027","moderator","Модератор"),
  "sales@demo.ru":("demo2027","sales","Demo Director"),
 }
-DEMO_STEPS=[
- ("ready","Исходное состояние подготовлено"),
- ("full","Зал заполнен: 120 / 120"),
- ("waitlist","P2 и P3 поставлены в waitlist"),
- ("promoted","Место освобождено: P2 автоматически повышен"),
- ("hall_move","Сессия перенесена, участникам создано уведомление"),
- ("pause","Live переведён в technical pause"),
- ("live","Эфир восстановлен"),
- ("replay","Эфир завершён, replay доступен"),
- ("checkin","QR-билет подтверждён на входе"),
- ("placement","Contracted placement активирован"),
- ("lead","Создан добровольный consented lead"),
- ("post_event","Post-event replay открыт, dashboard готов"),
-]
-
 def conn():
  return db.connect()
 
@@ -197,186 +185,6 @@ def init():
    c.execute("INSERT OR IGNORE INTO attendee_profiles(email,intent,interests,networking,visibility,updated) VALUES(?, 'Понять полезное для себя','сон,наука,движение',1,'event_only',?)",(e,int(time.time())))
    c.execute("INSERT OR IGNORE INTO passport(email,updated) VALUES(?,?)",(e,int(time.time())))
   c.commit(); db.sync_sequences(c); c.close()
-
-def sval(c,k,default=""):
- r=c.execute("SELECT v FROM state WHERE k=?",(k,)).fetchone(); return r["v"] if r else default
-
-def setv(c,k,v):
- c.execute("INSERT INTO state(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v",(k,str(v)))
-
-def audit(c,kind,actor,payload=None):
- c.execute("INSERT INTO events(kind,actor,payload,ts) VALUES(?,?,?,?)",(kind,actor,json.dumps(payload or {},ensure_ascii=False),int(time.time())))
-
-def notify(c,email,kind,title,body):
- c.execute("INSERT INTO notifications(email,kind,title,body,seen,ts) VALUES(?,?,?,?,0,?)",(email,kind,title,body,int(time.time())))
- audit(c,"notification_created","system",{"email":email,"kind":kind,"title":title})
-
-def promote_waitlist(c,sid="S2"):
- nxt=c.execute("SELECT email FROM bookings WHERE session_id=? AND status='waitlist' ORDER BY ts,email LIMIT 1",(sid,)).fetchone()
- if not nxt: return None
- c.execute("UPDATE bookings SET status='booked',ts=? WHERE email=? AND session_id=?",(int(time.time()),nxt["email"],sid))
- setv(c,"occupied",int(sval(c,"occupied","0"))+1)
- notify(c,nxt["email"],"waitlist_promoted","Вы в программе","Освободилось место. Бронь подтверждена автоматически.")
- audit(c,"waitlist_promoted","system",{"email":nxt["email"],"session_id":sid})
- return nxt["email"]
-
-def commercial(c):
- kinds={r["kind"]:r["n"] for r in c.execute("SELECT kind,COUNT(*) n FROM events GROUP BY kind")}
- regs=c.execute("SELECT COUNT(*) n FROM registrations").fetchone()["n"]
- checkins=c.execute("SELECT COUNT(*) n FROM checkins").fetchone()["n"]
- leads=c.execute("SELECT COUNT(*) n FROM leads WHERE status='new'").fetchone()["n"]
- replay=c.execute("SELECT COUNT(*) n FROM journeys WHERE replay=1").fetchone()["n"]
- wait=c.execute("SELECT COUNT(*) n FROM bookings WHERE status='waitlist'").fetchone()["n"]
- booked=c.execute("SELECT COUNT(*) n FROM bookings WHERE status='booked'").fetchone()["n"]
- return {
-  "registrations":regs,"attendance":checkins,"booked":booked,"waitlist":wait,
-  "voluntary_leads":leads,"post_event_replay":replay,
-  "attendance_rate":round(checkins/regs*100,1) if regs else 0,
-  "lead_rate":round(leads/checkins*100,1) if checkins else 0,
-  "event_counts":kinds
- }
-
-def state(c,email=None):
- d={r["k"]:r["v"] for r in c.execute("SELECT k,v FROM state")}
- d.update(commercial(c))
- d["checkins"]=d["attendance"]; d["leads"]=d["voluntary_leads"]; d["post_event"]=d["post_event_replay"]
- d["questions"]=c.execute("SELECT COUNT(*) n FROM questions").fetchone()["n"]
- d["program"]=[dict(r) for r in c.execute("SELECT * FROM program_items ORDER BY start,venue")]
- d["speakers"]=[dict(r) for r in c.execute("SELECT * FROM speakers ORDER BY name")]
- d["partners"]=[dict(r) for r in c.execute("SELECT * FROM partners ORDER BY name")]
- d["products"]=[dict(r) for r in c.execute("SELECT * FROM product_catalog ORDER BY id")]
- d["content_catalog"]=[dict(r) for r in c.execute("SELECT * FROM content_catalog ORDER BY id")]
- d["partner_packages"]=[dict(r) for r in c.execute("SELECT * FROM partner_packages ORDER BY id")]
- d["studio_episodes"]=[dict(r) for r in c.execute("SELECT e.*,s.name speaker_name,s.role speaker_role FROM studio_episodes e LEFT JOIN speakers s ON s.id=e.speaker_id ORDER BY e.id")]
- d["community_threads"]=[dict(r) for r in c.execute("SELECT t.*,COUNT(p.id) post_count FROM community_threads t LEFT JOIN community_posts p ON p.thread_id=t.id AND p.status IN ('published_demo','pending_moderation') GROUP BY t.id ORDER BY t.id")]
- d["learning_tracks"]=[dict(r) for r in c.execute("SELECT * FROM learning_tracks ORDER BY id")]
- d["learning_steps"]=[dict(r) for r in c.execute("SELECT * FROM learning_steps ORDER BY track_id,step_no")]
- d["session_speakers"]=[dict(r) for r in c.execute("SELECT ss.item_id,s.id,s.name,s.role,s.org,s.kind FROM session_speakers ss JOIN speakers s ON s.id=ss.speaker_id ORDER BY ss.item_id,s.name")]
- d["appointment_slots"]=[dict(r) for r in c.execute("SELECT a.*,p.name partner_name FROM appointment_slots a LEFT JOIN partners p ON p.id=a.partner_id ORDER BY a.start")]
- d["venue_state"]=[dict(r) for r in c.execute("SELECT venue,capacity,occupied,status,next_change,updated FROM venue_state ORDER BY venue")]
- d["stream_state"]=[dict(r) for r in c.execute("SELECT item_id,status,health,delay_sec,updated FROM stream_state ORDER BY item_id")]
- d["incidents"]=[dict(r) for r in c.execute("SELECT id,venue,severity,title,status,recovery,ts,resolved FROM incidents ORDER BY id DESC LIMIT 20")]
- d["staff_assignments"]=[dict(r) for r in c.execute("SELECT id,staff_name,role,venue,shift_start,shift_end,status,updated FROM staff_assignments ORDER BY venue,role")]
- d["speaker_readiness"]=[dict(r) for r in c.execute("SELECT r.speaker_id,r.item_id,r.status,r.checkin,r.briefed,r.mic,r.slides,r.updated,s.name,p.title,p.start,p.venue FROM speaker_readiness r JOIN speakers s ON s.id=r.speaker_id JOIN program_items p ON p.id=r.item_id ORDER BY p.start,s.name")]
- d["ops_broadcasts"]=[dict(r) for r in c.execute("SELECT id,audience,venue,title,body,status,ts FROM ops_broadcasts ORDER BY id DESC LIMIT 12")]
- if email:
-  d["takeaways"]=[dict(r) for r in c.execute("SELECT id,session_id,note,source,ts FROM takeaways WHERE email=? ORDER BY id DESC LIMIT 8",(email,))]
-  d["meeting_items"]=[dict(r) for r in c.execute("SELECT id,target,slot,place,status,ts FROM meetings WHERE requester=? ORDER BY id DESC LIMIT 8",(email,))]
-  d["mutual_meetings"]=[dict(r) for r in c.execute("SELECT id,requester,target_email,target_name,slot,place,status,requester_ok,target_ok,ts FROM mutual_meetings WHERE requester=? OR target_email=? ORDER BY id DESC LIMIT 12",(email,email))]
-  d["product_interests"]=[dict(r) for r in c.execute("SELECT id,track,context,consent_version,status,ts FROM product_interests WHERE email=? ORDER BY id DESC LIMIT 8",(email,))]
-  d["followups"]=[dict(r) for r in c.execute("SELECT day,track,status,ts FROM followups WHERE email=? ORDER BY day,id",(email,))]
-  d["activity_bookings"]=[dict(r) for r in c.execute("SELECT b.item_id,b.status,p.start,p.\"end\",p.venue,p.title,p.format FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? ORDER BY p.start",(email,))]
-  d["appointment_bookings"]=[dict(r) for r in c.execute("SELECT b.slot_id,b.status,a.item_id,a.start,a.\"end\",p.name partner_name FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id LEFT JOIN partners p ON p.id=a.partner_id WHERE b.email=? ORDER BY a.start",(email,))]
-  d["appointment_history"]=[dict(r) for r in c.execute("SELECT action,from_slot,to_slot,ts FROM appointment_history WHERE email=? ORDER BY id DESC LIMIT 10",(email,))]
-  d["session_attendance"]=[dict(r) for r in c.execute("SELECT a.item_id,a.status,a.checkin_ts,a.checkout_ts,a.source,p.title,p.venue,p.track FROM session_attendance a JOIN program_items p ON p.id=a.item_id WHERE a.email=? ORDER BY a.checkin_ts DESC",(email,))]
-  d["partner_engagement"]=[dict(r) for r in c.execute("SELECT partner,kind,ref_id,consent,ts FROM partner_engagement WHERE email=? ORDER BY id DESC LIMIT 12",(email,))]
-  d["challenges"]=[dict(r) for r in c.execute("SELECT challenge_id,status,days_required,started,verified,reward FROM challenges WHERE email=?",(email,))]
-  d["challenge_actions"]=[dict(r) for r in c.execute("SELECT challenge_id,action_id,label,status,ts FROM challenge_actions WHERE email=? ORDER BY action_id",(email,))]
-  d["topic_subscriptions"]=[dict(r) for r in c.execute("SELECT topic,status,ts FROM topic_subscriptions WHERE email=? ORDER BY topic",(email,))]
-  d["expert_follows"]=[dict(r) for r in c.execute("SELECT f.speaker_id,f.status,f.ts,s.name,s.role,s.org FROM expert_follows f JOIN speakers s ON s.id=f.speaker_id WHERE f.email=? ORDER BY s.name",(email,))]
-  d["learning_enrollments"]=[dict(r) for r in c.execute("SELECT e.track_id,e.status,e.current_step,e.started,e.updated,t.title,t.duration_days,t.topic,(SELECT COUNT(*) FROM learning_steps ls WHERE ls.track_id=e.track_id) total_steps FROM learning_enrollments e JOIN learning_tracks t ON t.id=e.track_id WHERE e.email=? ORDER BY e.updated DESC",(email,))]
-  d["community_posts"]=[dict(r) for r in c.execute("SELECT id,thread_id,body,status,ts FROM community_posts WHERE email=? ORDER BY id DESC LIMIT 12",(email,))]
-  d["direct_messages"]=[dict(r) for r in c.execute("SELECT id,sender,recipient,context,body,status,ts FROM direct_messages WHERE sender=? OR recipient=? ORDER BY id DESC LIMIT 40",(email,email))]
-  rel="registered"
-  if c.execute("SELECT 1 FROM checkins WHERE ticket='DEMO-2027-001'").fetchone(): rel="attended"
-  if c.execute("SELECT 1 FROM journeys WHERE email=? AND (replay=1 OR club=1)",(email,)).fetchone(): rel="continuing"
-  if c.execute("SELECT 1 FROM product_interests WHERE email=?",(email,)).fetchone(): rel="consented_interest"
-  d["relationship_stage"]=rel
- p=c.execute("SELECT status,name FROM placements WHERE id=1").fetchone()
- d["placement_status"]=p["status"] if p else "contracted"
- row=c.execute("SELECT status,version FROM cms WHERE id='A-014'").fetchone()
- d["cms_status"]=row["status"]; d["cms_version"]=row["version"]
- if email:
-  b=c.execute("SELECT status FROM bookings WHERE email=? AND session_id='S2'",(email,)).fetchone()
-  d["my_booking"]=b["status"] if b else None
-  n=c.execute("SELECT id,kind,title,body,seen,ts FROM notifications WHERE email=? ORDER BY id DESC LIMIT 5",(email,))
-  d["notifications"]=[dict(x) for x in n]
-  pr=c.execute("SELECT intent,interests,networking,visibility FROM attendee_profiles WHERE email=?",(email,)).fetchone()
-  d["profile"]=dict(pr) if pr else None
-  pp=c.execute("SELECT content,event,network,partner FROM passport WHERE email=?",(email,)).fetchone()
-  d["passport"]=dict(pp) if pp else {"content":0,"event":0,"network":0,"partner":0}
-  d["meetings"]=c.execute("SELECT COUNT(*) n FROM meetings WHERE requester=? AND status IN ('requested','confirmed')",(email,)).fetchone()["n"]
- d["server_time"]=int(time.time())
- return d
-
-def reset_demo(c,actor):
- for t in ("checkins","leads","registrations","bookings","questions","journeys","notifications","direct_messages","events","meetings","session_feedback","takeaways","product_interests","followups","topic_subscriptions","expert_follows","learning_enrollments","community_posts"):
-  c.execute("DELETE FROM "+t)
- for k,v in {"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"0"}.items(): setv(c,k,v)
- setv(c,"demo_run",int(sval(c,"demo_run","0"))+1)
- c.execute("UPDATE placements SET status='contracted',leads=0,ts=? WHERE id=1",(int(time.time()),))
- c.execute("UPDATE deliverables SET status='contracted',evidence='',updated=?",(int(time.time()),))
- c.execute("UPDATE passport SET content=0,event=0,network=0,partner=0,updated=?",(int(time.time()),))
- c.execute("UPDATE cms SET status='medical_review',version=1,updated=? WHERE id='A-014'",(int(time.time()),))
- c.execute("INSERT OR REPLACE INTO registrations(email,status,ts) VALUES('participant@demo.ru','confirmed',?)",(int(time.time()),))
- audit(c,"demo_reset",actor,{"run":sval(c,"demo_run")})
-
-def run_demo_step(c,step,actor):
- now=int(time.time())
- if step==1:
-  setv(c,"occupied",120); setv(c,"capacity",120); setv(c,"phase","during")
-  audit(c,"venue_full",actor,{"occupied":120,"capacity":120})
- elif step==2:
-  for e in ("participant2@demo.ru","participant3@demo.ru"):
-   c.execute("INSERT OR REPLACE INTO registrations(email,status,ts) VALUES(?,'confirmed',?)",(e,now))
-   c.execute("INSERT OR REPLACE INTO bookings(email,session_id,status,ts) VALUES(?,'S2','waitlist',?)",(e,now))
-   audit(c,"booking_waitlist",e,{"session_id":"S2"})
- elif step==3:
-  setv(c,"occupied",119); audit(c,"seat_released",actor,{"session_id":"S2"})
-  promote_waitlist(c,"S2")
- elif step==4:
-  setv(c,"session_time","11:30"); setv(c,"session_room","Зал «Практика»"); setv(c,"change_seq",int(sval(c,"change_seq","0"))+1)
-  for e in ("participant@demo.ru","participant2@demo.ru","participant3@demo.ru"):
-   notify(c,e,"schedule_changed","Изменение программы","«Как читать исследования» перенесена на 11:30 · зал «Практика».")
-  audit(c,"schedule_changed",actor,{"time":"11:30","room":"Зал «Практика»"})
- elif step==5:
-  setv(c,"live_state","pause"); audit(c,"live_state",actor,{"state":"pause"})
- elif step==6:
-  setv(c,"live_state","live"); audit(c,"live_state",actor,{"state":"live"})
- elif step==7:
-  setv(c,"live_state","replay"); setv(c,"phase","after"); audit(c,"live_state",actor,{"state":"replay"})
- elif step==8:
-  c.execute("INSERT OR IGNORE INTO checkins(ticket,ts,staff) VALUES('DEMO-2027-001',?,'staff@demo.ru')",(now,))
-  audit(c,"checkin","staff@demo.ru",{"ticket":"DEMO-2027-001"})
- elif step==9:
-  c.execute("UPDATE placements SET status='active',ts=? WHERE id=1",(now,))
-  c.execute("UPDATE deliverables SET status='delivered',evidence='demo_run:event:placement_active',updated=? WHERE id IN ('PL-01','PL-02')",(now,))
-  audit(c,"placement_active","partner@demo.ru",{"placement_id":1})
- elif step==10:
-  c.execute("INSERT INTO leads(kind,status,ts) VALUES('materials','new',?)",(now,))
-  c.execute("UPDATE placements SET leads=leads+1 WHERE id=1")
-  c.execute("UPDATE deliverables SET status='delivered',evidence='demo_run:event:voluntary_lead',updated=? WHERE id='PL-04'",(now,))
-  audit(c,"voluntary_lead","participant@demo.ru",{"kind":"materials","consent":True,"recipient":"demo_partner"})
- elif step==11:
-  c.execute("INSERT OR REPLACE INTO journeys(email,attended,replay,club,updated) VALUES('participant@demo.ru',1,1,0,?)",(now,))
-  c.execute("UPDATE deliverables SET status='delivered',evidence='demo_run:event:journey_replay',updated=? WHERE id='PL-03'",(now,))
-  audit(c,"journey_attended","participant@demo.ru",{}); audit(c,"journey_replay","participant@demo.ru",{})
- else:
-  raise ValueError("bad_step")
- setv(c,"demo_step",step)
-
-def token_hash(token):
- return hashlib.sha256(token.encode("utf-8")).hexdigest()
-
-def issue_session(c,email,role,name):
- token=secrets.token_urlsafe(32); now=int(time.time()); expires=now+SESSION_TTL
- c.execute("DELETE FROM auth_sessions WHERE expires_at<? OR revoked_at IS NOT NULL",(now,))
- c.execute("INSERT INTO auth_sessions(token_hash,email,role,name,created_at,expires_at,revoked_at) VALUES(?,?,?,?,?,?,NULL)",(token_hash(token),email,role,name,now,expires))
- c.commit()
- return token,expires
-
-def auth(h):
- token=h.headers.get("Authorization","").replace("Bearer ","").strip()
- if not token:return None
- c=conn()
- try:
-  row=c.execute("SELECT role,name,email,expires_at,revoked_at FROM auth_sessions WHERE token_hash=?",(token_hash(token),)).fetchone()
-  if not row or row["revoked_at"] is not None or int(row["expires_at"])<=int(time.time()):return None
-  return (row["role"],row["name"],row["email"])
- finally:c.close()
-
-def body(h):
- n=int(h.headers.get("Content-Length","0") or 0); return json.loads(h.rfile.read(n) or b"{}")
 
 class H(SimpleHTTPRequestHandler):
  def __init__(self,*a,**kw): super().__init__(*a,directory=ROOT,**kw)
