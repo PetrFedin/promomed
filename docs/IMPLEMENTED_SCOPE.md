@@ -39,3 +39,17 @@ Implemented in code, pending production infrastructure admission:
 - SQLite and PostgreSQL CI authority tests.
 
 Not yet claimed: public Render exact-SHA deployment or admitted production PostgreSQL.
+
+
+## Bounded-context foundation — PROMO-INT-01
+
+Implemented in repository:
+
+- authentication/session logic extracted from the HTTP monolith;
+- shared audit/notification/state primitives extracted;
+- demo orchestration isolated;
+- programme, content, community, learning, partner, operations and participant read projections separated;
+- analytics now composes projections instead of owning all domain SQL;
+- architecture contract prevents extracted functions from silently returning to `server.py`.
+
+The service is still a single deployable application. Write/command route extraction remains incremental work and is not claimed complete.
