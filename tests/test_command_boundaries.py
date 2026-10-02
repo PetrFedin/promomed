@@ -3,7 +3,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from app import community_commands, learning_commands, participant_commands, programme_commands
+from app import (
+    community_commands,
+    learning_commands,
+    participant_commands,
+    programme_commands,
+    operations_commands,
+    partner_commands,
+    editorial_commands,
+    demo_commands,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -93,6 +102,77 @@ class CommandBoundaryTests(unittest.TestCase):
         )
         self.assertEqual(denied.status, 403)
         self.assertEqual(denied.payload["error"], "forbidden")
+
+
+    def test_operations_role_and_capacity_boundary(self):
+        denied = operations_commands.handle_command(
+            self.c, "/api/venue-state", "participant", "participant@demo.ru",
+            {"venue": "Главная сцена", "occupied": 10, "capacity": 20, "status": "open"},
+        )
+        self.assertEqual(denied.status, 403)
+        self.assertEqual(denied.payload["error"], "forbidden")
+
+        over = operations_commands.handle_command(
+            self.c, "/api/venue-state", "organizer", "organizer@demo.ru",
+            {"venue": "Главная сцена", "occupied": 21, "capacity": 20, "status": "open"},
+        )
+        self.assertEqual(over.status, 409)
+        self.assertEqual(over.payload["error"], "occupied_exceeds_capacity")
+
+        ok = operations_commands.handle_command(
+            self.c, "/api/venue-state", "organizer", "organizer@demo.ru",
+            {"venue": "Главная сцена", "occupied": 18, "capacity": 20, "status": "open"},
+        )
+        self.assertTrue(ok.use_state)
+
+    def test_partner_consent_and_role_boundary(self):
+        denied = partner_commands.handle_command(
+            self.c, "/api/lead", "participant", "participant@demo.ru",
+            {"kind": "materials", "consent": False},
+        )
+        self.assertEqual(denied.status, 422)
+        self.assertEqual(denied.payload["error"], "consent_required")
+
+        allowed = partner_commands.handle_command(
+            self.c, "/api/lead", "participant", "participant@demo.ru",
+            {"kind": "materials", "consent": True},
+        )
+        self.assertTrue(allowed.use_state)
+        row = self.c.execute("SELECT COUNT(*) n FROM leads WHERE status='new'").fetchone()
+        self.assertGreaterEqual(row["n"], 1)
+
+        wrong_role = partner_commands.handle_command(
+            self.c, "/api/placement", "participant", "participant@demo.ru",
+            {"status": "active"},
+        )
+        self.assertEqual(wrong_role.status, 403)
+
+    def test_editorial_role_boundary(self):
+        denied = editorial_commands.handle_command(
+            self.c, "/api/cms", "participant", "participant@demo.ru",
+            {"status": "approved"},
+        )
+        self.assertEqual(denied.status, 403)
+
+        allowed = editorial_commands.handle_command(
+            self.c, "/api/cms", "editor", "editor@demo.ru",
+            {"status": "approved"},
+        )
+        self.assertTrue(allowed.use_state)
+        row = self.c.execute("SELECT status FROM cms WHERE id='A-014'").fetchone()
+        self.assertEqual(row["status"], "approved")
+
+    def test_demo_control_role_boundary(self):
+        denied = demo_commands.handle_command(
+            self.c, "/api/demo/reset", "participant", "participant@demo.ru", {}
+        )
+        self.assertEqual(denied.status, 403)
+
+        allowed = demo_commands.handle_command(
+            self.c, "/api/demo/reset", "sales", "sales@demo.ru", {}
+        )
+        self.assertTrue(allowed.use_state)
+        self.assertEqual(self.server.sval(self.c, "demo_step", "missing"), "0")
 
 
 if __name__ == "__main__":

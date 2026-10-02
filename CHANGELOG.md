@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-03 — Command boundaries wave 2
+
+Completed PROMO-INT-01 in repository scope: extracted operations, partner/commercial, editorial-demo and demo-control POST commands into bounded handlers. `server.py` is now ~379 lines and its POST path is a composition/dispatch layer rather than a domain monolith. Added direct role/permission/consent tests. Phase 1 remains gated by durable PostgreSQL live admission.
+
+
 ## 2026-10-03 — Command boundaries wave 1
 
 Continued PROMO-INT-01: moved 21 community, learning, participant and programme POST routes from `server.py` into bounded command handlers with normalized outcomes and direct consent/role tests. `server.py` is now ~518 lines versus 942 before the bounded-context work. Phase 1 remains gated.

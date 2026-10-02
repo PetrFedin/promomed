@@ -669,6 +669,21 @@ This checkpoint does **not** advance Phase 1. Command/write route extraction is 
 
 Phase 1 remains gated by Phase 0 durable PostgreSQL live admission.
 
+#### PROMO-INT-01 write checkpoint — wave 2 / repository complete
+
+The remaining POST command authorities have now been extracted into bounded contexts:
+
+- operations: schedule/live/check-in/staff/speaker-readiness/broadcast/venue/incidents/stream/phase;
+- partner/commercial: appointments, placement lifecycle and consented leads;
+- editorial demo boundary: question queue and existing CMS status command;
+- demo control: reset/next orchestration.
+
+`server.py` is now an HTTP composition layer: login -> auth -> transaction -> bounded command dispatch -> response composition. It is approximately 379 lines, down from 942 before PROMO-INT-01.
+
+Repository acceptance includes direct role/permission and consent negative tests, architecture regression tests, responsive browser QA, SQLite migration/restore and PostgreSQL 17 migration/state/session/restore contracts.
+
+**PROMO-INT-01 is complete in repository scope.** This does not open Phase 1. PROMO-INT-00 remains incomplete until an isolated durable PostgreSQL is admitted live and `/ready` reports `production_ready=true` with live smoke + restore evidence.
+
 ## 7. API structure recommendation
 
 Do not continue growing one monolithic `server.py` indefinitely.

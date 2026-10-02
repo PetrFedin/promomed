@@ -10,6 +10,10 @@ from app.community_commands import handle_command as handle_community_command
 from app.learning_commands import handle_command as handle_learning_command
 from app.participant_commands import handle_command as handle_participant_command
 from app.programme_commands import handle_command as handle_programme_command
+from app.operations_commands import handle_command as handle_operations_command
+from app.partner_commands import handle_command as handle_partner_command
+from app.editorial_commands import handle_command as handle_editorial_command
+from app.demo_commands import handle_command as handle_demo_command
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
 LOCK=threading.RLock()
@@ -359,157 +363,14 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_learning_command(c,p,role,email,data)
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
     if outcome is None: outcome=handle_programme_command(c,p,role,email,data)
-    if outcome is not None:
-     c.commit()
-     payload=state(c,email) if outcome.use_state else outcome.payload
-     return self.out(payload,outcome.status)
-    if p=="/api/demo/reset":
-     if role not in ("sales","organizer"): return self.out({"error":"forbidden"},403)
-     reset_demo(c,email)
-    elif p=="/api/demo/next":
-     if role not in ("sales","organizer"): return self.out({"error":"forbidden"},403)
-     cur=int(sval(c,"demo_step","0")); nxt=cur+1
-     if nxt>=len(DEMO_STEPS): return self.out({"error":"demo_complete","dashboard":commercial(c)},409)
-     run_demo_step(c,nxt,email)
-    elif p=="/api/move-session":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     t=str(data.get("time","11:30")); room=str(data.get("room","Лекторий"))[:80]
-     setv(c,"session_time",t); setv(c,"session_room",room); setv(c,"change_seq",int(sval(c,"change_seq","0"))+1)
-     for e in ("participant@demo.ru","participant2@demo.ru","participant3@demo.ru"): notify(c,e,"schedule_changed","Изменение программы",f"Новая площадка: {t} · {room}.")
-     audit(c,"schedule_changed",email,{"time":t,"room":room})
-    elif p=="/api/live":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     v=str(data.get("state","live"))
-     if v not in ("scheduled","live","pause","ended","replay"): return self.out({"error":"bad_state"},400)
-     setv(c,"live_state",v); audit(c,"live_state",email,{"state":v})
-    elif p=="/api/checkin":
-     if role!="staff": return self.out({"error":"forbidden"},403)
-     ticket=str(data.get("ticket","DEMO-2027-001"))
-     try: c.execute("INSERT INTO checkins(ticket,ts,staff) VALUES(?,?,?)",(ticket,int(time.time()),email)); audit(c,"checkin",email,{"ticket":ticket}); result="valid"
-     except db.INTEGRITY_ERRORS: result="duplicate"
-     c.commit(); d=state(c,email); d["scan_result"]=result; return self.out(d,200 if result=="valid" else 409)
-    elif p=="/api/appointment-booking":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     slot_id=str(data.get("slot_id",""))[:20]
-     slot=c.execute("SELECT a.*,p.title,p.venue FROM appointment_slots a JOIN program_items p ON p.id=a.item_id WHERE a.id=?",(slot_id,)).fetchone()
-     if not slot: return self.out({"error":"slot_not_found"},404)
-     conflict=c.execute("SELECT 1 FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.\"end\">?",(email,slot["end"],slot["start"])).fetchone()
-     if conflict: return self.out({"error":"schedule_conflict"},409)
-     used=c.execute("SELECT COUNT(*) n FROM appointment_bookings WHERE slot_id=? AND status='booked'",(slot_id,)).fetchone()["n"]
-     status="booked" if used<int(slot["capacity"]) else "waitlist"
-     c.execute("INSERT INTO appointment_bookings(email,slot_id,status,ts) VALUES(?,?,?,?) ON CONFLICT(email,slot_id) DO UPDATE SET status=excluded.status,ts=excluded.ts",(email,slot_id,status,int(time.time())))
-     audit(c,"appointment_"+status,email,{"slot_id":slot_id,"item_id":slot["item_id"]})
-     partner_name=c.execute("SELECT pr.name FROM appointment_slots a JOIN partners pr ON pr.id=a.partner_id WHERE a.id=?",(slot_id,)).fetchone()
-     c.execute("INSERT INTO partner_engagement(email,partner,kind,ref_id,consent,ts) VALUES(?,?,?,?,0,?)",(email,partner_name["name"] if partner_name else "partner","appointment_"+status,slot_id,int(time.time())))
-     notify(c,email,"appointment_"+status,"Запись к партнёру",slot["start"]+" · "+slot["venue"]+" · "+slot["title"])
-    elif p=="/api/appointment-manage":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     action=str(data.get("action","cancel")); slot_id=str(data.get("slot_id",""))[:20]
-     row=c.execute("SELECT b.status,a.start,a.\"end\",a.item_id FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id WHERE b.email=? AND b.slot_id=?",(email,slot_id)).fetchone()
-     if not row: return self.out({"error":"appointment_not_found"},404)
-     if action=="cancel":
-      was_booked=row["status"]=="booked"
-      c.execute("UPDATE appointment_bookings SET status='cancelled',ts=? WHERE email=? AND slot_id=?",(int(time.time()),email,slot_id))
-      c.execute("INSERT INTO appointment_history(email,slot_id,action,from_slot,to_slot,ts) VALUES(?,?, 'cancel', ?, NULL, ?)",(email,slot_id,slot_id,int(time.time())))
-      if was_booked:
-       waiter=c.execute("SELECT email FROM appointment_bookings WHERE slot_id=? AND status='waitlist' ORDER BY ts LIMIT 1",(slot_id,)).fetchone()
-       if waiter:
-        c.execute("UPDATE appointment_bookings SET status='booked',ts=? WHERE email=? AND slot_id=?",(int(time.time()),waiter["email"],slot_id))
-        notify(c,waiter["email"],"appointment_promoted","Освободилось место","Ваша запись к партнёру подтверждена.")
-        audit(c,"appointment_waitlist_promoted",waiter["email"],{"slot_id":slot_id})
-      audit(c,"appointment_cancelled",email,{"slot_id":slot_id})
-     elif action=="reschedule":
-      to_slot=str(data.get("to_slot",""))[:20]
-      target=c.execute("SELECT * FROM appointment_slots WHERE id=?",(to_slot,)).fetchone()
-      if not target: return self.out({"error":"slot_not_found"},404)
-      conflict=c.execute("SELECT p.id,p.title,p.start,p.\"end\",p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.\"end\">?",(email,target["end"],target["start"])).fetchone()
-      if conflict:return self.out({"error":"schedule_conflict","conflict":dict(conflict),"requested":{"slot_id":to_slot,"start":target["start"],"end":target["end"]}},409)
-      used=c.execute("SELECT COUNT(*) n FROM appointment_bookings WHERE slot_id=? AND status='booked'",(to_slot,)).fetchone()["n"]
-      if used>=int(target["capacity"]): return self.out({"error":"slot_full"},409)
-      was_booked=row["status"]=="booked"
-      c.execute("UPDATE appointment_bookings SET status='cancelled',ts=? WHERE email=? AND slot_id=?",(int(time.time()),email,slot_id))
-      if was_booked:
-       waiter=c.execute("SELECT email FROM appointment_bookings WHERE slot_id=? AND status='waitlist' ORDER BY ts LIMIT 1",(slot_id,)).fetchone()
-       if waiter:
-        c.execute("UPDATE appointment_bookings SET status='booked',ts=? WHERE email=? AND slot_id=?",(int(time.time()),waiter["email"],slot_id))
-        notify(c,waiter["email"],"appointment_promoted","Освободилось место","Ваша запись к партнёру подтверждена.")
-      c.execute("INSERT INTO appointment_bookings(email,slot_id,status,ts) VALUES(?,?,'booked',?) ON CONFLICT(email,slot_id) DO UPDATE SET status='booked',ts=excluded.ts",(email,to_slot,int(time.time())))
-      c.execute("INSERT INTO appointment_history(email,slot_id,action,from_slot,to_slot,ts) VALUES(?,?, 'reschedule', ?, ?, ?)",(email,to_slot,slot_id,to_slot,int(time.time())))
-      notify(c,email,"appointment_rescheduled","Запись перенесена",target["start"]+"–"+target["end"])
-      audit(c,"appointment_rescheduled",email,{"from":slot_id,"to":to_slot})
-     else: return self.out({"error":"bad_action"},400)
-    elif p=="/api/staff-assignment":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     action=str(data.get("action","update"))
-     if action=="update":
-      sid=int(data.get("id",0)); venue=str(data.get("venue",""))[:80]; status=str(data.get("status","on_shift"))[:20]
-      c.execute("UPDATE staff_assignments SET venue=?,status=?,updated=? WHERE id=?",(venue,status,int(time.time()),sid))
-      audit(c,"staff_assignment_updated",email,{"id":sid,"venue":venue,"status":status})
-     else:return self.out({"error":"bad_action"},400)
-    elif p=="/api/speaker-readiness":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     speaker_id=str(data.get("speaker_id",""))[:20]; item_id=str(data.get("item_id",""))[:20]; field=str(data.get("field","status"))
-     allowed={"status","checkin","briefed","mic","slides"}
-     if field not in allowed:return self.out({"error":"bad_field"},400)
-     value=data.get("value")
-     if field=="status": c.execute("UPDATE speaker_readiness SET status=?,updated=? WHERE speaker_id=? AND item_id=?",(str(value)[:20],int(time.time()),speaker_id,item_id))
-     else: c.execute("UPDATE speaker_readiness SET "+field+"=?,updated=? WHERE speaker_id=? AND item_id=?",(1 if value else 0,int(time.time()),speaker_id,item_id))
-     audit(c,"speaker_readiness_updated",email,{"speaker_id":speaker_id,"item_id":item_id,"field":field,"value":value})
-    elif p=="/api/broadcast":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     audience=str(data.get("audience","participants"))[:40]; venue=str(data.get("venue","all"))[:80]; title=str(data.get("title","Обновление события"))[:120]; msg=str(data.get("body",""))[:300]
-     c.execute("INSERT INTO ops_broadcasts(audience,venue,title,body,status,ts) VALUES(?,?,?,?, 'sent', ?)",(audience,venue,title,msg,int(time.time())))
-     targets=("participant@demo.ru","participant2@demo.ru","participant3@demo.ru") if audience in ("participants","all") else ()
-     for t in targets: notify(c,t,"ops_broadcast",title,msg)
-     audit(c,"ops_broadcast_sent",email,{"audience":audience,"venue":venue,"title":title})
-    elif p=="/api/venue-state":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     venue=str(data.get("venue",""))[:80]; occ=max(0,int(data.get("occupied",0))); cap=max(1,int(data.get("capacity",1))); status=str(data.get("status","open"))[:20]; nxt=str(data.get("next_change",""))[:120]
-     if occ>cap:return self.out({"error":"occupied_exceeds_capacity"},409)
-     c.execute("INSERT INTO venue_state(venue,capacity,occupied,status,next_change,updated) VALUES(?,?,?,?,?,?) ON CONFLICT(venue) DO UPDATE SET capacity=excluded.capacity,occupied=excluded.occupied,status=excluded.status,next_change=excluded.next_change,updated=excluded.updated",(venue,cap,occ,status,nxt,int(time.time())))
-     audit(c,"venue_state_updated",email,{"venue":venue,"occupied":occ,"capacity":cap,"status":status})
-    elif p=="/api/incident":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     action=str(data.get("action","create"))
-     if action=="create":
-      venue=str(data.get("venue","Главная сцена"))[:80]; sev=str(data.get("severity","medium"))[:20]; title=str(data.get("title","Операционный инцидент"))[:160]; rec=str(data.get("recovery","Проверить и восстановить"))[:240]
-      c.execute("INSERT INTO incidents(venue,severity,title,status,recovery,ts,resolved) VALUES(?,?,?,'open',?,?,0)",(venue,sev,title,rec,int(time.time())))
-      audit(c,"incident_opened",email,{"venue":venue,"severity":sev,"title":title})
-     elif action=="resolve":
-      iid=int(data.get("id",0)); c.execute("UPDATE incidents SET status='resolved',resolved=? WHERE id=?",(int(time.time()),iid)); audit(c,"incident_resolved",email,{"id":iid})
-     else:return self.out({"error":"bad_action"},400)
-    elif p=="/api/stream-control":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     iid=str(data.get("item_id","P01"))[:20]; status=str(data.get("status","live"))[:20]; health=str(data.get("health","ok"))[:20]; delay=max(0,int(data.get("delay_sec",3)))
-     c.execute("INSERT INTO stream_state(item_id,status,health,delay_sec,updated) VALUES(?,?,?,?,?) ON CONFLICT(item_id) DO UPDATE SET status=excluded.status,health=excluded.health,delay_sec=excluded.delay_sec,updated=excluded.updated",(iid,status,health,delay,int(time.time())))
-     audit(c,"stream_control",email,{"item_id":iid,"status":status,"health":health,"delay_sec":delay})
-    elif p=="/api/venue":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     occ=max(0,int(data.get("occupied",0))); cap=max(1,int(data.get("capacity",120))); room=str(data.get("room","Лекторий"))[:80]
-     if occ>cap: return self.out({"error":"occupied_exceeds_capacity"},409)
-     setv(c,"occupied",occ); setv(c,"capacity",cap); setv(c,"session_room",room); setv(c,"change_seq",int(sval(c,"change_seq","0"))+1)
-     audit(c,"venue_updated",email,{"occupied":occ,"capacity":cap,"room":room})
-    elif p=="/api/placement":
-     if role!="partner": return self.out({"error":"forbidden"},403)
-     status=str(data.get("status","active"))
-     if status not in ("contracted","active","ended"): return self.out({"error":"bad_status"},400)
-     c.execute("UPDATE placements SET status=?,ts=? WHERE id=1",(status,int(time.time()))); audit(c,"placement_"+status,email,{})
-    elif p=="/api/lead":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     if data.get("consent") is not True: return self.out({"error":"consent_required"},422)
-     kind=str(data.get("kind","materials")); c.execute("INSERT INTO leads(kind,status,ts) VALUES(?,'new',?)",(kind,int(time.time())))
-     c.execute("UPDATE placements SET leads=leads+1 WHERE id=1"); audit(c,"voluntary_lead",email,{"kind":kind,"consent":True})
-    elif p=="/api/question":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     text=str(data.get("text","Как отличать корреляцию от причинности?"))[:500]; c.execute("INSERT INTO questions(text,status,ts) VALUES(?,'review',?)",(text,int(time.time()))); audit(c,"question_submitted",email,{})
-    elif p=="/api/cms":
-     if role!="editor": return self.out({"error":"forbidden"},403)
-     status=str(data.get("status","approved")); c.execute("UPDATE cms SET status=?,version=version+1,updated=? WHERE id='A-014'",(status,int(time.time()))); audit(c,"cms_status",email,{"status":status})
-    elif p=="/api/phase":
-     if role!="organizer": return self.out({"error":"forbidden"},403)
-     v=str(data.get("phase","during")); setv(c,"phase",v); audit(c,"phase_changed",email,{"phase":v})
-    else: return self.out({"error":"not_found"},404)
-    c.commit(); return self.out(state(c,email))
+    if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
+    if outcome is None: return self.out({"error":"not_found"},404)
+    c.commit()
+    payload=state(c,email) if outcome.use_state else outcome.payload
+    return self.out(payload,outcome.status)
    finally: c.close()
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
 
