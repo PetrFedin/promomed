@@ -39,7 +39,7 @@ class CommandBoundaryTests(unittest.TestCase):
     def test_community_follow_and_consent_message_boundary(self):
         out = community_commands.handle_command(
             self.c, "/api/follow-expert", "participant", "participant@demo.ru",
-            {"speaker_id": "SP01", "action": "follow"}, self.server.ACCOUNTS
+            {"speaker_id": "SP01", "action": "follow"}
         )
         self.assertTrue(out.use_state)
         followed = self.c.execute(
@@ -51,7 +51,6 @@ class CommandBoundaryTests(unittest.TestCase):
         blocked = community_commands.handle_command(
             self.c, "/api/direct-message", "participant", "participant@demo.ru",
             {"recipient": "participant2@demo.ru", "body": "Проверка consent boundary"},
-            self.server.ACCOUNTS,
         )
         self.assertEqual(blocked.status, 403)
         self.assertEqual(blocked.payload["error"], "conversation_requires_mutual_consent")
