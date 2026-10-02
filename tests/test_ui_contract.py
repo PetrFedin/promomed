@@ -36,7 +36,12 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("100dvh", INDEX)
         self.assertIn("@media(max-height:520px) and (orientation:landscape)", INDEX)
         self.assertIn("@media(min-width:1440px)", INDEX)
-        self.assertIn('role="dialog" aria-modal="true"', INDEX)\n        self.assertIn('rel="manifest" href="/manifest.webmanifest"', INDEX)\n        self.assertIn('apple-mobile-web-app-capable" content="yes"', INDEX)\n        self.assertIn(":focus-visible", INDEX)\n        self.assertIn("@media(prefers-reduced-motion:reduce)", INDEX)\n        self.assertIn("@media(display-mode:standalone)", INDEX)
+        self.assertIn('role="dialog" aria-modal="true"', INDEX)
+        self.assertIn('rel="manifest" href="/manifest.webmanifest"', INDEX)
+        self.assertIn('apple-mobile-web-app-capable" content="yes"', INDEX)
+        self.assertIn(":focus-visible", INDEX)
+        self.assertIn("@media(prefers-reduced-motion:reduce)", INDEX)
+        self.assertIn("@media(display-mode:standalone)", INDEX)
 
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)
