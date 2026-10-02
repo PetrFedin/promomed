@@ -43,7 +43,7 @@ class ArchitectureContractTests(unittest.TestCase):
         top_defs = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
         self.assertTrue(EXTRACTED.isdisjoint(top_defs), top_defs & EXTRACTED)
         self.assertIn("from app.analytics import commercial, state", SERVER)
-        self.assertIn("from app.auth import auth, body, issue_session, token_hash", SERVER)
+        self.assertIn("from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash", SERVER)
         self.assertIn("from app.core import audit, notify, promote_waitlist, setv, sval", SERVER)
         self.assertIn("from app.demo import DEMO_STEPS, reset_demo, run_demo_step", SERVER)
 
