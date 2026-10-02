@@ -75,3 +75,19 @@ PROMO-INT-01 now also extracts write commands for four bounded contexts:
 All handlers return a normalized `CommandOutcome`; `server.py` only performs authentication, transaction boundary, final state composition and HTTP response formatting for these routes.
 
 Operations, partner/commercial, editor/CMS and demo route dispatch remain in `server.py` for the next extraction wave.
+
+
+### Write command boundaries — wave 2
+
+PROMO-INT-01 write extraction is complete in repository scope.
+
+Additional bounded command modules:
+
+- `app/operations_commands.py` — schedule/live/check-in, staffing, speaker readiness, broadcasts, venue state, incidents, stream state and phase;
+- `app/partner_commands.py` — appointment lifecycle, placement lifecycle and consented leads;
+- `app/editorial_commands.py` — existing question queue and demo CMS status boundary;
+- `app/demo_commands.py` — isolated controlled demo reset/step orchestration.
+
+`server.py::do_POST` now owns only HTTP parsing, login/authentication, transaction scope, ordered bounded-context dispatch and response formatting. It no longer contains domain POST business branches.
+
+This remains one deployable service; the split is a modular-monolith boundary, not a microservice expansion.
