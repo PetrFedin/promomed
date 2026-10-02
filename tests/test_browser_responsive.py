@@ -9,10 +9,13 @@ OUT = Path(os.environ.get("PROMOMED_SCREENSHOT_DIR", "artifacts/browser-qa"))
 OUT.mkdir(parents=True, exist_ok=True)
 
 VIEWPORTS = [
-    ("iphone-se", 375, 667),
-    ("iphone-15-pro", 393, 852),
-    ("tablet", 820, 1180),
-    ("desktop", 1440, 900),
+    ("iphone-se", 375, 667, True, True),
+    ("iphone-15-pro", 393, 852, True, True),
+    ("iphone-15-pro-landscape", 852, 393, True, True),
+    ("ipad-air", 820, 1180, False, True),
+    ("ipad-air-landscape", 1180, 820, False, True),
+    ("desktop", 1440, 900, False, False),
+    ("desktop-wide", 1728, 1117, False, False),
 ]
 
 
@@ -55,12 +58,30 @@ def assert_readable_text(page, label: str):
     assert min(sizes) >= 11, f"{label}: text below 11px: {min(sizes)}"
 
 
-def run_device(browser, name: str, width: int, height: int):
+def assert_navigation_placement(page, width: int, height: int, label: str):
+    nav = page.locator("#nav").bounding_box()
+    top = page.locator(".top").bounding_box()
+    assert nav and top, f"{label}: navigation/header missing"
+    if width >= 1024:
+        assert nav["y"] <= 32, f"{label}: desktop nav not promoted to top: {nav}"
+        assert nav["y"] + nav["height"] <= top["y"] + 2, f"{label}: desktop nav overlaps header: nav={nav}, top={top}"
+    else:
+        assert nav["y"] + nav["height"] >= height - 3, f"{label}: mobile/tablet nav not anchored to bottom: {nav}"
+
+
+def assert_sheet_within_viewport(page, height: int, label: str):
+    sheet = page.locator("#sheet").bounding_box()
+    assert sheet, f"{label}: sheet missing"
+    assert sheet["y"] >= -1, f"{label}: sheet starts above viewport: {sheet}"
+    assert sheet["height"] <= height + 1, f"{label}: sheet taller than viewport: {sheet}"
+
+
+def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has_touch: bool):
     context = browser.new_context(
         viewport={"width": width, "height": height},
-        device_scale_factor=2 if width < 1000 else 1,
-        is_mobile=width < 640,
-        has_touch=width < 1024,
+        device_scale_factor=2 if is_mobile or has_touch else 1,
+        is_mobile=is_mobile,
+        has_touch=has_touch,
         locale="ru-RU",
     )
     page = context.new_page()
@@ -79,6 +100,7 @@ def run_device(browser, name: str, width: int, height: int):
     assert_no_page_overflow(page, width, f"{name}/home")
     assert_touch_targets(page, f"{name}/home")
     assert_readable_text(page, f"{name}/home")
+    assert_navigation_placement(page, width, height, f"{name}/home")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-home.png"), full_page=True)
 
     for screen_id in ["media", "events", "community"]:
@@ -90,6 +112,7 @@ def run_device(browser, name: str, width: int, height: int):
     page.locator('#nav button[data-s="me"]').click()
     expect(page.locator("#overlay")).to_have_class(re.compile(r"\bon\b"))
     expect(page.locator("#sheet")).to_contain_text("Настоящие demo-роли")
+    assert_sheet_within_viewport(page, height, f"{name}/login-sheet")
     page.locator("#sheet .card").filter(has_text="Участник").get_by_role("button", name="Войти").click()
     expect(page.locator("#overlay")).to_be_hidden()
     page.locator('#nav button[data-s="me"]').click()
