@@ -21,6 +21,7 @@ class PersistenceContractTests(unittest.TestCase):
         self.assertEqual(status["missing"], [])
         self.assertEqual(status["checksum_drift"], [])
         self.assertIn("001_baseline", status["applied"])
+        self.assertIn("002_staff_seed_identity", status["applied"])
 
     def test_seed_is_deterministic(self):
         c = server.conn()
@@ -30,6 +31,7 @@ class PersistenceContractTests(unittest.TestCase):
                 "speakers": c.execute("SELECT COUNT(*) n FROM speakers").fetchone()["n"],
                 "content": c.execute("SELECT COUNT(*) n FROM content_catalog").fetchone()["n"],
                 "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
+                "staff": c.execute("SELECT COUNT(*) n FROM staff_assignments").fetchone()["n"],
             }
         finally:
             c.close()
@@ -41,6 +43,7 @@ class PersistenceContractTests(unittest.TestCase):
                 "speakers": c.execute("SELECT COUNT(*) n FROM speakers").fetchone()["n"],
                 "content": c.execute("SELECT COUNT(*) n FROM content_catalog").fetchone()["n"],
                 "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
+                "staff": c.execute("SELECT COUNT(*) n FROM staff_assignments").fetchone()["n"],
             }
         finally:
             c.close()
