@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS session_feedback(id BIGSERIAL PRIMARY KEY,email TEXT,
 CREATE TABLE IF NOT EXISTS takeaways(id BIGSERIAL PRIMARY KEY,email TEXT,session_id TEXT,note TEXT,source TEXT,ts BIGINT);
 CREATE TABLE IF NOT EXISTS product_interests(id BIGSERIAL PRIMARY KEY,email TEXT,track TEXT,context TEXT,consent_version TEXT,status TEXT,ts BIGINT);
 CREATE TABLE IF NOT EXISTS followups(id BIGSERIAL PRIMARY KEY,email TEXT,day INTEGER,track TEXT,status TEXT,ts BIGINT);
-CREATE TABLE IF NOT EXISTS program_items(id TEXT PRIMARY KEY,start TEXT,end TEXT,venue TEXT,track TEXT,format TEXT,title TEXT,audience TEXT,capacity INTEGER,stream INTEGER,replay INTEGER,partner TEXT);
+CREATE TABLE IF NOT EXISTS program_items(id TEXT PRIMARY KEY,start TEXT,"end" TEXT,venue TEXT,track TEXT,format TEXT,title TEXT,audience TEXT,capacity INTEGER,stream INTEGER,replay INTEGER,partner TEXT);
 CREATE TABLE IF NOT EXISTS activity_bookings(email TEXT,item_id TEXT,status TEXT,ts BIGINT,PRIMARY KEY(email,item_id));
 CREATE TABLE IF NOT EXISTS challenges(email TEXT,challenge_id TEXT,status TEXT,days_required INTEGER,started BIGINT,verified INTEGER,reward TEXT,PRIMARY KEY(email,challenge_id));
 CREATE TABLE IF NOT EXISTS challenge_actions(email TEXT,challenge_id TEXT,action_id TEXT,label TEXT,status TEXT,ts BIGINT,PRIMARY KEY(email,challenge_id,action_id));
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS learning_tracks(id TEXT PRIMARY KEY,topic TEXT,title 
 CREATE TABLE IF NOT EXISTS learning_steps(track_id TEXT,step_no INTEGER,kind TEXT,ref_id TEXT,title TEXT,PRIMARY KEY(track_id,step_no));
 CREATE TABLE IF NOT EXISTS learning_enrollments(email TEXT,track_id TEXT,status TEXT,current_step INTEGER DEFAULT 0,started BIGINT,updated BIGINT,PRIMARY KEY(email,track_id));
 CREATE TABLE IF NOT EXISTS session_speakers(item_id TEXT,speaker_id TEXT,PRIMARY KEY(item_id,speaker_id));
-CREATE TABLE IF NOT EXISTS appointment_slots(id TEXT PRIMARY KEY,item_id TEXT,start TEXT,end TEXT,capacity INTEGER,partner_id TEXT);
+CREATE TABLE IF NOT EXISTS appointment_slots(id TEXT PRIMARY KEY,item_id TEXT,start TEXT,"end" TEXT,capacity INTEGER,partner_id TEXT);
 CREATE TABLE IF NOT EXISTS appointment_bookings(email TEXT,slot_id TEXT,status TEXT,ts BIGINT,PRIMARY KEY(email,slot_id));
 CREATE TABLE IF NOT EXISTS replay_chapters(id TEXT PRIMARY KEY,item_id TEXT,offset_sec INTEGER,title TEXT,kind TEXT);
 CREATE TABLE IF NOT EXISTS mutual_meetings(id BIGSERIAL PRIMARY KEY,requester TEXT,target_email TEXT,target_name TEXT,slot TEXT,place TEXT,status TEXT,requester_ok INTEGER DEFAULT 1,target_ok INTEGER DEFAULT 0,ts BIGINT);
