@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-03 — Command boundaries wave 1
+
+Continued PROMO-INT-01: moved 21 community, learning, participant and programme POST routes from `server.py` into bounded command handlers with normalized outcomes and direct consent/role tests. `server.py` is now ~518 lines versus 942 before the bounded-context work. Phase 1 remains gated.
+
+
 ## 2026-10-02 — Bounded-context foundation
 
 Started PROMO-INT-01 without advancing Phase 1: extracted authentication, shared core, demo orchestration and seven domain read projections from the HTTP monolith. `server.py` remains the compatibility/dispatch layer; API behavior is preserved and a CI architecture contract prevents regression toward the monolith.

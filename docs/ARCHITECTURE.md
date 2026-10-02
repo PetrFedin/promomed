@@ -61,3 +61,17 @@ The runtime remains one deployable Python service. Internal authority is now sep
 This is deliberately an internal modularisation, not a microservice split. Existing API semantics remain stable.
 
 Remaining PROMO-INT-01 work: move command/write handlers out of `server.py` context by context while preserving one deployment and the same authorization/audit gates.
+
+
+### Write command boundaries — wave 1
+
+PROMO-INT-01 now also extracts write commands for four bounded contexts:
+
+- community: follows, topic subscriptions, moderated posts, direct messages and meeting consent;
+- learning: enroll/advance and challenge lifecycle;
+- participant: profile, takeaways, feedback, passport, product-interest consent and follow-up enrollment;
+- programme: registration, booking/waitlist, activity booking, replay and session attendance.
+
+All handlers return a normalized `CommandOutcome`; `server.py` only performs authentication, transaction boundary, final state composition and HTTP response formatting for these routes.
+
+Operations, partner/commercial, editor/CMS and demo route dispatch remain in `server.py` for the next extraction wave.

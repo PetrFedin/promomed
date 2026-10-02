@@ -6,6 +6,10 @@ from app.analytics import commercial, state
 from app.auth import auth, body, issue_session, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval
 from app.demo import DEMO_STEPS, reset_demo, run_demo_step
+from app.community_commands import handle_command as handle_community_command
+from app.learning_commands import handle_command as handle_learning_command
+from app.participant_commands import handle_command as handle_participant_command
+from app.programme_commands import handle_command as handle_programme_command
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
 LOCK=threading.RLock()
@@ -351,6 +355,14 @@ class H(SimpleHTTPRequestHandler):
   with LOCK:
    c=conn()
    try:
+    outcome=handle_community_command(c,p,role,email,data,ACCOUNTS)
+    if outcome is None: outcome=handle_learning_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_programme_command(c,p,role,email,data)
+    if outcome is not None:
+     c.commit()
+     payload=state(c,email) if outcome.use_state else outcome.payload
+     return self.out(payload,outcome.status)
     if p=="/api/demo/reset":
      if role not in ("sales","organizer"): return self.out({"error":"forbidden"},403)
      reset_demo(c,email)
@@ -359,56 +371,6 @@ class H(SimpleHTTPRequestHandler):
      cur=int(sval(c,"demo_step","0")); nxt=cur+1
      if nxt>=len(DEMO_STEPS): return self.out({"error":"demo_complete","dashboard":commercial(c)},409)
      run_demo_step(c,nxt,email)
-    elif p=="/api/follow-expert":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     speaker_id=str(data.get("speaker_id",""))[:20]; action=str(data.get("action","follow"))
-     speaker=c.execute("SELECT id,name FROM speakers WHERE id=?",(speaker_id,)).fetchone()
-     if not speaker: return self.out({"error":"speaker_not_found"},404)
-     if action=="unfollow":
-      c.execute("DELETE FROM expert_follows WHERE email=? AND speaker_id=?",(email,speaker_id)); audit(c,"expert_unfollowed",email,{"speaker_id":speaker_id})
-     else:
-      c.execute("INSERT INTO expert_follows(email,speaker_id,status,ts) VALUES(?,?,'active',?) ON CONFLICT(email,speaker_id) DO UPDATE SET status='active',ts=excluded.ts",(email,speaker_id,int(time.time())))
-      notify(c,email,"expert_followed","Вы подписались на эксперта",speaker["name"]+" · новые материалы и эфиры появятся в вашем маршруте.")
-      audit(c,"expert_followed",email,{"speaker_id":speaker_id})
-    elif p=="/api/subscribe-topic":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     topic=str(data.get("topic",""))[:120].strip(); action=str(data.get("action","subscribe"))
-     allowed={r["topic"] for r in c.execute("SELECT DISTINCT topic FROM community_threads")}
-     if topic not in allowed: return self.out({"error":"topic_not_found"},404)
-     if action=="unsubscribe":
-      c.execute("DELETE FROM topic_subscriptions WHERE email=? AND topic=?",(email,topic)); audit(c,"topic_unsubscribed",email,{"topic":topic})
-     else:
-      c.execute("INSERT INTO topic_subscriptions(email,topic,status,ts) VALUES(?,?,'active',?) ON CONFLICT(email,topic) DO UPDATE SET status='active',ts=excluded.ts",(email,topic,int(time.time())))
-      notify(c,email,"topic_subscribed","Тема добавлена в ваш маршрут",topic+" · Studio, материалы, события и обсуждения будут собираться вместе.")
-      audit(c,"topic_subscribed",email,{"topic":topic})
-    elif p=="/api/community-post":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     thread_id=str(data.get("thread_id",""))[:20]; text=str(data.get("body","")).strip()[:800]
-     thread=c.execute("SELECT id,title FROM community_threads WHERE id=? AND status='open'",(thread_id,)).fetchone()
-     if not thread: return self.out({"error":"thread_not_found"},404)
-     if len(text)<8: return self.out({"error":"post_too_short"},400)
-     c.execute("INSERT INTO community_posts(thread_id,email,body,status,ts) VALUES(?,?,?,'pending_moderation',?)",(thread_id,email,text,int(time.time())))
-     notify(c,email,"community_post","Вопрос отправлен на модерацию",thread["title"]+" · после проверки он появится в обсуждении.")
-     audit(c,"community_post_submitted",email,{"thread_id":thread_id})
-    elif p=="/api/learning":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     track_id=str(data.get("track_id",""))[:20]; action=str(data.get("action","enroll"))
-     track=c.execute("SELECT id,title FROM learning_tracks WHERE id=?",(track_id,)).fetchone()
-     if not track: return self.out({"error":"learning_track_not_found"},404)
-     total=c.execute("SELECT COUNT(*) n FROM learning_steps WHERE track_id=?",(track_id,)).fetchone()["n"]
-     if action=="enroll":
-      c.execute("INSERT INTO learning_enrollments(email,track_id,status,current_step,started,updated) VALUES(?,?,'active',0,?,?) ON CONFLICT(email,track_id) DO UPDATE SET status='active',updated=excluded.updated",(email,track_id,int(time.time()),int(time.time())))
-      notify(c,email,"learning_enrolled","Маршрут начат",track["title"]+" · прогресс сохраняется в профиле.")
-      audit(c,"learning_enrolled",email,{"track_id":track_id})
-     elif action=="advance":
-      row=c.execute("SELECT current_step,status FROM learning_enrollments WHERE email=? AND track_id=?",(email,track_id)).fetchone()
-      if not row: return self.out({"error":"learning_not_enrolled"},409)
-      new_step=min(total,int(row["current_step"])+1)
-      status="completed" if total and new_step>=total else "active"
-      c.execute("UPDATE learning_enrollments SET current_step=?,status=?,updated=? WHERE email=? AND track_id=?",(new_step,status,int(time.time()),email,track_id))
-      if status=="completed": notify(c,email,"learning_completed","Маршрут завершён",track["title"]+" · материалы и replay остаются в вашем профиле.")
-      audit(c,"learning_advanced",email,{"track_id":track_id,"current_step":new_step,"total_steps":total,"status":status})
-     else: return self.out({"error":"bad_action"},400)
     elif p=="/api/move-session":
      if role!="organizer": return self.out({"error":"forbidden"},403)
      t=str(data.get("time","11:30")); room=str(data.get("room","Лекторий"))[:80]
@@ -426,69 +388,6 @@ class H(SimpleHTTPRequestHandler):
      try: c.execute("INSERT INTO checkins(ticket,ts,staff) VALUES(?,?,?)",(ticket,int(time.time()),email)); audit(c,"checkin",email,{"ticket":ticket}); result="valid"
      except db.INTEGRITY_ERRORS: result="duplicate"
      c.commit(); d=state(c,email); d["scan_result"]=result; return self.out(d,200 if result=="valid" else 409)
-    elif p=="/api/register":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     c.execute("INSERT OR REPLACE INTO registrations(email,status,ts) VALUES(?,'confirmed',?)",(email,int(time.time()))); audit(c,"registration",email,{})
-    elif p=="/api/booking":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     sid=str(data.get("session_id","S2")); action=str(data.get("action","book"))
-     if action=="cancel":
-      old=c.execute("SELECT status FROM bookings WHERE email=? AND session_id=?",(email,sid)).fetchone(); c.execute("DELETE FROM bookings WHERE email=? AND session_id=?",(email,sid))
-      if old and old["status"]=="booked":
-       setv(c,"occupied",max(0,int(sval(c,"occupied","0"))-1)); promote_waitlist(c,sid)
-      audit(c,"booking_cancelled",email,{"session_id":sid})
-     else:
-      existing=c.execute("SELECT status FROM bookings WHERE email=? AND session_id=?",(email,sid)).fetchone()
-      if not existing:
-       status="booked" if int(sval(c,"occupied","0"))<int(sval(c,"capacity","120")) else "waitlist"
-       c.execute("INSERT INTO bookings(email,session_id,status,ts) VALUES(?,?,?,?)",(email,sid,status,int(time.time())))
-       if status=="booked": setv(c,"occupied",int(sval(c,"occupied","0"))+1)
-       audit(c,"booking_"+status,email,{"session_id":sid})
-    elif p=="/api/activity-booking":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     item_id=str(data.get("item_id",""))[:20]; action=str(data.get("action","book"))
-     item=c.execute("SELECT * FROM program_items WHERE id=?",(item_id,)).fetchone()
-     if not item: return self.out({"error":"program_item_not_found"},404)
-     if action=="cancel":
-      old=c.execute("SELECT status FROM activity_bookings WHERE email=? AND item_id=?",(email,item_id)).fetchone()
-      c.execute("DELETE FROM activity_bookings WHERE email=? AND item_id=?",(email,item_id))
-      if old and old["status"]=="booked":
-       waiter=c.execute("SELECT email FROM activity_bookings WHERE item_id=? AND status='waitlist' ORDER BY ts,email LIMIT 1",(item_id,)).fetchone()
-       if waiter:
-        c.execute("UPDATE activity_bookings SET status='booked',ts=? WHERE email=? AND item_id=?",(int(time.time()),waiter["email"],item_id))
-        notify(c,waiter["email"],"activity_promoted","Освободилось место",item["start"]+" · "+item["venue"]+" · "+item["title"])
-        audit(c,"activity_waitlist_promoted",waiter["email"],{"item_id":item_id})
-      audit(c,"activity_cancelled",email,{"item_id":item_id})
-     else:
-      conflict=c.execute("SELECT p.id,p.start,p.\"end\",p.title,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.id<>? AND p.start<? AND p.\"end\">?",(email,item_id,item["end"],item["start"])).fetchone()
-      if conflict: return self.out({"error":"schedule_conflict","conflict":dict(conflict),"requested":{"id":item["id"],"start":item["start"],"end":item["end"],"title":item["title"],"venue":item["venue"]}},409)
-      current=c.execute("SELECT COUNT(*) n FROM activity_bookings WHERE item_id=? AND status='booked'",(item_id,)).fetchone()["n"]
-      status="booked" if current<int(item["capacity"]) else "waitlist"
-      c.execute("INSERT INTO activity_bookings(email,item_id,status,ts) VALUES(?,?,?,?) ON CONFLICT(email,item_id) DO UPDATE SET status=excluded.status,ts=excluded.ts",(email,item_id,status,int(time.time())))
-      audit(c,"activity_"+status,email,{"item_id":item_id,"venue":item["venue"],"format":item["format"]})
-      notify(c,email,"activity_"+status,"Запись в программу",item["start"]+" · "+item["venue"]+" · "+item["title"])
-    elif p=="/api/challenge":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     cid=str(data.get("challenge_id","health30"))[:40]; action=str(data.get("action","start"))
-     if action=="start":
-      reward="Гарантированный partner benefit после подтверждения условий; не связан с покупкой лекарства"
-      c.execute("INSERT INTO challenges(email,challenge_id,status,days_required,started,verified,reward) VALUES(?,?,'active',30,?,0,?) ON CONFLICT(email,challenge_id) DO UPDATE SET status='active',started=excluded.started,reward=excluded.reward",(email,cid,int(time.time()),reward))
-      for aid,label in [("01_platform","Подписка на СОСТОЯНИЕ"),("02_promomed","Выбранный публичный канал Промомед"),("03_partner","Выбранный канал партнёра"),("04_content","Контент / эфир в течение маршрута"),("05_day30","Финальная проверка на 30-й день")]:
-       c.execute("INSERT OR IGNORE INTO challenge_actions(email,challenge_id,action_id,label,status,ts) VALUES(?,?,?,?,'planned',?)",(email,cid,aid,label,int(time.time())))
-      audit(c,"challenge_started",email,{"challenge_id":cid,"days":30})
-      notify(c,email,"challenge_started","30 дней СОСТОЯНИЯ","Подписки и действия подтверждаются по опубликованным правилам. Награда не зависит от покупки лекарств.")
-     elif action=="check":
-      aid=str(data.get("action_id",""))[:40]
-      row=c.execute("SELECT 1 FROM challenge_actions WHERE email=? AND challenge_id=? AND action_id=?",(email,cid,aid)).fetchone()
-      if not row: return self.out({"error":"challenge_action_not_found"},404)
-      c.execute("UPDATE challenge_actions SET status='confirmed_demo',ts=? WHERE email=? AND challenge_id=? AND action_id=?",(int(time.time()),email,cid,aid))
-      audit(c,"challenge_action_confirmed",email,{"challenge_id":cid,"action_id":aid})
-     elif action=="verify_demo":
-      remaining=c.execute("SELECT COUNT(*) n FROM challenge_actions WHERE email=? AND challenge_id=? AND status!='confirmed_demo'",(email,cid)).fetchone()["n"]
-      if remaining: return self.out({"error":"challenge_incomplete","remaining":remaining},409)
-      c.execute("UPDATE challenges SET status='completed',verified=? WHERE email=? AND challenge_id=?",(int(time.time()),email,cid))
-      audit(c,"challenge_completed",email,{"challenge_id":cid})
-     else: return self.out({"error":"bad_action"},400)
     elif p=="/api/appointment-booking":
      if role!="participant": return self.out({"error":"forbidden"},403)
      slot_id=str(data.get("slot_id",""))[:20]
@@ -503,30 +402,6 @@ class H(SimpleHTTPRequestHandler):
      partner_name=c.execute("SELECT pr.name FROM appointment_slots a JOIN partners pr ON pr.id=a.partner_id WHERE a.id=?",(slot_id,)).fetchone()
      c.execute("INSERT INTO partner_engagement(email,partner,kind,ref_id,consent,ts) VALUES(?,?,?,?,0,?)",(email,partner_name["name"] if partner_name else "partner","appointment_"+status,slot_id,int(time.time())))
      notify(c,email,"appointment_"+status,"Запись к партнёру",slot["start"]+" · "+slot["venue"]+" · "+slot["title"])
-    elif p=="/api/replay":
-     item_id=str(data.get("item_id","P05"))[:20]
-     item=c.execute("SELECT id,title,venue,track,partner,replay FROM program_items WHERE id=?",(item_id,)).fetchone()
-     if not item: return self.out({"error":"program_item_not_found"},404)
-     chapters=[dict(r) for r in c.execute("SELECT offset_sec,title,kind FROM replay_chapters WHERE item_id=? ORDER BY offset_sec",(item_id,))]
-     if role=="participant":
-      c.execute("INSERT OR IGNORE INTO journeys(email,updated) VALUES(?,?)",(email,int(time.time())))
-      c.execute("UPDATE journeys SET replay=1,updated=? WHERE email=?",(int(time.time()),email)); audit(c,"replay_opened",email,{"item_id":item_id})
-     c.commit(); return self.out({"item":dict(item),"chapters":chapters,"transcript":"Демо-транскрипт: полный текст будет поступать из media provider и проходить редакционную проверку.","related":["A-014","next_live_demo"]})
-    elif p=="/api/session-attendance":
-     if role not in ("participant","staff","organizer"): return self.out({"error":"forbidden"},403)
-     item_id=str(data.get("item_id",""))[:20]; action=str(data.get("action","checkin"))
-     item=c.execute("SELECT id,title,venue,track,partner FROM program_items WHERE id=?",(item_id,)).fetchone()
-     if not item: return self.out({"error":"program_item_not_found"},404)
-     target=email
-     if role in ("staff","organizer") and data.get("email"): target=str(data.get("email"))[:160].lower()
-     if action=="checkin":
-      c.execute("INSERT INTO session_attendance(email,item_id,status,checkin_ts,checkout_ts,source) VALUES(?,?,'present',?,NULL,?) ON CONFLICT(email,item_id) DO UPDATE SET status='present',checkin_ts=excluded.checkin_ts,source=excluded.source",(target,item_id,int(time.time()),role))
-      audit(c,"session_checkin",email,{"target":target,"item_id":item_id})
-     elif action=="checkout":
-      c.execute("UPDATE session_attendance SET status='completed',checkout_ts=? WHERE email=? AND item_id=?",(int(time.time()),target,item_id))
-      audit(c,"session_checkout",email,{"target":target,"item_id":item_id})
-     else:return self.out({"error":"bad_action"},400)
-     c.execute("INSERT INTO partner_engagement(email,partner,kind,ref_id,consent,ts) VALUES(?,?,?,?,0,?)",(target,item["partner"],"session_"+action,item_id,int(time.time())))
     elif p=="/api/appointment-manage":
      if role!="participant": return self.out({"error":"forbidden"},403)
      action=str(data.get("action","cancel")); slot_id=str(data.get("slot_id",""))[:20]
@@ -619,113 +494,6 @@ class H(SimpleHTTPRequestHandler):
      status=str(data.get("status","active"))
      if status not in ("contracted","active","ended"): return self.out({"error":"bad_status"},400)
      c.execute("UPDATE placements SET status=?,ts=? WHERE id=1",(status,int(time.time()))); audit(c,"placement_"+status,email,{})
-    elif p=="/api/journey":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     action=str(data.get("action","replay")); c.execute("INSERT OR IGNORE INTO journeys(email,updated) VALUES(?,?)",(email,int(time.time())))
-     if action not in ("attended","replay","club"): return self.out({"error":"bad_action"},400)
-     c.execute("UPDATE journeys SET "+action+"=1,updated=? WHERE email=?",(int(time.time()),email)); audit(c,"journey_"+action,email,{})
-    elif p=="/api/direct-message":
-     if role not in ("participant","organizer"): return self.out({"error":"forbidden"},403)
-     recipient=str(data.get("recipient","")).lower()[:120].strip(); text=str(data.get("body","")).strip()[:500]; context=str(data.get("context","inbox"))[:80]
-     if recipient not in ACCOUNTS or recipient==email: return self.out({"error":"recipient_not_allowed"},403)
-     if len(text)<1: return self.out({"error":"message_required"},422)
-     allowed=False
-     if role=="organizer":
-      allowed=ACCOUNTS[recipient][1]=="participant"
-     elif recipient=="organizer@demo.ru":
-      allowed=True
-     elif ACCOUNTS[recipient][1]=="participant":
-      rel=c.execute("""SELECT 1 FROM mutual_meetings
-                      WHERE status='confirmed' AND ((requester=? AND target_email=?) OR (requester=? AND target_email=?))
-                      LIMIT 1""",(email,recipient,recipient,email)).fetchone()
-      allowed=bool(rel)
-     if not allowed: return self.out({"error":"conversation_requires_mutual_consent"},403)
-     c.execute("INSERT INTO direct_messages(sender,recipient,context,body,status,ts) VALUES(?,?,?,?, 'delivered',?)",(email,recipient,context,text,int(time.time())))
-     notify(c,recipient,"direct_message","Новое сообщение",ACCOUNTS[email][2]+" · "+text[:120])
-     audit(c,"direct_message_sent",email,{"recipient":recipient,"context":context})
-    elif p=="/api/profile":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     intent=str(data.get("intent","Понять полезное для себя"))[:120]; interests=str(data.get("interests","сон,наука,движение"))[:240]
-     networking=1 if data.get("networking",True) else 0; visibility=str(data.get("visibility","event_only"))
-     if visibility not in ("private","event_only","matches_only"): return self.out({"error":"bad_visibility"},400)
-     c.execute("INSERT INTO attendee_profiles(email,intent,interests,networking,visibility,updated) VALUES(?,?,?,?,?,?) ON CONFLICT(email) DO UPDATE SET intent=excluded.intent,interests=excluded.interests,networking=excluded.networking,visibility=excluded.visibility,updated=excluded.updated",(email,intent,interests,networking,visibility,int(time.time())))
-     audit(c,"profile_updated",email,{"intent":intent,"networking":bool(networking),"visibility":visibility})
-    elif p=="/api/meeting":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     target=str(data.get("target","Участник с похожими интересами"))[:120]; slot=str(data.get("slot","14:20"))[:20]; place=str(data.get("place","Клуб СОСТОЯНИЯ"))[:80]
-     c.execute("INSERT INTO meetings(requester,target,slot,place,status,ts) VALUES(?,?,?,?, 'requested',?)",(email,target,slot,place,int(time.time())))
-     c.execute("UPDATE passport SET network=1,updated=? WHERE email=?",(int(time.time()),email))
-     notify(c,email,"meeting_requested","Встреча запрошена",slot+" · "+place)
-     audit(c,"meeting_requested",email,{"target":target,"slot":slot,"place":place})
-    elif p=="/api/mutual-meeting":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     action=str(data.get("action","request"))
-     if action=="request":
-      target_email=str(data.get("target_email","participant2@demo.ru")).lower()[:120]
-      if target_email==email: return self.out({"error":"self_meeting"},409)
-      target_name=str(data.get("target_name","Участник"))[:120]; slot=str(data.get("slot","14:20"))[:20]; place=str(data.get("place","Клуб СОСТОЯНИЯ"))[:80]
-      overlap=c.execute("SELECT 1 FROM mutual_meetings WHERE requester=? AND slot=? AND status IN ('requested','confirmed')",(email,slot)).fetchone()
-      if overlap: return self.out({"error":"meeting_slot_conflict"},409)
-      c.execute("INSERT INTO mutual_meetings(requester,target_email,target_name,slot,place,status,requester_ok,target_ok,ts) VALUES(?,?,?,?,?,'requested',1,0,?)",(email,target_email,target_name,slot,place,int(time.time())))
-      notify(c,target_email,"meeting_invite","Новый запрос на встречу",slot+" · "+place+" · взаимное подтверждение")
-      audit(c,"mutual_meeting_requested",email,{"target_email":target_email,"slot":slot})
-     else:
-      mid=int(data.get("id",0))
-      row=c.execute("SELECT * FROM mutual_meetings WHERE id=?",(mid,)).fetchone()
-      if not row or email not in (row["requester"],row["target_email"]): return self.out({"error":"meeting_not_found"},404)
-      if action=="accept":
-       if email!=row["target_email"]: return self.out({"error":"target_confirmation_required"},403)
-       c.execute("UPDATE mutual_meetings SET target_ok=1,status='confirmed' WHERE id=?",(mid,))
-       notify(c,row["requester"],"meeting_confirmed","Встреча подтверждена",row["slot"]+" · "+row["place"])
-       notify(c,row["target_email"],"meeting_confirmed","Встреча подтверждена",row["slot"]+" · "+row["place"])
-       audit(c,"mutual_meeting_confirmed",email,{"id":mid})
-      elif action=="cancel":
-       c.execute("UPDATE mutual_meetings SET status='cancelled' WHERE id=?",(mid,)); audit(c,"mutual_meeting_cancelled",email,{"id":mid})
-      else: return self.out({"error":"bad_action"},400)
-    elif p=="/api/takeaway":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     note=str(data.get("note",""))[:240].strip()
-     if not note: return self.out({"error":"note_required"},422)
-     sid=str(data.get("session_id","S2"))[:30]; source=str(data.get("source","session"))[:40]
-     c.execute("INSERT INTO takeaways(email,session_id,note,source,ts) VALUES(?,?,?,?,?)",(email,sid,note,source,int(time.time())))
-     audit(c,"takeaway_saved",email,{"session_id":sid,"source":source})
-     notify(c,email,"takeaway_saved","Сохранено в «Мои выводы»","Вернитесь к мысли после события — она останется рядом с записью и источниками.")
-    elif p=="/api/meeting-action":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     mid=int(data.get("id",0)); action=str(data.get("action","cancel"))
-     row=c.execute("SELECT status,target,slot,place FROM meetings WHERE id=? AND requester=?",(mid,email)).fetchone()
-     if not row: return self.out({"error":"meeting_not_found"},404)
-     if action not in ("accept_demo","cancel"): return self.out({"error":"bad_action"},400)
-     status="confirmed" if action=="accept_demo" else "cancelled"
-     c.execute("UPDATE meetings SET status=? WHERE id=?",(status,mid))
-     notify(c,email,"meeting_"+status,"Встреча "+("подтверждена" if status=="confirmed" else "отменена"),row["slot"]+" · "+row["place"])
-     audit(c,"meeting_"+status,email,{"id":mid,"target":row["target"]})
-    elif p=="/api/feedback":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     rating=max(1,min(5,int(data.get("rating",5)))); useful=1 if data.get("useful",True) else 0; comment=str(data.get("comment",""))[:300]
-     c.execute("INSERT INTO session_feedback(email,session_id,rating,useful,comment,ts) VALUES(?,?,?,?,?,?)",(email,str(data.get("session_id","S2")),rating,useful,comment,int(time.time())))
-     audit(c,"session_feedback",email,{"rating":rating,"useful":bool(useful)})
-    elif p=="/api/passport":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     dimension=str(data.get("dimension","content"))
-     if dimension not in ("content","event","network","partner"): return self.out({"error":"bad_dimension"},400)
-     c.execute("UPDATE passport SET "+dimension+"=1,updated=? WHERE email=?",(int(time.time()),email))
-     audit(c,"passport_"+dimension,email,{})
-    elif p=="/api/product-interest":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     if data.get("consent") is not True: return self.out({"error":"consent_required"},422)
-     track=str(data.get("track","metabolic_health"))[:80]; context=str(data.get("context","official_product_information"))[:120]
-     consent_version=str(data.get("consent_version","product-interest-v1"))[:40]
-     c.execute("INSERT INTO product_interests(email,track,context,consent_version,status,ts) VALUES(?,?,?,?, 'requested',?)",(email,track,context,consent_version,int(time.time())))
-     notify(c,email,"product_interest_saved","Интерес сохранён","Мы сохранили запрос на официальный материал. Это не медицинская рекомендация и не назначение.")
-     audit(c,"product_interest",email,{"track":track,"context":context,"consent_version":consent_version})
-    elif p=="/api/followup-enroll":
-     if role!="participant": return self.out({"error":"forbidden"},403)
-     track=str(data.get("track","metabolic_health"))[:80]
-     for day in (1,7,30):
-      c.execute("INSERT INTO followups(email,day,track,status,ts) VALUES(?,?,?,'planned',?)",(email,day,track,int(time.time())))
-     audit(c,"followup_30d_enrolled",email,{"track":track,"days":[1,7,30]})
-     notify(c,email,"followup_enrolled","30-дневный маршрут включён","Материалы и события будут продолжать выбранную тему без автоматических медицинских назначений.")
     elif p=="/api/lead":
      if role!="participant": return self.out({"error":"forbidden"},403)
      if data.get("consent") is not True: return self.out({"error":"consent_required"},422)

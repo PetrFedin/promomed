@@ -25,6 +25,11 @@ MODULES = {
     "partners.py",
     "operations.py",
     "participant.py",
+    "commanding.py",
+    "community_commands.py",
+    "learning_commands.py",
+    "participant_commands.py",
+    "programme_commands.py",
 }
 
 
@@ -57,8 +62,24 @@ class ArchitectureContractTests(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
 
+    def test_write_routes_are_outside_http_monolith(self):
+        extracted_routes = {
+            "/api/follow-expert", "/api/subscribe-topic", "/api/community-post", "/api/learning",
+            "/api/register", "/api/booking", "/api/activity-booking", "/api/challenge",
+            "/api/replay", "/api/session-attendance", "/api/journey", "/api/direct-message",
+            "/api/profile", "/api/meeting", "/api/mutual-meeting", "/api/takeaway",
+            "/api/meeting-action", "/api/feedback", "/api/passport", "/api/product-interest",
+            "/api/followup-enroll",
+        }
+        for route in extracted_routes:
+            self.assertNotIn(f'p=="{route}"', SERVER)
+        self.assertIn("handle_community_command", SERVER)
+        self.assertIn("handle_learning_command", SERVER)
+        self.assertIn("handle_participant_command", SERVER)
+        self.assertIn("handle_programme_command", SERVER)
+
     def test_server_size_moves_down_not_up(self):
-        self.assertLessEqual(len(SERVER.splitlines()), 800)
+        self.assertLessEqual(len(SERVER.splitlines()), 550)
 
 
 if __name__ == "__main__":

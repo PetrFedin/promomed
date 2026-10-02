@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 INDEX = (ROOT / "public" / "index.html").read_text(encoding="utf-8")
 SERVER = (ROOT / "server.py").read_text(encoding="utf-8")
+COMMUNITY_COMMANDS = (ROOT / "app" / "community_commands.py").read_text(encoding="utf-8")
 
 
 class UIContractTests(unittest.TestCase):
@@ -21,10 +22,10 @@ class UIContractTests(unittest.TestCase):
     def test_account_inbox_is_consent_first(self):
         self.assertIn('id="accountInbox"', INDEX)
         self.assertIn("function openConversation", INDEX)
-        self.assertIn('elif p=="/api/direct-message"', SERVER)
-        self.assertIn("conversation_requires_mutual_consent", SERVER)
-        self.assertIn("mutual_meetings", SERVER)
-        self.assertIn("organizer@demo.ru", SERVER)
+        self.assertIn('"/api/direct-message"', COMMUNITY_COMMANDS)
+        self.assertIn("conversation_requires_mutual_consent", COMMUNITY_COMMANDS)
+        self.assertIn("mutual_meetings", COMMUNITY_COMMANDS)
+        self.assertIn("organizer@demo.ru", COMMUNITY_COMMANDS)
 
     def test_responsive_breakpoints_and_touch_targets_exist(self):
         self.assertIn("@media(max-width:379px)", INDEX)

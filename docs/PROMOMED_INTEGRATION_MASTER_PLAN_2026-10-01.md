@@ -661,6 +661,14 @@ Bounded-context foundation has started while Phase 0 durable infrastructure admi
 
 This checkpoint does **not** advance Phase 1. Command/write route extraction is the remaining PROMO-INT-01 work before calling the code-structure issue complete.
 
+#### PROMO-INT-01 write checkpoint — wave 1
+
+21 existing POST routes have been moved behind bounded command handlers for community, learning, participant and programme. A normalized command outcome keeps HTTP formatting and final state composition in the composition layer while domain validation/audit/consent rules live in their contexts.
+
+`server.py` is now approximately 518 lines, down from 942 before PROMO-INT-01. Remaining command extraction: operations, partner/commercial, editor/CMS and demo control routes.
+
+Phase 1 remains gated by Phase 0 durable PostgreSQL live admission.
+
 ## 7. API structure recommendation
 
 Do not continue growing one monolithic `server.py` indefinitely.

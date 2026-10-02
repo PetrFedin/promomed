@@ -53,3 +53,17 @@ Implemented in repository:
 - architecture contract prevents extracted functions from silently returning to `server.py`.
 
 The service is still a single deployable application. Write/command route extraction remains incremental work and is not claimed complete.
+
+
+## Command boundary wave 1 — PROMO-INT-01
+
+Extracted 21 existing POST routes from `server.py` into bounded command handlers for community, learning, participant and programme contexts. HTTP and API semantics remain unchanged.
+
+New CI coverage checks:
+
+- command modules exist and compile;
+- extracted routes cannot silently return to the HTTP monolith;
+- consent/role negative tests for representative commands;
+- existing responsive/browser and PostgreSQL contracts remain mandatory.
+
+Remaining PROMO-INT-01 work: operations, partner/commercial, editor/CMS and demo write-route extraction.
