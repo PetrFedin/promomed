@@ -123,3 +123,19 @@ Before setting a live PostgreSQL `DATABASE_URL`, the actual service build config
 **CODE / CI / EXACT-MAIN LIVE: PASS**  
 **DURABLE POSTGRESQL LIVE ADMISSION: BLOCKED BY FREE-CAPACITY + SERVICE-CONFIG DRIFT**  
 **Phase 1 remains gated.**
+
+
+### Preferred zero-cost resolution candidate — Neon
+
+After exhausting currently connected free capacity, Neon is the verified non-destructive candidate:
+
+- Free plan available;
+- PostgreSQL 17 available on Free;
+- AWS Europe Central 1 / Frankfurt (`eu-central-1`) available;
+- does not require deleting or sharing MFW, Antiqua or FLASHIN databases.
+
+The Neon account/connector is not connected in the current execution context, so no Neon resource has been created and no claim of admission is made.
+
+Required continuation after connection:
+
+`create isolated Promomed PostgreSQL in eu-central-1 -> obtain DATABASE_URL securely -> reconcile Render build command/dependency install -> set DATABASE_URL + PROMOMED_REQUIRE_POSTGRES=true -> migrations -> /ready production_ready=true -> smoke -> backup/restore proof`.
