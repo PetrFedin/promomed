@@ -1166,3 +1166,102 @@ Corrections require editorial review and versioning.
 
 **Dependency note:** scispaCy and medspaCy are actively maintained upstream as of this research wave; pin versions and benchmark on RU/EN content because model coverage/language support may differ.
 
+## 16. Premium innovation wave — clinical-trial and evidence-development radar
+
+This wave turns Promomed's evidence layer into a proactive editorial-intelligence product.
+
+### Clinical Study Registry Projection — ADOPT
+
+Primary source: official ClinicalTrials.gov programmatic interfaces.
+
+Create reviewed study records with:
+
+- external study ID;
+- title;
+- sponsor;
+- conditions/topics;
+- interventions;
+- study type/phase;
+- recruitment/status;
+- locations;
+- start/primary-completion/completion dates;
+- results availability;
+- last provider update;
+- source URL;
+- fetched_at;
+- topic/claim mapping;
+- editorial review state.
+
+A registered or completed study is observed metadata, not evidence of efficacy or safety.
+
+### Evidence Development Timeline — ADOPT
+
+For selected health topics/interventions:
+
+registered study -> status changes -> primary completion -> posted results -> publication(s) -> reviewed evidence/claim change
+
+This lets editors see how the evidence landscape evolves over time.
+
+### Literature Radar — ADOPT/ADAPT
+
+Use approved APIs such as Europe PMC/PubMed-compatible services to watch:
+
+- new publications;
+- reviews/meta-analyses;
+- cited/citing works;
+- corrections/updates;
+- topic-relevant evidence.
+
+Every candidate enters the existing Evidence Library review queue. Nothing automatically changes a public medical claim.
+
+### Topic Watchlist — ADOPT
+
+Editors may watch:
+
+- disease/topic;
+- intervention/substance;
+- expert field;
+- partner/product-related topic;
+- study;
+- guideline/evidence question.
+
+Each watch stores query/version, owner, sources, cadence, last successful check, last material delta and review state.
+
+### Material Evidence Delta — ADOPT
+
+Generate a structured change record:
+
+- what changed;
+- source;
+- previous state;
+- new state;
+- potentially affected claims/content;
+- review priority;
+- reviewer decision.
+
+Never generate an automatic medical recommendation.
+
+### Editorial Intelligence Surface — ADOPT
+
+Provide an expert/editor cockpit showing:
+
+- active/recently completed studies;
+- new results/publications;
+- claims needing re-review;
+- contradictory evidence;
+- existing content on the topic;
+- disclosure/partner context.
+
+### Additional acceptance
+
+- every external study/publication retains source ID and fetch time;
+- trial metadata never becomes efficacy/safety conclusion;
+- source changes create review work rather than silent publication edits;
+- API outage/staleness is visible;
+- claim/content changes require human review;
+- participant-facing treatment recommendations remain outside this system.
+
+**Sequencing:** Evidence Library + Claim Registry + controlled vocabulary -> watchlists -> study/literature adapters -> evidence timeline -> editorial cockpit.
+
+**Source rule:** use official ClinicalTrials.gov / Europe PMC / PubMed-compatible programmatic sources rather than scraping public pages.
+
