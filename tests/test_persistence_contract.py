@@ -47,6 +47,7 @@ class PersistenceContractTests(unittest.TestCase):
                 "content": c.execute("SELECT COUNT(*) n FROM content_catalog").fetchone()["n"],
                 "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
                 "staff": c.execute("SELECT COUNT(*) n FROM staff_assignments").fetchone()["n"],
+                "accounts": c.execute("SELECT COUNT(*) n FROM accounts").fetchone()["n"],
             }
         finally:
             c.close()
