@@ -1,0 +1,86 @@
+name: Promomed Phase 0 PostgreSQL admission
+
+on:
+  workflow_dispatch:
+
+jobs:
+  durable-postgres-admission:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DATABASE_URL: ${{ secrets.PROMOMED_ADMISSION_DATABASE_URL }}
+      RESTORE_DATABASE_URL: ${{ secrets.PROMOMED_ADMISSION_RESTORE_DATABASE_URL }}
+      PROMOMED_REQUIRE_POSTGRES: "true"
+      PROMOMED_SEED_DEMO: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require isolated source and restore databases
+        run: |
+          test -n "$DATABASE_URL" || (echo "PROMOMED_ADMISSION_DATABASE_URL is missing" && exit 1)
+          test -n "$RESTORE_DATABASE_URL" || (echo "PROMOMED_ADMISSION_RESTORE_DATABASE_URL is missing" && exit 1)
+          test "$DATABASE_URL" != "$RESTORE_DATABASE_URL" || (echo "Source and restore database URLs must differ" && exit 1)
+
+      - name: Install runtime and PostgreSQL 17 client
+        run: |
+          pip install -r requirements.txt
+          sudo apt-get update
+          sudo apt-get install -y curl ca-certificates
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          . /etc/os-release
+          printf "Types: deb\nURIs: https://apt.postgresql.org/pub/repos/apt\nSuites: %s-pgdg\nComponents: main\nSigned-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc\n" "$VERSION_CODENAME" | sudo tee /etc/apt/sources.list.d/pgdg.sources
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+
+      - name: Admit source PostgreSQL
+        run: python ops/phase0_postgres_admission.py
+
+      - name: Fingerprint source catalog
+        run: python ops/db_catalog_fingerprint.py > /tmp/source-fingerprint.json
+
+      - name: Create encrypted-in-transit backup artifact locally
+        run: python ops/db_backup_restore.py backup --output /tmp/promomed-phase0.dump
+
+      - name: Restore into isolated restore target
+        run: python ops/db_backup_restore.py restore --input /tmp/promomed-phase0.dump
+
+      - name: Admit restored PostgreSQL
+        env:
+          DATABASE_URL: ${{ secrets.PROMOMED_ADMISSION_RESTORE_DATABASE_URL }}
+        run: python ops/phase0_postgres_admission.py
+
+      - name: Fingerprint restored catalog
+        env:
+          DATABASE_URL: ${{ secrets.PROMOMED_ADMISSION_RESTORE_DATABASE_URL }}
+        run: python ops/db_catalog_fingerprint.py > /tmp/restore-fingerprint.json
+
+      - name: Compare source and restored catalog fingerprints
+        run: |
+          python - <<'PY'
+          import json
+          source=json.load(open("/tmp/source-fingerprint.json"))
+          restored=json.load(open("/tmp/restore-fingerprint.json"))
+          assert source["catalog_sha256"] == restored["catalog_sha256"], (source, restored)
+          assert source["counts"] == restored["counts"], (source, restored)
+          assert source["migration_versions"] == restored["migration_versions"], (source, restored)
+          print("PHASE 0 BACKUP/RESTORE CATALOG PROOF PASS")
+          PY
+
+      - name: Emit admission evidence
+        run: |
+          python - <<'PY'
+          import json, os
+          source=json.load(open("/tmp/source-fingerprint.json"))
+          print(json.dumps({
+            "phase0_repository_sha": os.environ.get("GITHUB_SHA"),
+            "source_catalog_sha256": source["catalog_sha256"],
+            "migration_versions": source["migration_versions"],
+            "backup_restore": "pass",
+            "production_ready": True,
+          }, indent=2))
+          PY
