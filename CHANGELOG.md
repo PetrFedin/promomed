@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-02 — Bounded-context foundation
+
+Started PROMO-INT-01 without advancing Phase 1: extracted authentication, shared core, demo orchestration and seven domain read projections from the HTTP monolith. `server.py` remains the compatibility/dispatch layer; API behavior is preserved and a CI architecture contract prevents regression toward the monolith.
+
+
 ## 2026-10-02 — Standalone app-shell
 
 Added a zero-cost standalone web-app shell for phone/tablet/desktop without introducing a service-worker cache: web app manifest, iOS Home Screen metadata, standalone display styling, keyboard focus visibility and reduced-motion handling. Existing responsive and persistence authorities remain unchanged; Phase 1 remains gated.
