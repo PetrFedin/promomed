@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-02 — Standalone app-shell
+
+Added a zero-cost standalone web-app shell for phone/tablet/desktop without introducing a service-worker cache: web app manifest, iOS Home Screen metadata, standalone display styling, keyboard focus visibility and reduced-motion handling. Existing responsive and persistence authorities remain unchanged; Phase 1 remains gated.
+
+
 ## 2026-10-02 — Responsive shell hardening
 
 Hardened the existing product shell without advancing gated Phase 1 authority: dynamic mobile viewport handling, iPhone landscape mode, tablet grid tuning, desktop/monitor top navigation, viewport-safe modal sheets, and expanded Playwright evidence across portrait/landscape/wide monitor sizes.
