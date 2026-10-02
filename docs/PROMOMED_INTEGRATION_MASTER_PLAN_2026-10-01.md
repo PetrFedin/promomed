@@ -171,6 +171,24 @@ Target admission path:
 
 Neon remains an infrastructure provider only. Promomed retains database schema, migration, auth/session/consent and audit authority.
 
+#### Phase 0 admission authority checkpoint — 2026-10-03
+
+Repository Phase 0 hardening now also includes:
+
+- migration `003_account_authority` for SQLite/PostgreSQL;
+- salted scrypt account passwords;
+- database-backed login/account role authority;
+- demo identities seeded only in explicit demo mode;
+- production readiness rejects demo seed and any `@demo.ru` accounts;
+- provider-neutral clean PostgreSQL admission probe;
+- privacy-safe source/restore catalog fingerprint;
+- manual two-database admission workflow;
+- the same clean admission + backup/restore flow exercised in PostgreSQL 17 PR CI.
+
+Runbook: `docs/PHASE0_POSTGRES_ADMISSION.md`.
+
+This does not mark Phase 0 complete. External admission still requires an isolated durable PostgreSQL source + restore target, Render `DATABASE_URL`, exact-main deploy, live `/ready -> production_ready=true`, live smoke and recorded restore evidence.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  
