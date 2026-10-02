@@ -1,5 +1,21 @@
 # Release Ledger
 
+## 2026-10-02 — v1.8 Phase 0 Persistence Authority — REPOSITORY READY / NOT LIVE
+
+Implemented the repository foundation required by Phase 0 of `docs/PROMOMED_INTEGRATION_MASTER_PLAN_2026-10-01.md`.
+
+- SQLite/PostgreSQL database adapter;
+- versioned/checksummed migrations;
+- deterministic seed controls;
+- durable hashed authentication sessions;
+- liveness/readiness separation;
+- PostgreSQL-only production readiness;
+- backup/restore checksum utility;
+- real PostgreSQL 17 migration/state/session/restore CI proof;
+- responsive browser QA remains green.
+
+This entry does **not** claim production admission. Public Render exact-SHA deployment and a dedicated durable Promomed PostgreSQL contour remain required before LIVE / `production_ready=true`.
+
 ## 2026-09-30 — v1.4 Health Media & Conference — LIVE
 
 Authoritative repository: `PetrFedin/promomed/main`.

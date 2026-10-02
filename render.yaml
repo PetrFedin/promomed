@@ -1,9 +1,13 @@
 services:
   - type: web
-    name: sostoyanie-promomed
+    name: sostoyanie-promomed-live
+    repo: https://github.com/PetrFedin/promomed
+    branch: main
+    region: frankfurt
+    autoDeployTrigger: commit
     runtime: python
     plan: free
-    buildCommand: python -m py_compile server.py
+    buildCommand: pip install -r requirements.txt && python -m py_compile server.py app/db.py
     startCommand: python server.py
     healthCheckPath: /health
     envVars:

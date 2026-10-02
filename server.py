@@ -1,11 +1,11 @@
-import json, os, sqlite3, threading, secrets, time
+import hashlib, json, os, threading, secrets, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
+from app import db
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
-DB=os.environ.get("SQLITE_PATH","/tmp/sostoyanie-v06.db")
 LOCK=threading.RLock()
-TOKENS={}
+SESSION_TTL=int(os.environ.get("PROMOMED_SESSION_TTL_SECONDS","43200"))
 ACCOUNTS={
  "participant@demo.ru":("demo2027","participant","Участник"),
  "participant2@demo.ru":("demo2027","participant","Участник 2"),
@@ -33,58 +33,15 @@ DEMO_STEPS=[
 ]
 
 def conn():
- c=sqlite3.connect(DB,timeout=10,check_same_thread=False); c.row_factory=sqlite3.Row; return c
+ return db.connect()
 
 def init():
  with LOCK:
   c=conn()
-  c.executescript("""CREATE TABLE IF NOT EXISTS state(k TEXT PRIMARY KEY,v TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS checkins(ticket TEXT PRIMARY KEY,ts INTEGER,staff TEXT);
-CREATE TABLE IF NOT EXISTS leads(id INTEGER PRIMARY KEY AUTOINCREMENT,kind TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS registrations(email TEXT PRIMARY KEY,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS bookings(email TEXT,session_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,session_id));
-CREATE TABLE IF NOT EXISTS questions(id INTEGER PRIMARY KEY AUTOINCREMENT,text TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS placements(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT,status TEXT,leads INTEGER DEFAULT 0,ts INTEGER);
-CREATE TABLE IF NOT EXISTS deliverables(id TEXT PRIMARY KEY,label TEXT,status TEXT,evidence TEXT,updated INTEGER);\nCREATE TABLE IF NOT EXISTS attendee_profiles(email TEXT PRIMARY KEY,intent TEXT,interests TEXT,networking INTEGER DEFAULT 0,visibility TEXT DEFAULT 'event_only',updated INTEGER);\nCREATE TABLE IF NOT EXISTS meetings(id INTEGER PRIMARY KEY AUTOINCREMENT,requester TEXT,target TEXT,slot TEXT,place TEXT,status TEXT,ts INTEGER);\nCREATE TABLE IF NOT EXISTS session_feedback(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,session_id TEXT,rating INTEGER,useful INTEGER,comment TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS takeaways(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,session_id TEXT,note TEXT,source TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS product_interests(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,track TEXT,context TEXT,consent_version TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS followups(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,day INTEGER,track TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS program_items(id TEXT PRIMARY KEY,start TEXT,end TEXT,venue TEXT,track TEXT,format TEXT,title TEXT,audience TEXT,capacity INTEGER,stream INTEGER,replay INTEGER,partner TEXT);
-CREATE TABLE IF NOT EXISTS activity_bookings(email TEXT,item_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,item_id));
-CREATE TABLE IF NOT EXISTS challenges(email TEXT,challenge_id TEXT,status TEXT,days_required INTEGER,started INTEGER,verified INTEGER,reward TEXT,PRIMARY KEY(email,challenge_id));
-CREATE TABLE IF NOT EXISTS challenge_actions(email TEXT,challenge_id TEXT,action_id TEXT,label TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,challenge_id,action_id));
-CREATE TABLE IF NOT EXISTS speakers(id TEXT PRIMARY KEY,name TEXT,role TEXT,org TEXT,bio TEXT,topics TEXT,kind TEXT);
-CREATE TABLE IF NOT EXISTS partners(id TEXT PRIMARY KEY,name TEXT,category TEXT,description TEXT,status TEXT);
-CREATE TABLE IF NOT EXISTS product_catalog(id TEXT PRIMARY KEY,name TEXT,inn TEXT,company TEXT,theme TEXT,kind TEXT,summary TEXT,source_label TEXT,source_url TEXT,disclosure TEXT);
-CREATE TABLE IF NOT EXISTS content_catalog(id TEXT PRIMARY KEY,kind TEXT,theme TEXT,title TEXT,dek TEXT,duration TEXT,author TEXT,reviewer TEXT,partner TEXT,status TEXT);
-CREATE TABLE IF NOT EXISTS partner_packages(id TEXT PRIMARY KEY,name TEXT,tier TEXT,summary TEXT,deliverables TEXT,measurement TEXT,disclosure TEXT);
-CREATE TABLE IF NOT EXISTS studio_episodes(id TEXT PRIMARY KEY,topic TEXT,title TEXT,dek TEXT,duration TEXT,speaker_id TEXT,content_id TEXT,item_id TEXT,thread_id TEXT,track_id TEXT,status TEXT);
-CREATE TABLE IF NOT EXISTS community_threads(id TEXT PRIMARY KEY,topic TEXT,title TEXT,summary TEXT,moderator TEXT,status TEXT,related_item TEXT);
-CREATE TABLE IF NOT EXISTS community_posts(id INTEGER PRIMARY KEY AUTOINCREMENT,thread_id TEXT,email TEXT,body TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS topic_subscriptions(email TEXT,topic TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,topic));
-CREATE TABLE IF NOT EXISTS expert_follows(email TEXT,speaker_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,speaker_id));
-CREATE TABLE IF NOT EXISTS learning_tracks(id TEXT PRIMARY KEY,topic TEXT,title TEXT,summary TEXT,duration_days INTEGER,level TEXT);
-CREATE TABLE IF NOT EXISTS learning_steps(track_id TEXT,step_no INTEGER,kind TEXT,ref_id TEXT,title TEXT,PRIMARY KEY(track_id,step_no));
-CREATE TABLE IF NOT EXISTS learning_enrollments(email TEXT,track_id TEXT,status TEXT,current_step INTEGER DEFAULT 0,started INTEGER,updated INTEGER,PRIMARY KEY(email,track_id));
-CREATE TABLE IF NOT EXISTS session_speakers(item_id TEXT,speaker_id TEXT,PRIMARY KEY(item_id,speaker_id));
-CREATE TABLE IF NOT EXISTS appointment_slots(id TEXT PRIMARY KEY,item_id TEXT,start TEXT,end TEXT,capacity INTEGER,partner_id TEXT);
-CREATE TABLE IF NOT EXISTS appointment_bookings(email TEXT,slot_id TEXT,status TEXT,ts INTEGER,PRIMARY KEY(email,slot_id));
-CREATE TABLE IF NOT EXISTS replay_chapters(id TEXT PRIMARY KEY,item_id TEXT,offset_sec INTEGER,title TEXT,kind TEXT);
-CREATE TABLE IF NOT EXISTS mutual_meetings(id INTEGER PRIMARY KEY AUTOINCREMENT,requester TEXT,target_email TEXT,target_name TEXT,slot TEXT,place TEXT,status TEXT,requester_ok INTEGER DEFAULT 1,target_ok INTEGER DEFAULT 0,ts INTEGER);
-CREATE TABLE IF NOT EXISTS venue_state(venue TEXT PRIMARY KEY,capacity INTEGER,occupied INTEGER,status TEXT,next_change TEXT,updated INTEGER);
-CREATE TABLE IF NOT EXISTS incidents(id INTEGER PRIMARY KEY AUTOINCREMENT,venue TEXT,severity TEXT,title TEXT,status TEXT,recovery TEXT,ts INTEGER,resolved INTEGER);
-CREATE TABLE IF NOT EXISTS stream_state(item_id TEXT PRIMARY KEY,status TEXT,health TEXT,delay_sec INTEGER,updated INTEGER);
-CREATE TABLE IF NOT EXISTS appointment_history(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,slot_id TEXT,action TEXT,from_slot TEXT,to_slot TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS session_attendance(email TEXT,item_id TEXT,status TEXT,checkin_ts INTEGER,checkout_ts INTEGER,source TEXT,PRIMARY KEY(email,item_id));
-CREATE TABLE IF NOT EXISTS partner_engagement(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,partner TEXT,kind TEXT,ref_id TEXT,consent INTEGER DEFAULT 0,ts INTEGER);
-CREATE TABLE IF NOT EXISTS staff_assignments(id INTEGER PRIMARY KEY AUTOINCREMENT,staff_name TEXT,role TEXT,venue TEXT,shift_start TEXT,shift_end TEXT,status TEXT,updated INTEGER);
-CREATE TABLE IF NOT EXISTS speaker_readiness(speaker_id TEXT,item_id TEXT,status TEXT,checkin INTEGER DEFAULT 0,briefed INTEGER DEFAULT 0,mic INTEGER DEFAULT 0,slides INTEGER DEFAULT 0,updated INTEGER,PRIMARY KEY(speaker_id,item_id));
-CREATE TABLE IF NOT EXISTS ops_broadcasts(id INTEGER PRIMARY KEY AUTOINCREMENT,audience TEXT,venue TEXT,title TEXT,body TEXT,status TEXT,ts INTEGER);\nCREATE TABLE IF NOT EXISTS passport(email TEXT PRIMARY KEY,content INTEGER DEFAULT 0,event INTEGER DEFAULT 0,network INTEGER DEFAULT 0,partner INTEGER DEFAULT 0,updated INTEGER);
-CREATE TABLE IF NOT EXISTS journeys(email TEXT PRIMARY KEY,attended INTEGER DEFAULT 0,replay INTEGER DEFAULT 0,club INTEGER DEFAULT 0,updated INTEGER);
-CREATE TABLE IF NOT EXISTS notifications(id INTEGER PRIMARY KEY AUTOINCREMENT,email TEXT,kind TEXT,title TEXT,body TEXT,seen INTEGER DEFAULT 0,ts INTEGER);
-CREATE TABLE IF NOT EXISTS direct_messages(id INTEGER PRIMARY KEY AUTOINCREMENT,sender TEXT,recipient TEXT,context TEXT,body TEXT,status TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS events(id INTEGER PRIMARY KEY AUTOINCREMENT,kind TEXT,actor TEXT,payload TEXT,ts INTEGER);
-CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,updated INTEGER);""")
+  db.migrate(c)
+  if not db.demo_seed_enabled():
+   c.close(); return
+  # Deterministic demo seed. Production PostgreSQL requires explicit PROMOMED_SEED_DEMO=true.
   defaults={"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"-1","demo_run":"0"}
   for k,v in defaults.items(): c.execute("INSERT OR IGNORE INTO state(k,v) VALUES(?,?)",(k,v))
   c.execute("INSERT OR IGNORE INTO cms(id,status,version,updated) VALUES('A-014','medical_review',1,?)",(int(time.time()),))
@@ -109,7 +66,7 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
    ("P17","18:00","18:40","Клуб","Community","closing","Что я забираю с собой: 30 дней продолжения","все",240,1,1,"СОСТОЯНИЕ"),
    ("P18","19:00","20:00","Клуб","Community","club","Closing club & partner encounters","участники / спикеры / бренды",180,0,0,"СОСТОЯНИЕ")
   ]
-  c.executemany("INSERT OR IGNORE INTO program_items(id,start,end,venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",program)
+  c.executemany("INSERT OR IGNORE INTO program_items(id,start,\"end\",venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",program)
   extended_program=[
    ("P19","09:30","10:10","Partner Studio","Диагностика","workshop","Чекап без перегруза: как выбирать действительно нужное","участники",45,1,1,"Diagnostics partner · demo"),
    ("P20","09:45","10:30","Recovery Lab","Восстановление","practice","Утро, энергия, ритм: настройка дня","по записи",32,0,1,"Recovery partner · demo"),
@@ -136,7 +93,7 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
    ("P41","18:45","19:25","Главная сцена","Итоги","closing","СОСТОЯНИЕ: 10 идей, которые стоит забрать в следующий год","все",600,1,1,"Промомед + СОСТОЯНИЕ"),
    ("P42","19:20","20:00","Business Club","B2B","reception","Client & Partner Salon: разговоры без сцены","клиенты / партнёры / спикеры",100,0,0,"Промомед")
   ]
-  c.executemany("INSERT OR IGNORE INTO program_items(id,start,end,venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",extended_program)
+  c.executemany("INSERT OR IGNORE INTO program_items(id,start,\"end\",venue,track,format,title,audience,capacity,stream,replay,partner) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",extended_program)
   speakers=[
    ("SP01","Анна Миронова","Медицинский редактор","СОСТОЯНИЕ","Демо-профиль. Переводит исследования в понятный редакционный язык; профиль не представляет реального специалиста.","научная грамотность,сон","expert"),
    ("SP02","Ирина Волкова","R&D / стратегический спикер","Промомед","Демо-профиль представителя компании для показа будущей структуры карточки: роль, компетенции, выступления, материалы и disclosure.","разработка,метаболическое здоровье","promomed"),
@@ -164,7 +121,7 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
    ("SL01","P06","11:00","11:10",1,"BR02"),("SL02","P06","11:10","11:20",1,"BR02"),("SL03","P06","11:20","11:30",1,"BR02"),
    ("SL04","P12","15:00","15:15",2,"BR02"),("SL05","P12","15:15","15:30",2,"BR02"),("SL06","P12","15:30","15:45",2,"BR02")
   ]
-  c.executemany("INSERT OR IGNORE INTO appointment_slots(id,item_id,start,end,capacity,partner_id) VALUES(?,?,?,?,?,?)",slots)
+  c.executemany("INSERT OR IGNORE INTO appointment_slots(id,item_id,start,\"end\",capacity,partner_id) VALUES(?,?,?,?,?,?)",slots)
   products=[
    ("PR01","Тирзетта®","тирзепатид","ПРОМОМЕД","Метаболическое здоровье","real","Официальный продуктовый контекст внутри темы метаболического здоровья. Не является назначением лечения.","Годовой отчёт ПРОМОМЕД 2024","https://promomed.ru/","Реальный бренд ПРОМОМЕД; показ в MVP требует medical/legal review перед публичным запуском."),
    ("PR02","Велгия®","семаглутид","ПРОМОМЕД","Управление весом","real","Препарат ПРОМОМЕД, представленный в официальных материалах компании для терапии избыточной массы тела и ожирения.","ПРОМОМЕД · официальный пресс-релиз","https://promomed.ru/","Информационная карточка; не медицинская рекомендация и не механизм стимулирования покупки."),
@@ -239,7 +196,7 @@ CREATE TABLE IF NOT EXISTS cms(id TEXT PRIMARY KEY,status TEXT,version INTEGER,u
   for e in ("participant@demo.ru","participant2@demo.ru","participant3@demo.ru"):
    c.execute("INSERT OR IGNORE INTO attendee_profiles(email,intent,interests,networking,visibility,updated) VALUES(?, 'Понять полезное для себя','сон,наука,движение',1,'event_only',?)",(e,int(time.time())))
    c.execute("INSERT OR IGNORE INTO passport(email,updated) VALUES(?,?)",(e,int(time.time())))
-  c.commit(); c.close()
+  c.commit(); db.sync_sequences(c); c.close()
 
 def sval(c,k,default=""):
  r=c.execute("SELECT v FROM state WHERE k=?",(k,)).fetchone(); return r["v"] if r else default
@@ -308,8 +265,8 @@ def state(c,email=None):
   d["mutual_meetings"]=[dict(r) for r in c.execute("SELECT id,requester,target_email,target_name,slot,place,status,requester_ok,target_ok,ts FROM mutual_meetings WHERE requester=? OR target_email=? ORDER BY id DESC LIMIT 12",(email,email))]
   d["product_interests"]=[dict(r) for r in c.execute("SELECT id,track,context,consent_version,status,ts FROM product_interests WHERE email=? ORDER BY id DESC LIMIT 8",(email,))]
   d["followups"]=[dict(r) for r in c.execute("SELECT day,track,status,ts FROM followups WHERE email=? ORDER BY day,id",(email,))]
-  d["activity_bookings"]=[dict(r) for r in c.execute("SELECT b.item_id,b.status,p.start,p.end,p.venue,p.title,p.format FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? ORDER BY p.start",(email,))]
-  d["appointment_bookings"]=[dict(r) for r in c.execute("SELECT b.slot_id,b.status,a.item_id,a.start,a.end,p.name partner_name FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id LEFT JOIN partners p ON p.id=a.partner_id WHERE b.email=? ORDER BY a.start",(email,))]
+  d["activity_bookings"]=[dict(r) for r in c.execute("SELECT b.item_id,b.status,p.start,p.\"end\",p.venue,p.title,p.format FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? ORDER BY p.start",(email,))]
+  d["appointment_bookings"]=[dict(r) for r in c.execute("SELECT b.slot_id,b.status,a.item_id,a.start,a.\"end\",p.name partner_name FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id LEFT JOIN partners p ON p.id=a.partner_id WHERE b.email=? ORDER BY a.start",(email,))]
   d["appointment_history"]=[dict(r) for r in c.execute("SELECT action,from_slot,to_slot,ts FROM appointment_history WHERE email=? ORDER BY id DESC LIMIT 10",(email,))]
   d["session_attendance"]=[dict(r) for r in c.execute("SELECT a.item_id,a.status,a.checkin_ts,a.checkout_ts,a.source,p.title,p.venue,p.track FROM session_attendance a JOIN program_items p ON p.id=a.item_id WHERE a.email=? ORDER BY a.checkin_ts DESC",(email,))]
   d["partner_engagement"]=[dict(r) for r in c.execute("SELECT partner,kind,ref_id,consent,ts FROM partner_engagement WHERE email=? ORDER BY id DESC LIMIT 12",(email,))]
@@ -398,8 +355,25 @@ def run_demo_step(c,step,actor):
   raise ValueError("bad_step")
  setv(c,"demo_step",step)
 
+def token_hash(token):
+ return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+def issue_session(c,email,role,name):
+ token=secrets.token_urlsafe(32); now=int(time.time()); expires=now+SESSION_TTL
+ c.execute("DELETE FROM auth_sessions WHERE expires_at<? OR revoked_at IS NOT NULL",(now,))
+ c.execute("INSERT INTO auth_sessions(token_hash,email,role,name,created_at,expires_at,revoked_at) VALUES(?,?,?,?,?,?,NULL)",(token_hash(token),email,role,name,now,expires))
+ c.commit()
+ return token,expires
+
 def auth(h):
- token=h.headers.get("Authorization","").replace("Bearer ","").strip(); return TOKENS.get(token)
+ token=h.headers.get("Authorization","").replace("Bearer ","").strip()
+ if not token:return None
+ c=conn()
+ try:
+  row=c.execute("SELECT role,name,email,expires_at,revoked_at FROM auth_sessions WHERE token_hash=?",(token_hash(token),)).fetchone()
+  if not row or row["revoked_at"] is not None or int(row["expires_at"])<=int(time.time()):return None
+  return (row["role"],row["name"],row["email"])
+ finally:c.close()
 
 def body(h):
  n=int(h.headers.get("Content-Length","0") or 0); return json.loads(h.rfile.read(n) or b"{}")
@@ -418,7 +392,17 @@ class H(SimpleHTTPRequestHandler):
   self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
-  if p=="/health": return self.out({"ok":True,"app":"sostoyanie-v17-responsive-inbox","authority":"shared-sqlite-demo","golden_demo":True,"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
+  if p=="/health":
+   return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
+  if p=="/ready":
+   try:
+    r=db.readiness(); c=conn()
+    try:r["data_ready"]=bool(c.execute("SELECT 1 FROM state LIMIT 1").fetchone() and c.execute("SELECT 1 FROM cms LIMIT 1").fetchone())
+    finally:c.close()
+    r["ready"]=bool(r["ready"] and r["data_ready"]); r["production_ready"]=bool(r["production_ready"] and r["data_ready"])
+    return self.out(r,200 if r["ready"] else 503)
+   except Exception as e:
+    return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/product-quality-proof":
@@ -478,7 +462,7 @@ class H(SimpleHTTPRequestHandler):
     i["sla_minutes"]=limit; i["age_minutes"]=age; i["sla_status"]="breached" if i["status"]=="open" and age>limit else ("resolved" if i["status"]!="open" else "within_sla")
    streams=[dict(r) for r in c.execute("SELECT item_id,status,health,delay_sec,updated FROM stream_state ORDER BY item_id")]
    broadcasts=[dict(r) for r in c.execute("SELECT id,audience,venue,title,body,status,ts FROM ops_broadcasts ORDER BY id DESC LIMIT 12")]
-   partner_desk=[dict(r) for r in c.execute("SELECT pr.name partner,a.id slot_id,a.start,a.end,p.venue,p.title,COUNT(CASE WHEN b.status='booked' THEN 1 END) booked,COUNT(CASE WHEN b.status='waitlist' THEN 1 END) waitlist,a.capacity FROM appointment_slots a JOIN program_items p ON p.id=a.item_id LEFT JOIN partners pr ON pr.id=a.partner_id LEFT JOIN appointment_bookings b ON b.slot_id=a.id GROUP BY pr.name,a.id,a.start,a.end,p.venue,p.title,a.capacity ORDER BY a.start")]
+   partner_desk=[dict(r) for r in c.execute("SELECT pr.name partner,a.id slot_id,a.start,a.\"end\",p.venue,p.title,COUNT(CASE WHEN b.status='booked' THEN 1 END) booked,COUNT(CASE WHEN b.status='waitlist' THEN 1 END) waitlist,a.capacity FROM appointment_slots a JOIN program_items p ON p.id=a.item_id LEFT JOIN partners pr ON pr.id=a.partner_id LEFT JOIN appointment_bookings b ON b.slot_id=a.id GROUP BY pr.name,a.id,a.start,a.\"end\",p.venue,p.title,a.capacity ORDER BY a.start")]
    c.close()
    return self.out({"venues":venues,"staff":staff,"speakers":speakers,"incidents":incidents,"streams":streams,"broadcasts":broadcasts,"partner_desk":partner_desk})
   if p=="/api/intelligence":
@@ -549,7 +533,10 @@ class H(SimpleHTTPRequestHandler):
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password","")); rec=ACCOUNTS.get(email)
    if not rec or not secrets.compare_digest(rec[0],pw): return self.out({"error":"invalid_credentials"},401)
-   token=secrets.token_urlsafe(24); TOKENS[token]=(rec[1],rec[2],email); return self.out({"token":token,"role":rec[1],"name":rec[2]})
+   c=conn()
+   try:token,expires=issue_session(c,email,rec[1],rec[2])
+   finally:c.close()
+   return self.out({"token":token,"role":rec[1],"name":rec[2],"expires_at":expires})
   a=auth(self)
   if not a: return self.out({"error":"unauthorized"},401)
   role,name,email=a
@@ -629,7 +616,7 @@ class H(SimpleHTTPRequestHandler):
      if role!="staff": return self.out({"error":"forbidden"},403)
      ticket=str(data.get("ticket","DEMO-2027-001"))
      try: c.execute("INSERT INTO checkins(ticket,ts,staff) VALUES(?,?,?)",(ticket,int(time.time()),email)); audit(c,"checkin",email,{"ticket":ticket}); result="valid"
-     except sqlite3.IntegrityError: result="duplicate"
+     except db.INTEGRITY_ERRORS: result="duplicate"
      c.commit(); d=state(c,email); d["scan_result"]=result; return self.out(d,200 if result=="valid" else 409)
     elif p=="/api/register":
      if role!="participant": return self.out({"error":"forbidden"},403)
@@ -665,7 +652,7 @@ class H(SimpleHTTPRequestHandler):
         audit(c,"activity_waitlist_promoted",waiter["email"],{"item_id":item_id})
       audit(c,"activity_cancelled",email,{"item_id":item_id})
      else:
-      conflict=c.execute("SELECT p.id,p.start,p.end,p.title,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.id<>? AND p.start<? AND p.end>?",(email,item_id,item["end"],item["start"])).fetchone()
+      conflict=c.execute("SELECT p.id,p.start,p.\"end\",p.title,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.id<>? AND p.start<? AND p.\"end\">?",(email,item_id,item["end"],item["start"])).fetchone()
       if conflict: return self.out({"error":"schedule_conflict","conflict":dict(conflict),"requested":{"id":item["id"],"start":item["start"],"end":item["end"],"title":item["title"],"venue":item["venue"]}},409)
       current=c.execute("SELECT COUNT(*) n FROM activity_bookings WHERE item_id=? AND status='booked'",(item_id,)).fetchone()["n"]
       status="booked" if current<int(item["capacity"]) else "waitlist"
@@ -699,7 +686,7 @@ class H(SimpleHTTPRequestHandler):
      slot_id=str(data.get("slot_id",""))[:20]
      slot=c.execute("SELECT a.*,p.title,p.venue FROM appointment_slots a JOIN program_items p ON p.id=a.item_id WHERE a.id=?",(slot_id,)).fetchone()
      if not slot: return self.out({"error":"slot_not_found"},404)
-     conflict=c.execute("SELECT 1 FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.end>?",(email,slot["end"],slot["start"])).fetchone()
+     conflict=c.execute("SELECT 1 FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.\"end\">?",(email,slot["end"],slot["start"])).fetchone()
      if conflict: return self.out({"error":"schedule_conflict"},409)
      used=c.execute("SELECT COUNT(*) n FROM appointment_bookings WHERE slot_id=? AND status='booked'",(slot_id,)).fetchone()["n"]
      status="booked" if used<int(slot["capacity"]) else "waitlist"
@@ -735,7 +722,7 @@ class H(SimpleHTTPRequestHandler):
     elif p=="/api/appointment-manage":
      if role!="participant": return self.out({"error":"forbidden"},403)
      action=str(data.get("action","cancel")); slot_id=str(data.get("slot_id",""))[:20]
-     row=c.execute("SELECT b.status,a.start,a.end,a.item_id FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id WHERE b.email=? AND b.slot_id=?",(email,slot_id)).fetchone()
+     row=c.execute("SELECT b.status,a.start,a.\"end\",a.item_id FROM appointment_bookings b JOIN appointment_slots a ON a.id=b.slot_id WHERE b.email=? AND b.slot_id=?",(email,slot_id)).fetchone()
      if not row: return self.out({"error":"appointment_not_found"},404)
      if action=="cancel":
       was_booked=row["status"]=="booked"
@@ -752,7 +739,7 @@ class H(SimpleHTTPRequestHandler):
       to_slot=str(data.get("to_slot",""))[:20]
       target=c.execute("SELECT * FROM appointment_slots WHERE id=?",(to_slot,)).fetchone()
       if not target: return self.out({"error":"slot_not_found"},404)
-      conflict=c.execute("SELECT p.id,p.title,p.start,p.end,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.end>?",(email,target["end"],target["start"])).fetchone()
+      conflict=c.execute("SELECT p.id,p.title,p.start,p.\"end\",p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id WHERE b.email=? AND b.status='booked' AND p.start<? AND p.\"end\">?",(email,target["end"],target["start"])).fetchone()
       if conflict:return self.out({"error":"schedule_conflict","conflict":dict(conflict),"requested":{"slot_id":to_slot,"start":target["start"],"end":target["end"]}},409)
       used=c.execute("SELECT COUNT(*) n FROM appointment_bookings WHERE slot_id=? AND status='booked'",(to_slot,)).fetchone()["n"]
       if used>=int(target["capacity"]): return self.out({"error":"slot_full"},409)
@@ -951,4 +938,4 @@ class H(SimpleHTTPRequestHandler):
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
 
 if __name__=="__main__":
- init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.5 product quality listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
+ init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.8 persistence admission",db.backend_name(),"listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()

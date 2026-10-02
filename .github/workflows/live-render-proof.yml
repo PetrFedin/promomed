@@ -4,6 +4,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "server.py"
+      - "app/**"
+      - "public/**"
+      - "migrations/**"
+      - "requirements.txt"
+      - "render.yaml"
+      - ".github/workflows/live-render-proof.yml"
 
 jobs:
   live-proof:

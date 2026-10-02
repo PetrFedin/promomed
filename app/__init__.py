@@ -1,0 +1,1 @@
+"""Promomed application modules."""

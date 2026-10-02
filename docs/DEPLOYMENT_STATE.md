@@ -47,3 +47,16 @@ Every completed wave records: application Git SHA, release version, Render servi
 ## Known production boundary
 
 Persistent production datastore is still not admitted: current free service uses SQLite under `/tmp`. Production pilot requires durable PostgreSQL/migrations/session-consent-audit authority.
+
+
+## Deployment drift observed — 2026-10-01
+
+GitHub live-proof runs against `https://sostoyanie-promomed-live.onrender.com/health` observed:
+
+- response app marker: `sostoyanie-v15-product-quality`;
+- no `git_commit` field;
+- therefore recent `main` commits were **not** verified as deployed to the public service.
+
+This supersedes any assumption that repository `main` automatically equals public live. No later wave may be labelled LIVE until exact-SHA verification passes again.
+
+Phase 0 production admission requires a separate durable PostgreSQL contour and `/ready -> production_ready=true`. Current public SQLite runtime remains demo-only.
