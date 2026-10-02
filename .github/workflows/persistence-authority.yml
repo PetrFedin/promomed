@@ -63,11 +63,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install runtime and PostgreSQL client
+      - name: Install runtime and PostgreSQL 17 client
         run: |
           pip install -r requirements.txt
           sudo apt-get update
-          sudo apt-get install -y postgresql-client
+          sudo apt-get install -y curl ca-certificates
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          . /etc/os-release
+          printf "Types: deb\nURIs: https://apt.postgresql.org/pub/repos/apt\nSuites: %s-pgdg\nComponents: main\nSigned-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc\n" "$VERSION_CODENAME" | sudo tee /etc/apt/sources.list.d/pgdg.sources
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
       - name: Run real PostgreSQL migration and API-state contract
         run: python -m unittest -v tests/test_persistence_contract.py
       - name: Prove PostgreSQL backup and restore
