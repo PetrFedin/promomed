@@ -109,6 +109,8 @@ Repository implementation now includes:
 
 This checkpoint is **not** production admission. Public Render was independently observed serving an older runtime without `git_commit`, and no durable Promomed PostgreSQL has yet been admitted. Phase 0 completes only after exact-SHA live deployment, PostgreSQL `DATABASE_URL`, migrations, `production_ready=true`, and restore evidence on the admitted contour.
 
+Repository foundation was merged to `main` as `adeb0e6e9db24900af33ac96026a4029840b97b2`. Post-merge UI, responsive browser, SQLite persistence and PostgreSQL 17 migration/restore gates all passed. Exact-SHA Render proof still failed: the public service remained on `sostoyanie-v15-product-quality`. Phase 0 therefore remains **LIVE BLOCKED**, not complete.
+
 
 **Preferred path: PostgreSQL.**
 
