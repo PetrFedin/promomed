@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-03 — Phase 0 admission authority
+
+Hardened the persistence foundation before Phase 1: added durable account authority with salted scrypt hashes, removed hardcoded login authority from `server.py`, made production readiness reject demo seed/demo accounts, and added provider-neutral clean PostgreSQL admission + isolated backup/restore fingerprint proof. External durable PostgreSQL remains the only infrastructure blocker.
+
+
 ## 2026-10-03 — Command boundaries wave 2
 
 Completed PROMO-INT-01 in repository scope: extracted operations, partner/commercial, editorial-demo and demo-control POST commands into bounded handlers. `server.py` is now ~379 lines and its POST path is a composition/dispatch layer rather than a domain monolith. Added direct role/permission/consent tests. Phase 1 remains gated by durable PostgreSQL live admission.
