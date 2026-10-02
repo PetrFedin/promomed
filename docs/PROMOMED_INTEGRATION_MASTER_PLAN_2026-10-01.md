@@ -649,6 +649,18 @@ Implementation waves are expected to add or formalise:
 
 Exact names can change, but **authority separation cannot**.
 
+### PROMO-INT-01 implementation checkpoint — 2026-10-02
+
+Bounded-context foundation has started while Phase 0 durable infrastructure admission remains gated:
+
+- auth/session, shared core and demo orchestration extracted from `server.py`;
+- read projections split into programme/content/community/learning/partners/operations/participant;
+- `app/analytics.py` now composes those projections;
+- architecture CI contract added;
+- API paths and response semantics remain unchanged.
+
+This checkpoint does **not** advance Phase 1. Command/write route extraction is the remaining PROMO-INT-01 work before calling the code-structure issue complete.
+
 ## 7. API structure recommendation
 
 Do not continue growing one monolithic `server.py` indefinitely.
