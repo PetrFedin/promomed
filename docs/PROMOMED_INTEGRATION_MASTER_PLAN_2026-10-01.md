@@ -142,6 +142,14 @@ Do not spend a full product wave on Litestream if PostgreSQL can be admitted dir
 
 ---
 
+#### Live admission checkpoint — 2026-10-02
+
+Exact-main public deployment is now proven on `c87aa79d775e15ac3ea46f829732ea9d5abe92a5` by GitHub live-proof run `37025984463`. The stale-deploy problem was traced to the existing Render service operating as a Public Git clone without a functioning Git-provider webhook; explicit Render deploy API triggering is the current release path.
+
+Durable PostgreSQL remains blocked under the current zero-cost constraint: Render's only free PostgreSQL slot is occupied by MFW, Supabase's two free project slots are occupied by Antiqua and FLASHIN, and Railway's European region is Amsterdam with trial credits rather than a permanent free Frankfurt database.
+
+The existing Render service also retains an old build command that does not install `requirements.txt`. Therefore Phase 0 is **not complete** until a separate durable PostgreSQL is admitted and the live service build config installs `psycopg`, followed by `/ready -> production_ready=true`, live PostgreSQL smoke and restore evidence.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  

@@ -80,3 +80,46 @@ The live-proof polled the public `/health` endpoint 30 times and consistently re
 The public service therefore did **not** reach main SHA `adeb0e6e...`. No `git_commit` field was present.
 
 Next admission action requires Render workspace confirmation, inspection of service `srv-daug7pnlot8c73b1aja0`, restoration of exact-main deployment, then a dedicated free PostgreSQL attachment and `/ready -> production_ready=true`.
+
+
+## Phase 0 live admission checkpoint — 2026-10-02
+
+### Exact-main deployment — PASS
+
+- GitHub `main`: `c87aa79d775e15ac3ea46f829732ea9d5abe92a5`
+- Render service: `sostoyanie-promomed-live` / `srv-daug7pnlot8c73b1aja0`
+- Current live deploy: `dep-davsmbhmgk9c73c6tdn0`
+- Region / plan: Frankfurt / free
+- Exact-SHA public live-proof workflow: `37025984463` — **PASS**
+- Post-deploy Render error logs: no errors observed in the verification window.
+- Runtime remains SQLite and therefore is **not** production-ready.
+
+### Durable PostgreSQL capacity — BLOCKED UNDER CURRENT ZERO-COST CONSTRAINT
+
+Verified provider state:
+
+- Render ME: one active free PostgreSQL is already occupied by `mfw-postgres`; an attempted second free database was rejected with `cannot have more than one active free tier database`.
+- Supabase free organization: both allowed free project slots are already occupied by Antiqua and FLASHIN.
+- Railway: Europe deployment region is Europe West (Amsterdam), not Frankfurt, and the no-cost path is a finite trial credit rather than a permanent free PostgreSQL allocation.
+
+No existing MFW, Antiqua or FLASHIN database was deleted, paused, opened externally or reused for Promomed.
+
+### Remaining Render configuration drift
+
+The existing Render web service still reports:
+
+- build command: `python -m py_compile server.py`;
+- health-check path: empty.
+
+Repository `render.yaml` expects:
+
+- `pip install -r requirements.txt && python -m py_compile server.py app/db.py`;
+- health-check path: `/health`.
+
+Before setting a live PostgreSQL `DATABASE_URL`, the actual service build configuration must install `psycopg`; otherwise PostgreSQL startup is not admitted.
+
+### Phase 0 status
+
+**CODE / CI / EXACT-MAIN LIVE: PASS**  
+**DURABLE POSTGRESQL LIVE ADMISSION: BLOCKED BY FREE-CAPACITY + SERVICE-CONFIG DRIFT**  
+**Phase 1 remains gated.**
