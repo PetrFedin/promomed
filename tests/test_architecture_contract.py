@@ -7,6 +7,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SERVER_PATH = ROOT / "server.py"
 SERVER = SERVER_PATH.read_text(encoding="utf-8")
 APP = ROOT / "app"
+LIVE_ADMISSION_WORKFLOW = (ROOT / ".github" / "workflows" / "phase0-live-postgres-proof.yml").read_text(encoding="utf-8")
+LIVE_PROOF_WORKFLOW = (ROOT / ".github" / "workflows" / "live-render-proof.yml").read_text(encoding="utf-8")
 
 EXTRACTED = {
     "sval", "setv", "audit", "notify", "promote_waitlist",
@@ -98,6 +100,22 @@ class ArchitectureContractTests(unittest.TestCase):
         auth = (APP / "auth.py").read_text(encoding="utf-8")
         self.assertIn("hashlib.scrypt", auth)
         self.assertIn("SELECT email,password_hash,role,name,status FROM accounts", auth)
+
+    def test_live_admission_workflow_is_fail_closed(self):
+        required = (
+            'ADMISSION_URL: https://sostoyanie-promomed-pg-admission.onrender.com',
+            'health.get("backend")=="postgres"',
+            'health.get("durable") is True',
+            'health.get("demo_seed") is False',
+            'ready.get("schema_ready") is True',
+            'ready.get("demo_seed_enabled") is False',
+            'ready.get("demo_accounts")==0',
+            'ready.get("production_ready") is True',
+        )
+        for marker in required:
+            self.assertIn(marker, LIVE_ADMISSION_WORKFLOW)
+        self.assertIn('ready.get("production_ready") is not False', LIVE_PROOF_WORKFLOW)
+        self.assertIn('backend=="postgres"', LIVE_PROOF_WORKFLOW)
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 400)
