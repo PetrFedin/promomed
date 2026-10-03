@@ -112,6 +112,71 @@ jobs:
           PROMOMED_SEED_DEMO: "false"
         run: python ops/phase0_postgres_admission.py
 
+      - name: Generate ephemeral account test credentials
+        run: |
+          python - <<'PY'
+          import secrets, os
+          with open(os.environ["GITHUB_ENV"],"a") as f:
+              f.write("CI_ACCOUNT_PASSWORD="+secrets.token_urlsafe(24)+"Aa1!\n")
+              f.write("CI_ROTATED_PASSWORD="+secrets.token_urlsafe(24)+"Bb2!\n")
+          PY
+
+      - name: Reject demo identity provisioning
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
+          PROMOMED_REQUIRE_POSTGRES: "true"
+          PROMOMED_SEED_DEMO: "false"
+        run: |
+          set +e
+          PROMOMED_ACCOUNT_PASSWORD="$CI_ACCOUNT_PASSWORD" python ops/provision_account.py --email forbidden@demo.ru --role organizer --name "Forbidden Demo" > /tmp/demo-reject.json
+          code=$?
+          set -e
+          test "$code" -ne 0
+          python - <<'PY'
+          import json
+          result=json.load(open("/tmp/demo-reject.json"))
+          assert result["error"]=="demo_identity_forbidden", result
+          print("DEMO IDENTITY REJECTION PASS")
+          PY
+
+      - name: Prove production account bootstrap and rotation
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
+          PROMOMED_REQUIRE_POSTGRES: "true"
+          PROMOMED_SEED_DEMO: "false"
+        run: |
+          PROMOMED_ACCOUNT_PASSWORD="$CI_ACCOUNT_PASSWORD" python ops/provision_account.py --email ci-organizer@example.test --role organizer --name "CI Organizer"
+          python - <<'PY'
+          import os
+          from app import db
+          from app.auth import authenticate, issue_session, token_hash
+          c=db.connect()
+          account=authenticate(c,"ci-organizer@example.test",os.environ["CI_ACCOUNT_PASSWORD"])
+          assert account and account["role"]=="organizer", account
+          token,_=issue_session(c,account["email"],account["role"],account["name"])
+          row=c.execute("SELECT revoked_at FROM auth_sessions WHERE token_hash=?",(token_hash(token),)).fetchone()
+          assert row and row["revoked_at"] is None
+          c.close()
+          with open("/tmp/ci-session-token-hash","w") as f:
+              f.write(token_hash(token))
+          print("ACCOUNT CREATE + LOGIN + SESSION PASS")
+          PY
+          PROMOMED_ACCOUNT_PASSWORD="$CI_ROTATED_PASSWORD" python ops/provision_account.py --email ci-organizer@example.test --role organizer --name "CI Organizer" --rotate
+          python - <<'PY'
+          import os
+          from app import db
+          from app.auth import authenticate
+          token_hash_value=open("/tmp/ci-session-token-hash").read().strip()
+          c=db.connect()
+          assert authenticate(c,"ci-organizer@example.test",os.environ["CI_ACCOUNT_PASSWORD"]) is None
+          account=authenticate(c,"ci-organizer@example.test",os.environ["CI_ROTATED_PASSWORD"])
+          assert account and account["role"]=="organizer", account
+          row=c.execute("SELECT revoked_at FROM auth_sessions WHERE token_hash=?",(token_hash_value,)).fetchone()
+          assert row and row["revoked_at"] is not None, row
+          c.close()
+          print("ACCOUNT ROTATION + SESSION REVOCATION PASS")
+          PY
+
       - name: Fingerprint clean source catalog
         env:
           DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission

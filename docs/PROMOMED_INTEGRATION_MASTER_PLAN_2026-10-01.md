@@ -189,6 +189,20 @@ Runbook: `docs/PHASE0_POSTGRES_ADMISSION.md`.
 
 This does not mark Phase 0 complete. External admission still requires an isolated durable PostgreSQL source + restore target, Render `DATABASE_URL`, exact-main deploy, live `/ready -> production_ready=true`, live smoke and recorded restore evidence.
 
+##### Production identity bootstrap checkpoint — 2026-10-03
+
+PROMO-INT-00 repository hardening now includes a controlled first-account path for the clean PostgreSQL authority:
+
+- non-demo account creation/rotation via `ops/provision_account.py`;
+- PostgreSQL + `PROMOMED_REQUIRE_POSTGRES=true` required;
+- demo seed rejected;
+- `@demo.ru` identities rejected;
+- credential input is accepted through an interactive no-echo prompt or a secret-store environment injection, never as a CLI argument;
+- password rotation revokes live sessions;
+- PostgreSQL 17 CI proves create -> authenticate -> session -> rotate -> old-session revocation before backup/restore.
+
+This still does not complete PROMO-INT-00: the external source/restore PostgreSQL resources and live Render admission remain outstanding.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  

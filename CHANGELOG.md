@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-03 — Production account bootstrap
+
+Added a PostgreSQL-only operator account provisioning utility with interactive/secret-store password input, strong password validation, explicit rotation, session revocation and demo-identity rejection. PostgreSQL CI now proves create → authenticate → session → password rotation → old-session revocation before backup/restore.
+
+
 ## 2026-10-03 — Phase 0 admission authority
 
 Hardened the persistence foundation before Phase 1: added durable account authority with salted scrypt hashes, removed hardcoded login authority from `server.py`, made production readiness reject demo seed/demo accounts, and added provider-neutral clean PostgreSQL admission + isolated backup/restore fingerprint proof. External durable PostgreSQL remains the only infrastructure blocker.

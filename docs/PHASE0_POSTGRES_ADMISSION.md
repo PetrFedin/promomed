@@ -64,6 +64,25 @@ It executes the same repository utilities that are exercised against PostgreSQL 
 
 The workflow must fail if demo seeding is enabled, demo accounts exist, migrations drift, the write probe fails, restore fails, or source/restore fingerprints differ.
 
+## Provision the first non-demo operator account
+
+After repository database admission is green and before authenticated live smoke, provision a deliberate non-demo account:
+
+`python ops/provision_account.py --email <operator-email> --role organizer --name "<display name>"`
+
+Credential rules:
+
+- do not pass the password as a CLI argument;
+- interactive execution prompts twice without echo;
+- automation may inject `PROMOMED_ACCOUNT_PASSWORD` from a secret store;
+- `@demo.ru` identities are rejected;
+- password minimum is 14 characters and must span at least three character classes;
+- provisioning is PostgreSQL-only, requires `PROMOMED_REQUIRE_POSTGRES=true`, and rejects demo seed mode;
+- existing accounts are not overwritten unless `--rotate` is explicit;
+- password rotation revokes all live sessions for that account.
+
+Use the least privileged role required for the smoke. Do not create permanent shared credentials solely for a demo.
+
 ## Render admission service
 
 Only after the manual database workflow is green, configure the existing admission service with:

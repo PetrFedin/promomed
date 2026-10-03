@@ -186,3 +186,20 @@ PROMO-INT-01 is complete in repository scope: bounded read projections and bound
 Responsive/browser authority remains green across the required phone/tablet/desktop matrix.
 
 **Phase 0 remains incomplete:** both Render contours still require an isolated durable PostgreSQL `DATABASE_URL` and live `/ready -> production_ready=true` plus live PostgreSQL smoke and restore evidence before Phase 1 may begin.
+
+
+## Phase 0 durable-account authority live checkpoint — 2026-10-03
+
+- GitHub `main`: `af0c8e16961211982adca0f6155aafd9d4d8aa87`
+- Public service: `sostoyanie-promomed-live` / `srv-daug7pnlot8c73b1aja0`
+- Public deploy: `dep-db049rid0e5s73a266hg` — **LIVE**
+- PostgreSQL admission service: `sostoyanie-promomed-pg-admission` / `srv-davsqk942hec73e1vcr0`
+- Admission deploy: `dep-db049sm7bikc7384m6gg` — **LIVE**
+- UI/architecture workflow: `37079962351` — **PASS**
+- Responsive browser QA: `37079962327` — **PASS**
+- Persistence authority workflow: `37079962342` — **PASS**
+- Exact-SHA live Render proof: `37079962354` — **PASS**
+
+This release moves demo login authority out of `server.py` into the database, adds migration `003_account_authority`, salted scrypt password hashes, honest production-readiness gates, and clean PostgreSQL admission/restore proof.
+
+The currently deployed Render contours remain SQLite demo runtimes. This checkpoint therefore does **not** mark Phase 0 COMPLETE.
