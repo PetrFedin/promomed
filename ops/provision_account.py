@@ -37,7 +37,7 @@ def password_from_input():
     if env_value:
         return env_value
     if not sys.stdin.isatty():
-        fail("password_required_via_stdin_or_env")
+        fail("password_required_via_tty_or_secret_env")
     first = getpass.getpass("Password: ")
     second = getpass.getpass("Confirm password: ")
     if first != second:
