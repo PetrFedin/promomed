@@ -121,6 +121,24 @@ jobs:
               f.write("CI_ROTATED_PASSWORD="+secrets.token_urlsafe(24)+"Bb2!\n")
           PY
 
+      - name: Reject demo identity provisioning
+        env:
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
+          PROMOMED_REQUIRE_POSTGRES: "true"
+          PROMOMED_SEED_DEMO: "false"
+        run: |
+          set +e
+          PROMOMED_ACCOUNT_PASSWORD="$CI_ACCOUNT_PASSWORD" python ops/provision_account.py --email forbidden@demo.ru --role organizer --name "Forbidden Demo" > /tmp/demo-reject.json
+          code=$?
+          set -e
+          test "$code" -ne 0
+          python - <<'PY'
+          import json
+          result=json.load(open("/tmp/demo-reject.json"))
+          assert result["error"]=="demo_identity_forbidden", result
+          print("DEMO IDENTITY REJECTION PASS")
+          PY
+
       - name: Prove production account bootstrap and rotation
         env:
           DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
