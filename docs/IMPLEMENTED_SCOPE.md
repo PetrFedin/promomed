@@ -120,3 +120,13 @@ Guards:
 - rotation revokes existing sessions.
 
 PostgreSQL 17 CI proves create/login/session/rotate/revocation and demo-identity rejection before backup/restore.
+
+
+## Live admission proof authority — Phase 0
+
+Added two complementary release gates:
+
+- public live proof requires exact SHA and refuses a SQLite runtime that claims production readiness;
+- dedicated manual PostgreSQL proof targets the Render admission service and requires durable PostgreSQL, clean migrations, demo seed off, zero demo accounts and `production_ready=true`.
+
+This closes repository-side live verification for PROMO-INT-00. External durable PostgreSQL resource admission remains outstanding.
