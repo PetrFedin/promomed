@@ -102,3 +102,21 @@ Added:
 - clean PostgreSQL 17 admission + backup/restore proof in PR CI.
 
 External durable PostgreSQL is still required before Phase 0 can be marked COMPLETE.
+
+
+## Production identity bootstrap — Phase 0
+
+Repository scope now includes `ops/provision_account.py` for deliberately creating or rotating non-demo accounts on an admitted PostgreSQL authority.
+
+Guards:
+
+- PostgreSQL-only;
+- production readiness required before account write;
+- demo seed must be off;
+- `@demo.ru` identities rejected;
+- salted scrypt password hash;
+- no password CLI argument;
+- explicit `--rotate` required for replacement;
+- rotation revokes existing sessions.
+
+PostgreSQL 17 CI proves create/login/session/rotate/revocation and demo-identity rejection before backup/restore.
