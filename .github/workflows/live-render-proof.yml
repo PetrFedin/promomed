@@ -54,7 +54,33 @@ jobs:
                           missing=[x for x in required if x not in page]
                           if missing:
                               raise SystemExit("Live SHA matched but UI markers are missing: "+repr(missing))
-                          print("LIVE PROOF PASS: exact SHA and responsive Inbox UI markers verified")
+                          ready_raw=subprocess.run(
+                              ["curl","-fsS","--max-time","20",base+"/ready"],
+                              capture_output=True,text=True,timeout=25
+                          )
+                          ready=json.loads(ready_raw.stdout or "{}")
+                          backend=data.get("backend")
+                          if backend=="sqlite":
+                              if ready.get("production_ready") is not False:
+                                  raise SystemExit("SQLite demo must never report production_ready=true: "+repr(ready))
+                              if ready.get("durable") is not False:
+                                  raise SystemExit("SQLite demo must report durable=false: "+repr(ready))
+                              print("LIVE DEMO PROOF PASS: exact SHA, responsive UI, production_ready=false")
+                          elif backend=="postgres":
+                              required_ready={
+                                  "durable":True,
+                                  "schema_ready":True,
+                                  "demo_seed_enabled":False,
+                                  "demo_accounts":0,
+                                  "ready":True,
+                                  "production_ready":True,
+                              }
+                              bad={k:(ready.get(k),v) for k,v in required_ready.items() if ready.get(k)!=v}
+                              if bad:
+                                  raise SystemExit("PostgreSQL live readiness mismatch: "+repr(bad))
+                              print("LIVE POSTGRES PROOF PASS: exact SHA, responsive UI and production readiness")
+                          else:
+                              raise SystemExit("Unsupported live backend: "+repr(backend))
                           sys.exit(0)
               except Exception as exc:
                   last=repr(exc)
