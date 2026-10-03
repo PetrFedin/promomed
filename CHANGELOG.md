@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-03 — Live admission proof authority
+
+Added fail-closed live-state verification: SQLite public runtime must remain explicitly non-production, while the dedicated PostgreSQL admission workflow requires exact SHA, durable PostgreSQL, clean migrations, demo seed off, zero demo accounts and `production_ready=true`.
+
+
 ## 2026-10-03 — Production account bootstrap
 
 Added a PostgreSQL-only operator account provisioning utility with interactive/secret-store password input, strong password validation, explicit rotation, session revocation and demo-identity rejection. PostgreSQL CI now proves create → authenticate → session → password rotation → old-session revocation before backup/restore.
