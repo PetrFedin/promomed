@@ -203,3 +203,19 @@ Responsive/browser authority remains green across the required phone/tablet/desk
 This release moves demo login authority out of `server.py` into the database, adds migration `003_account_authority`, salted scrypt password hashes, honest production-readiness gates, and clean PostgreSQL admission/restore proof.
 
 The currently deployed Render contours remain SQLite demo runtimes. This checkpoint therefore does **not** mark Phase 0 COMPLETE.
+
+
+## Production identity bootstrap live checkpoint — 2026-10-03
+
+- GitHub `main`: `817654e07b50e0876f12594e05f35a2b6c38b4f7`
+- Public service: `sostoyanie-promomed-live` / `srv-daug7pnlot8c73b1aja0`
+- Public deploy: `dep-db04csid0e5s73a2huo0` — **LIVE**
+- PostgreSQL admission service: `sostoyanie-promomed-pg-admission` / `srv-davsqk942hec73e1vcr0`
+- Admission deploy: `dep-db04ctjncjis73f17l2g` — **LIVE**
+- UI/architecture workflow: `37080441537` — **PASS**
+- Persistence authority workflow: `37080441538` — **PASS**
+- Responsive browser QA: `37080441541` — **PASS**
+
+The persistence workflow includes production-account bootstrap/rotation proof on isolated PostgreSQL before backup/restore.
+
+This deploy remains SQLite on both Render services and therefore remains **demo / infrastructure-admission only**, not Phase 0 COMPLETE.
