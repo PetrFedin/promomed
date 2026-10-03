@@ -121,6 +121,25 @@ Required live response characteristics:
 
 Then run an authenticated smoke only with a deliberately provisioned non-demo account. Do not enable the old demo identities on the production contour.
 
+## Live admission workflow
+
+After the Render admission service is configured and explicitly deployed on the exact current `main` SHA, run:
+
+`Promomed Phase 0 live PostgreSQL admission proof`
+
+The workflow targets the dedicated admission service and accepts it only when:
+
+- `/health.git_commit` equals the workflow SHA;
+- backend is PostgreSQL;
+- durable is true;
+- demo seed is false;
+- schema is ready with no missing migrations or checksum drift;
+- demo account count is zero;
+- `ready=true`;
+- `production_ready=true`.
+
+The ordinary public live-proof has a complementary guard: while the public service is SQLite demo, it must explicitly report `production_ready=false`. A demo contour silently becoming “production ready” is therefore a release failure, not a success.
+
 ## Completion evidence
 
 Update `docs/DEPLOYMENT_STATE.md` with:

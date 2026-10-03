@@ -1,0 +1,61 @@
+name: Promomed Phase 0 live PostgreSQL admission proof
+
+on:
+  workflow_dispatch:
+
+jobs:
+  live-postgres-admission-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXPECTED_SHA: ${{ github.sha }}
+      ADMISSION_URL: https://sostoyanie-promomed-pg-admission.onrender.com
+    steps:
+      - name: Wait for exact SHA and PostgreSQL production readiness
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, sys, time
+
+          expected=os.environ["EXPECTED_SHA"]
+          base=os.environ["ADMISSION_URL"].rstrip("/")
+          last={}
+          for attempt in range(1,61):
+              try:
+                  health_raw=subprocess.run(
+                      ["curl","-fsS","--max-time","20",base+"/health"],
+                      capture_output=True,text=True,timeout=25,check=True
+                  ).stdout
+                  ready_raw=subprocess.run(
+                      ["curl","-fsS","--max-time","20",base+"/ready"],
+                      capture_output=True,text=True,timeout=25
+                  )
+                  health=json.loads(health_raw)
+                  ready=json.loads(ready_raw.stdout or "{}")
+                  last={"health":health,"ready":ready,"ready_http":ready_raw.returncode}
+                  print(
+                      "attempt=%s sha=%s backend=%s production_ready=%s" %
+                      (attempt,health.get("git_commit"),health.get("backend"),ready.get("production_ready"))
+                  )
+                  if (
+                      health.get("git_commit")==expected
+                      and health.get("backend")=="postgres"
+                      and health.get("durable") is True
+                      and health.get("demo_seed") is False
+                      and ready.get("backend")=="postgres"
+                      and ready.get("durable") is True
+                      and ready.get("schema_ready") is True
+                      and ready.get("checksum_drift")==[]
+                      and ready.get("missing")==[]
+                      and ready.get("demo_seed_enabled") is False
+                      and ready.get("demo_accounts")==0
+                      and ready.get("ready") is True
+                      and ready.get("production_ready") is True
+                  ):
+                      print("LIVE POSTGRESQL ADMISSION PROOF PASS")
+                      sys.exit(0)
+              except Exception as exc:
+                  last={"error":repr(exc)}
+                  print("attempt=%s error=%r" % (attempt,exc))
+              time.sleep(10)
+          raise SystemExit("Live PostgreSQL admission proof failed: "+json.dumps(last,ensure_ascii=False))
+          PY

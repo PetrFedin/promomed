@@ -203,6 +203,16 @@ PROMO-INT-00 repository hardening now includes a controlled first-account path f
 
 This still does not complete PROMO-INT-00: the external source/restore PostgreSQL resources and live Render admission remain outstanding.
 
+##### Live admission proof checkpoint — 2026-10-03
+
+PROMO-INT-00 now has explicit live-state verification:
+
+- ordinary public live proof treats SQLite as demo-only and requires `production_ready=false`;
+- dedicated manual workflow `Promomed Phase 0 live PostgreSQL admission proof` targets the Render admission service;
+- live PostgreSQL PASS requires exact SHA, durable backend, demo seed off, zero demo accounts, clean schema and `production_ready=true`.
+
+This removes the final manual interpretation step after an external PostgreSQL is connected. The remaining blocker is resource admission itself, not proof logic.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  
