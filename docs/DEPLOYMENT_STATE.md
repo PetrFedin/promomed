@@ -219,3 +219,21 @@ The currently deployed Render contours remain SQLite demo runtimes. This checkpo
 The persistence workflow includes production-account bootstrap/rotation proof on isolated PostgreSQL before backup/restore.
 
 This deploy remains SQLite on both Render services and therefore remains **demo / infrastructure-admission only**, not Phase 0 COMPLETE.
+
+
+## Fail-closed live admission proof checkpoint — 2026-10-03
+
+- GitHub `main`: `f96c8747e1a4c68b07af521bb0fc0411f706511a`
+- Public service: `sostoyanie-promomed-live` / `srv-daug7pnlot8c73b1aja0`
+- Public deploy: `dep-db04fdvavr4c73e489b0` — **LIVE**
+- PostgreSQL admission service: `sostoyanie-promomed-pg-admission` / `srv-davsqk942hec73e1vcr0`
+- Admission deploy: `dep-db04fetg1s2s73chvf9g` — **LIVE**
+- UI/architecture workflow: `37080841250` — **PASS**
+- Persistence authority workflow: `37080841242` — **PASS**
+- Responsive browser QA: `37080841243` — **PASS**
+- Exact-SHA live Render proof: `37080841226` — **PASS**
+- Live proof statement: `LIVE DEMO PROOF PASS: exact SHA, responsive UI, production_ready=false`
+
+The public runtime is intentionally still SQLite demo. The dedicated manual live PostgreSQL proof is now present and will accept the admission service only with exact SHA, PostgreSQL durable backend, clean migrations, demo seed disabled, zero demo accounts and `production_ready=true`.
+
+**PROMO-INT-00 repository-side implementation and proof tooling are ready. External isolated PostgreSQL source + restore capacity remains the blocker for Phase 0 COMPLETE.**
