@@ -1580,3 +1580,126 @@ The graph is a projection over canonical Promomed records and external metadata.
 
 **Commercial framing:** scientific evidence intelligence for editors, experts and strategic partners.
 
+## Moat wave — accredited continuing education and verifiable professional credentials
+
+This wave turns existing sessions, learning tracks, experts, evidence and assessments into a professional education product.
+
+### Education Programme Authority — ADOPT
+
+Create:
+
+- programme/course;
+- learning objectives;
+- target professional audience;
+- modules/sessions;
+- required evidence/content versions;
+- faculty;
+- assessment;
+- completion criteria;
+- hours/credit candidate;
+- accreditor/provider;
+- jurisdiction;
+- approval/effective dates.
+
+A programme may exist without accredited credit.
+
+### Attendance / Learning Evidence — ADOPT
+
+Track:
+
+- authenticated attendance;
+- replay completion where allowed;
+- module progression;
+- assessment attempt/result;
+- required feedback;
+- completion state;
+- evidence/version.
+
+Do not equate video-open with learning completion unless programme rules explicitly allow it.
+
+### Accreditation Boundary — REQUIRED
+
+Promomed must distinguish:
+
+- participation certificate;
+- internal educational badge;
+- externally accredited CME/CPD credit.
+
+Official CME/CPD credit is issued only when a recognised accreditor/provider and jurisdictional rules are actually satisfied.
+
+Never label an internal certificate as accredited CME.
+
+### Open Badges 3.0 Credential — ADAPT
+
+Official standard:
+
+https://www.1edtech.org/standards/open-badges
+
+Use Open Badges 3.0-compatible credentials for portable achievements where appropriate.
+
+Credential metadata can include:
+
+- issuer;
+- learner;
+- achievement;
+- criteria;
+- evidence;
+- skills/alignment;
+- issue/expiry;
+- cryptographic proof/status.
+
+Open Badge portability does not itself create professional accreditation.
+
+### Competency / Evidence Passport — ADOPT
+
+For a professional user, show only earned/verified items:
+
+- completed programmes;
+- assessed competencies;
+- issued credentials;
+- evidence links;
+- expiry/revalidation;
+- issuer/accreditor.
+
+User can export/share selected credentials.
+
+### Faculty / Conflict Governance — ADOPT
+
+Education programme stores:
+
+- faculty;
+- disclosure;
+- partner/commercial context;
+- content review;
+- evidence freshness;
+- accreditation status.
+
+Commercial sponsor cannot silently alter educational criteria/content authority.
+
+### Accreditation Audit Pack — ADOPT
+
+Generate:
+
+- programme version;
+- objectives;
+- agenda/content;
+- faculty/disclosures;
+- attendance evidence;
+- assessment rules/results;
+- credential issuance log;
+- feedback;
+- source/evidence versions.
+
+### Additional acceptance
+
+- accredited vs non-accredited status is explicit everywhere;
+- credential issuance is reproducible from programme/completion rules;
+- Open Badge verifies issuer/achievement metadata but is not misrepresented as regulator approval;
+- sponsor influence/disclosure remains visible;
+- expired/revoked credential status is handled;
+- educational analytics do not become clinical-performance scoring.
+
+**Sequencing:** Learning Tracks + Evidence/Expert/Disclosure -> programme authority -> completion/assessment -> credential issuance -> accreditor integration -> professional passport.
+
+**Commercial framing:** opens a separate medical professional education / partner academy line with verifiable portable credentials. Open Badges 3.0 is aligned with verifiable credentials and portable achievement evidence. 
+
