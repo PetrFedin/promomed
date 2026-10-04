@@ -155,7 +155,7 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     page.locator("#scenarioPlatform").fill("1000000")
     page.locator("#scenarioPartnerCount").fill("2")
     page.locator("#scenarioPartnerAvg").fill("500000")
-    expect(page.locator("#investorScenarioResult")).to_contain_text("2 000 000")
+    expect(page.locator("#investorScenarioResult")).to_contain_text(re.compile(r"2\s*000\s*000"))
     assert_no_page_overflow(page, width, f"{name}/investor")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-investor.png"), full_page=True)
 
