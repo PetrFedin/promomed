@@ -174,6 +174,54 @@ def snapshot(c):
         },
     ]
 
+    capital_milestones = [
+        {
+            "id": "phase0",
+            "title": "Phase 0 · Durable Core",
+            "status": "live" if production else "ci_proven",
+            "decision": "Admit isolated PostgreSQL source + restore capacity and prove exact-main production readiness.",
+        },
+        {
+            "id": "phase1",
+            "title": "Phase 1 · Editorial & Medical Review",
+            "status": "gated",
+            "decision": "Open only after Phase 0 COMPLETE; establish versioned review, disclosure and approval authority.",
+        },
+        {
+            "id": "phase2",
+            "title": "Phase 2 · Evidence / Claim / Expert",
+            "status": "gated",
+            "decision": "Turn reviewed scientific context into durable, auditable enterprise assets.",
+        },
+        {
+            "id": "phase3",
+            "title": "Phase 3 · Scientific Information",
+            "status": "gated",
+            "decision": "Activate governed request/response workflow and an approved response library.",
+        },
+        {
+            "id": "scale",
+            "title": "Scale · Repeatable Health Platform",
+            "status": "gated",
+            "decision": "Prove a repeatable operating and commercial model before broader white-label expansion.",
+        },
+    ]
+
+    investor_thesis = {
+        "category": "Health relationship + event operating system",
+        "statement": (
+            "СОСТОЯНИЕ соединяет year-round media, live event operations, consent-first partner activation "
+            "и измеримый post-event relationship loop в одном управляемом продукте."
+        ),
+        "what_is_not": "Не агентский лендинг, не приложение-афиша и не медицинский сервис.",
+        "value_creation_logic": [
+            "Repeatable platform capability instead of one-off event production.",
+            "Commercial evidence and first-party consent signals instead of vanity reach.",
+            "Governed health-content roadmap instead of unbounded AI claims.",
+            "Operational authority + audit trail create switching cost and diligence evidence.",
+        ],
+    }
+
     blockers = []
     if not production:
         blockers.append({
@@ -197,6 +245,8 @@ def snapshot(c):
         "capabilities": capabilities,
         "revenue_architecture": revenue_architecture,
         "defensibility": defensibility,
+        "capital_milestones": capital_milestones,
+        "investor_thesis": investor_thesis,
         "blockers": blockers,
         "disclaimers": [
             "MVP metrics are demo/runtime evidence, not market traction.",
