@@ -152,10 +152,15 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     assert page.locator("#investorCapabilities .investorCapability").count() >= 8
     expect(page.locator("#investorThesis")).to_contain_text("event operating system")
     assert page.locator("#investorMilestones .investorMilestone").count() >= 5
-    page.locator("#scenarioPlatform").fill("1000000")
-    page.locator("#scenarioPartnerCount").fill("2")
-    page.locator("#scenarioPartnerAvg").fill("500000")
-    expect(page.locator("#investorScenarioResult")).to_contain_text(re.compile(r"2\s*000\s*000"))
+    expect(page.locator("#committeeState")).to_contain_text("PILOT DILIGENCE READY")
+    assert page.locator("#diligenceGrid .diligenceCard").count() >= 7
+    assert page.locator("#investorRisks .riskRow").count() >= 5
+    assert page.locator("#investorScalePaths .scalePath").count() >= 5
+    page.locator("#econPlatform").fill("1000000")
+    page.locator("#econEvents").fill("2")
+    page.locator("#econEventFee").fill("500000")
+    expect(page.locator("#investorEconomicsOutput")).to_contain_text(re.compile(r"2\s*000\s*000"))
+    expect(page.locator("#investorEconomicsOutput")).to_contain_text("MAX REVENUE-LINE CONCENTRATION")
     assert_no_page_overflow(page, width, f"{name}/investor")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-investor.png"), full_page=True)
 

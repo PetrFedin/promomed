@@ -222,6 +222,147 @@ def snapshot(c):
         ],
     }
 
+    diligence_domains = [
+        {
+            "id": "product_experience",
+            "title": "Product experience",
+            "status": "live",
+            "question": "Есть ли цельный пользовательский продукт, а не набор экранов?",
+            "evidence": "Participant journey, Inbox, event, community and investor surfaces run in the current responsive web runtime.",
+        },
+        {
+            "id": "technical_architecture",
+            "title": "Technical architecture",
+            "status": "ci_proven",
+            "question": "Можно ли масштабировать код без возврата к HTTP-монолиту?",
+            "evidence": "Bounded read/write contexts, architecture regression gates and PostgreSQL compatibility are CI-proven.",
+        },
+        {
+            "id": "persistence",
+            "title": "Durable production state",
+            "status": "live" if production else "ci_proven",
+            "question": "Есть ли admitted production data authority?",
+            "evidence": (
+                "Durable PostgreSQL is admitted live."
+                if production
+                else "Clean PostgreSQL admission and restore are CI-proven; external live source/restore capacity remains the Phase 0 blocker."
+            ),
+        },
+        {
+            "id": "commercial_loop",
+            "title": "Commercial execution",
+            "status": "demo",
+            "question": "Можно ли связать партнёрское обещание с измеримым исполнением?",
+            "evidence": "Partner package -> deliverable -> appointment/placement -> consented action -> evidence is executable in Golden Demo.",
+        },
+        {
+            "id": "market_traction",
+            "title": "Market traction",
+            "status": "gated",
+            "question": "Есть ли доказанная готовность рынка платить и возвращаться?",
+            "evidence": "Not claimed in MVP. Requires a paid pilot and agreed success criteria.",
+        },
+        {
+            "id": "medical_governance",
+            "title": "Medical / editorial governance",
+            "status": "gated",
+            "question": "Можно ли безопасно масштабировать governed health content?",
+            "evidence": "Not activated before Phase 0 COMPLETE and PROMO-INT-02 review authority.",
+        },
+        {
+            "id": "economics",
+            "title": "Commercial economics",
+            "status": "demo",
+            "question": "Проверена ли unit economics?",
+            "evidence": "Scenario calculator is assumption-only. Real pricing, delivery cost and conversion require the funded pilot.",
+        },
+    ]
+
+    risk_register = [
+        {
+            "id": "infra_capacity",
+            "severity": "blocking" if not production else "controlled",
+            "title": "Durable PostgreSQL capacity",
+            "mitigation": (
+                "Admit an isolated source + restore PostgreSQL and run the existing fail-closed workflow."
+                if not production
+                else "Live admission proof is green; keep restore evidence current."
+            ),
+        },
+        {
+            "id": "governance",
+            "severity": "gated",
+            "title": "Medical / editorial authority",
+            "mitigation": "Do not activate medical claims, evidence intelligence or scientific-information delivery before PROMO-INT-02 and later authorities.",
+        },
+        {
+            "id": "traction",
+            "severity": "unproven",
+            "title": "Paid market traction",
+            "mitigation": "Use the first funded pilot to validate willingness to pay, partner renewal intent and participant return rather than projecting them.",
+        },
+        {
+            "id": "concentration",
+            "severity": "measure",
+            "title": "Revenue concentration",
+            "mitigation": "Use the scenario lab and pilot actuals to measure dependence on platform fee vs partner/media/experience lines.",
+        },
+        {
+            "id": "execution",
+            "severity": "demo_proven",
+            "title": "Event operating execution",
+            "mitigation": "Golden Demo already exercises capacity, waitlist, venue change, stream recovery, check-in and partner evidence; paid pilot must prove the same under real load.",
+        },
+    ]
+
+    scale_paths = [
+        {
+            "title": "Flagship annual event + 365 relationship",
+            "status": "demo",
+            "why": "Existing participant, event, media, community and post-event journeys already connect in one product.",
+        },
+        {
+            "title": "Partner activation platform",
+            "status": "demo",
+            "why": "Packages, appointments, deliverables, consent and evidence can form a repeatable B2B layer.",
+        },
+        {
+            "title": "Studio / expert / topic network",
+            "status": "demo",
+            "why": "Content, speakers, Studio, learning and community provide a year-round return loop.",
+        },
+        {
+            "title": "Governed scientific-information platform",
+            "status": "gated",
+            "why": "High-value enterprise path, but it opens only after review, evidence, claim and expert authorities exist.",
+        },
+        {
+            "title": "White-label operating system",
+            "status": "gated",
+            "why": "Potential scale path only after a repeatable paid pilot proves configuration, operations and commercial economics.",
+        },
+    ]
+
+    committee_state = {
+        "evidence_state": "pilot_diligence_ready" if not production else "production_core_admitted",
+        "current_scope": (
+            "Investor diligence + controlled pilot preparation"
+            if not production
+            else "Production-core pilot preparation"
+        ),
+        "next_gate": (
+            "Phase 0 COMPLETE: live durable PostgreSQL + production account + authenticated smoke"
+            if not production
+            else "PROMO-INT-02 Editorial & Medical Review Authority"
+        ),
+        "not_claimed": [
+            "Paid market traction",
+            "Validated unit economics",
+            "Production medical governance",
+            "Revenue forecast or valuation",
+        ],
+    }
+
     blockers = []
     if not production:
         blockers.append({
@@ -247,6 +388,10 @@ def snapshot(c):
         "defensibility": defensibility,
         "capital_milestones": capital_milestones,
         "investor_thesis": investor_thesis,
+        "diligence_domains": diligence_domains,
+        "risk_register": risk_register,
+        "scale_paths": scale_paths,
+        "committee_state": committee_state,
         "blockers": blockers,
         "disclaimers": [
             "MVP metrics are demo/runtime evidence, not market traction.",

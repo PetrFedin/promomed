@@ -235,6 +235,19 @@ Rules:
 - Medical Information / Evidence Intelligence remain gated behind Review/Evidence/Claim authorities;
 - the strongest next investor proof remains live PostgreSQL admission, not additional feature count.
 
+##### Investment Committee Room checkpoint — 2026-10-05
+
+While PROMO-INT-00 remains blocked only by external durable PostgreSQL capacity, the investor-facing layer is extended without opening Phase 1:
+
+- one consolidated, user-input-only Scenario Economics Lab;
+- server-owned investment-committee diligence domains;
+- explicit risk register separating blocking, gated, unproven and demo-proven states;
+- strategic scale paths marked DEMO or GATED;
+- current evidence state remains `pilot_diligence_ready` until Phase 0 is COMPLETE;
+- paid market traction, validated unit economics, production medical governance, revenue forecast and valuation remain explicitly **not claimed**.
+
+This layer is commercial/diligence presentation of already governed product evidence; it does not introduce medical/editorial authority.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  
