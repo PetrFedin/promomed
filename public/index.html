@@ -112,6 +112,17 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 .investorScenarioResult div{background:#fff;border:1px solid var(--l);border-radius:14px;padding:12px}
 .investorScenarioResult strong{display:block;font-size:18px;margin-top:4px}
 @media(min-width:800px){.investorLogic{grid-template-columns:repeat(2,1fr)}.investorScenarioGrid{grid-template-columns:repeat(3,1fr)}.investorScenarioResult{grid-template-columns:repeat(4,1fr)}}
+.committeeHero{border-radius:24px;padding:19px;background:linear-gradient(145deg,#f4f8fc,#fff);border:1px solid #d8e4ef}
+.committeeHero h3{margin:7px 0 5px;font-size:20px}
+.committeeGrid{display:grid;grid-template-columns:1fr;gap:9px;margin-top:10px}
+.diligenceCard{border:1px solid var(--l);border-radius:16px;padding:14px;background:#fff}
+.diligenceCard .q{font-size:10px;font-weight:750;color:#34485f;margin:8px 0 5px}
+.riskRow{display:grid;grid-template-columns:1fr auto;gap:10px;padding:13px 0;border-bottom:1px solid var(--l)}
+.riskRow:last-child{border-bottom:0}
+.riskSeverity{font-size:8px;font-weight:900;letter-spacing:.6px;border-radius:999px;padding:6px 8px;white-space:nowrap;height:max-content}
+.riskSeverity.blocking{background:#ffeaec;color:#9c2530}.riskSeverity.gated{background:#f2f3f5;color:#667085}.riskSeverity.unproven{background:#fff4db;color:#8a5c06}.riskSeverity.measure{background:#eaf2ff;color:#2454a6}.riskSeverity.demo_proven,.riskSeverity.controlled{background:#e8f7f1;color:#12684e}
+.scalePath{display:grid;grid-template-columns:1fr auto;gap:10px;padding:14px;border-radius:16px;background:#fff;border:1px solid var(--l);margin-top:8px}
+@media(min-width:800px){.committeeGrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 </style></head><body>
 <main class="app"><header class="top"><div class="brand"><b>с.</b>СОСТОЯНИЕ</div><div class="topActions"><button class="icon" aria-label="Поиск" onclick="openSheet('search')">⌕</button><button class="icon" aria-label="Уведомления" onclick="openNotifications()">●</button><button class="icon" aria-label="Аккаунт и управление" onclick="openSheet('control')">•••</button></div></header>
@@ -204,7 +215,9 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 <div class="section"><div class="ey blue">DEFENSIBILITY · WHY THIS IS NOT JUST AN EVENT APP</div><h2>Moat строится на связи journey, consent, operations и evidence</h2><div id="investorMoat" class="investorMoatGrid"></div><div id="investorDisclaimers"></div></div>
 <div class="section"><div class="ey blue">INVESTMENT THESIS · PLATFORM, NOT ONE-OFF EVENT</div><h2>Что именно здесь может накапливать стоимость</h2><div id="investorThesis" class="investorThesis"><p class="small muted">Загрузка investment thesis…</p></div></div>
 <div class="section"><div class="ey blue">CAPITAL MILESTONES · MONEY → CAPABILITY → PROOF</div><h2>Каждый следующий этап открывается только после доказательства предыдущего</h2><div id="investorMilestones"></div></div>
-<div class="section"><div class="ey blue">COMMERCIAL SCENARIO BUILDER · INPUTS, NOT FORECAST</div><h2>Проверяем economics без выдуманной выручки</h2><p class="small muted">Введите только согласованные или собственные допущения. Поля по умолчанию пустые; GATED enterprise-модули намеренно не включены в расчёт.</p><div class="investorScenario"><div class="investorScenarioGrid"><label>PLATFORM / PILOT FEE, ₽<input id="scenarioPlatform" inputmode="decimal" placeholder="0" oninput="recalcInvestorScenario()"></label><label>PARTNER PACKAGES · COUNT<input id="scenarioPartnerCount" inputmode="decimal" placeholder="0" oninput="recalcInvestorScenario()"></label><label>AVG PARTNER PACKAGE, ₽<input id="scenarioPartnerAvg" inputmode="decimal" placeholder="0" oninput="recalcInvestorScenario()"></label><label>EXPERIENCE MODULES · COUNT<input id="scenarioExperienceCount" inputmode="decimal" placeholder="0" oninput="recalcInvestorScenario()"></label><label>AVG EXPERIENCE MODULE, ₽<input id="scenarioExperienceAvg" inputmode="decimal" placeholder="0" oninput="recalcInvestorScenario()"></label><label>STUDIO / CONTENT PACKAGES · COUNT<input id="scenarioStudioCount" inputmode="decimal" placeholder="0" oninput="recalcInvestorScenario()"></label><label>AVG STUDIO PACKAGE, ₽<input id="scenarioStudioAvg" inputmode="decimal" placeholder="0" oninput="recalcInvestorScenario()"></label><label>DIRECT DELIVERY COST, ₽<input id="scenarioDirectCost" inputmode="decimal" placeholder="0" oninput="recalcInvestorScenario()"></label></div><div id="investorScenarioResult" class="investorScenarioResult"><div><span class="tiny muted">SCENARIO REVENUE</span><strong>—</strong></div><div><span class="tiny muted">CONTRIBUTION</span><strong>—</strong></div><div><span class="tiny muted">CONTRIBUTION %</span><strong>—</strong></div><div><span class="tiny muted">MAX LINE CONCENTRATION</span><strong>—</strong></div></div><div class="investorDisclaimer">Сценарий не является прогнозом, бюджетом, офертой или оценкой бизнеса. Это калькулятор введённых пользователем коммерческих предпосылок.</div></div></div>
+<div class="section"><div class="ey blue">INVESTMENT COMMITTEE ROOM · DILIGENCE BEFORE STORYTELLING</div><h2>Что должен увидеть инвестиционный комитет до следующего транша</h2><div id="committeeState" class="committeeHero"><p class="small muted">Загрузка committee state…</p></div><div id="diligenceGrid" class="committeeGrid"></div></div>
+<div class="section"><div class="ey blue">RISK REGISTER · EXPLICIT, NOT HIDDEN</div><h2>Что может сломать thesis и чем это закрывается</h2><div id="investorRisks" class="card"></div></div>
+<div class="section"><div class="ey blue">SCALE PATHS · OPTION VALUE AFTER PROOF</div><h2>Куда продукт может расти после оплаченного доказательства</h2><div id="investorScalePaths"></div><div class="investorDisclaimer">Scale paths — стратегические опции, а не обещание рынка или будущей оценки. White-label и scientific-information направления остаются GATED до соответствующих proof points.</div></div>
 <div class="opsboard"><div class="ey" style="color:#7fb2ff">LIVE OPERATIONS BOARD</div><h2 style="color:#fff;margin-bottom:14px">Событие под контролем в реальном времени</h2><div id="opsMetrics" class="proofgrid"></div><div id="opsLine" class="small muted" style="margin-top:14px">Загрузка server authority…</div></div>
 <div class="section"><div class="ey blue">PARTNER CONTRACT PROOF</div><h2>Обещание → выполнение → evidence</h2><div id="deliverableProof" class="card"></div></div>
 <div class="section"><div class="ey blue">DEMO-RUN AUDIT TRAIL</div><h2>Что реально произошло</h2><div id="eventTimeline" class="card"></div></div>
@@ -555,27 +568,13 @@ function econValue(id){const el=document.getElementById(id);const n=Number(el?.v
 function formatMoney(v){return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0}).format(Math.round(v))+' ₽'}
 function calcInvestorScenario(){
  const platform=econValue('econPlatform'),events=econValue('econEvents'),eventFee=econValue('econEventFee'),partners=econValue('econPartners'),partnerFee=econValue('econPartnerFee'),studio=econValue('econStudio'),cost=econValue('econCost'),investment=econValue('econInvestment');
- const revenue=platform+events*eventFee+partners*partnerFee+studio,contribution=revenue-cost,margin=revenue>0?contribution/revenue*100:null,monthly=contribution>0?contribution/12:0,payback=investment>0&&monthly>0?investment/monthly:null;
+ const lines=[platform,events*eventFee,partners*partnerFee,studio],revenue=lines.reduce((a,b)=>a+b,0),contribution=revenue-cost,margin=revenue>0?contribution/revenue*100:null,monthly=contribution>0?contribution/12:0,payback=investment>0&&monthly>0?investment/monthly:null,concentration=revenue>0?Math.max(...lines)/revenue*100:null;
  const root=document.getElementById('investorEconomicsOutput');if(!root)return;
- root.innerHTML='<div class="proofgrid"><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">MODELED ANNUAL REVENUE</span><strong>'+formatMoney(revenue)+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">CONTRIBUTION</span><strong>'+formatMoney(contribution)+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">CONTRIBUTION MARGIN</span><strong>'+(margin===null?'—':margin.toFixed(1)+'%')+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">PAYBACK</span><strong>'+(payback===null?'—':payback.toFixed(1)+' мес.')+'</strong></div></div><div class="tiny muted" style="margin-top:10px">Scenario only · значения не сохраняются и не являются прогнозом.</div>'
+ root.innerHTML='<div class="proofgrid"><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">MODELED ANNUAL REVENUE</span><strong>'+formatMoney(revenue)+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">CONTRIBUTION</span><strong>'+formatMoney(contribution)+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">CONTRIBUTION MARGIN</span><strong>'+(margin===null?'—':margin.toFixed(1)+'%')+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">PAYBACK</span><strong>'+(payback===null?'—':payback.toFixed(1)+' мес.')+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">MAX REVENUE-LINE CONCENTRATION</span><strong>'+(concentration===null?'—':concentration.toFixed(1)+'%')+'</strong></div></div><div class="tiny muted" style="margin-top:10px">Scenario only · значения не сохраняются и не являются прогнозом.</div>'
 }
 function investorStatus(status){
  const labels={live:'LIVE',ci_proven:'CI-PROVEN',demo:'DEMO',gated:'GATED'};
  return '<span class="investorStatus '+esc(status)+'">'+(labels[status]||esc(status))+'</span>'
-}
-function scenarioNumber(id){const el=document.getElementById(id);return Number(String(el?.value||'').replace(/[^0-9.,-]/g,'').replace(',','.'))||0}
-function scenarioMoney(v){return new Intl.NumberFormat('ru-RU',{maximumFractionDigits:0}).format(v)+' ₽'}
-function recalcInvestorScenario(){
- const platform=scenarioNumber('scenarioPlatform');
- const partner=scenarioNumber('scenarioPartnerCount')*scenarioNumber('scenarioPartnerAvg');
- const experience=scenarioNumber('scenarioExperienceCount')*scenarioNumber('scenarioExperienceAvg');
- const studio=scenarioNumber('scenarioStudioCount')*scenarioNumber('scenarioStudioAvg');
- const cost=scenarioNumber('scenarioDirectCost');
- const lines=[platform,partner,experience,studio],revenue=lines.reduce((a,b)=>a+b,0),contribution=revenue-cost;
- const margin=revenue?contribution/revenue*100:0,concentration=revenue?Math.max(...lines)/revenue*100:0;
- const root=document.getElementById('investorScenarioResult');if(!root)return;
- if(!revenue&&!cost){root.innerHTML='<div><span class="tiny muted">SCENARIO REVENUE</span><strong>—</strong></div><div><span class="tiny muted">CONTRIBUTION</span><strong>—</strong></div><div><span class="tiny muted">CONTRIBUTION %</span><strong>—</strong></div><div><span class="tiny muted">MAX LINE CONCENTRATION</span><strong>—</strong></div>';return}
- root.innerHTML='<div><span class="tiny muted">SCENARIO REVENUE</span><strong>'+scenarioMoney(revenue)+'</strong></div><div><span class="tiny muted">CONTRIBUTION</span><strong>'+scenarioMoney(contribution)+'</strong></div><div><span class="tiny muted">CONTRIBUTION %</span><strong>'+margin.toFixed(1)+'%</strong></div><div><span class="tiny muted">MAX LINE CONCENTRATION</span><strong>'+concentration.toFixed(1)+'%</strong></div>';
 }
 async function loadInvestorReadiness(){
  try{
@@ -600,7 +599,14 @@ async function loadInvestorReadiness(){
   if(thesis)thesis.innerHTML='<div class="ey" style="color:#8edcff">CATEGORY</div><h2 style="color:#fff;margin-top:7px">'+esc(it.category||'—')+'</h2><p class="small">'+esc(it.statement||'')+'</p><p class="tiny muted">'+esc(it.what_is_not||'')+'</p><div class="investorLogic">'+(it.value_creation_logic||[]).map((x,i)=>'<div><span class="tiny muted">VALUE LEVER '+(i+1)+'</span><b>'+esc(x)+'</b></div>').join('')+'</div>';
   const milestones=document.getElementById('investorMilestones');
   if(milestones)milestones.innerHTML=(d.capital_milestones||[]).map(x=>'<div class="investorMilestone"><div><b>'+esc(x.title)+'</b><div class="tiny muted">'+esc(x.decision)+'</div></div>'+investorStatus(x.status)+'</div>').join('');
-  recalcInvestorScenario();
+  const committee=document.getElementById('committeeState'),cs=d.committee_state||{};
+  if(committee)committee.innerHTML='<div class="ey blue">CURRENT EVIDENCE STATE</div><h3>'+esc(String(cs.evidence_state||'—').replaceAll('_',' ').toUpperCase())+'</h3><p class="small">'+esc(cs.current_scope||'')+'</p><div class="notice"><b>NEXT GATE</b><br>'+esc(cs.next_gate||'—')+'</div><div class="tiny muted"><b>NOT CLAIMED:</b> '+(cs.not_claimed||[]).map(esc).join(' · ')+'</div>';
+  const diligence=document.getElementById('diligenceGrid');
+  if(diligence)diligence.innerHTML=(d.diligence_domains||[]).map(x=>'<div class="diligenceCard">'+investorStatus(x.status)+'<h3>'+esc(x.title)+'</h3><div class="q">'+esc(x.question)+'</div><p class="tiny muted">'+esc(x.evidence)+'</p></div>').join('');
+  const risks=document.getElementById('investorRisks');
+  if(risks)risks.innerHTML=(d.risk_register||[]).map(x=>'<div class="riskRow"><div><b>'+esc(x.title)+'</b><div class="tiny muted">'+esc(x.mitigation)+'</div></div><span class="riskSeverity '+esc(x.severity)+'">'+esc(x.severity).replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+  const scale=document.getElementById('investorScalePaths');
+  if(scale)scale.innerHTML=(d.scale_paths||[]).map(x=>'<div class="scalePath"><div><b>'+esc(x.title)+'</b><div class="tiny muted">'+esc(x.why)+'</div></div>'+investorStatus(x.status)+'</div>').join('');
   const disclaimers=document.getElementById('investorDisclaimers');
   if(disclaimers)disclaimers.innerHTML=(d.disclaimers||[]).map(x=>'<div class="investorDisclaimer">'+esc(x)+'</div>').join('');
  }catch(e){console.warn('Investor readiness',e)}
