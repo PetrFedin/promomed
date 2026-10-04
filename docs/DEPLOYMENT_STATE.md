@@ -262,3 +262,20 @@ Zero-cost infrastructure checks on 2026-10-05:
 - Railway: connected account reported `Your trial has expired. Please upgrade to use agent features.`
 
 No paid infrastructure was created.
+
+
+## Investment Committee Room live checkpoint — 2026-10-05
+
+- GitHub `main`: `1b4e196a9daeef7afe560005ac5c58ba73de9645`
+- Public service: `sostoyanie-promomed-live` / `srv-daug7pnlot8c73b1aja0`
+- Public deploy: `dep-db1cp0egekts73d7cvmg` — **LIVE**
+- PostgreSQL admission service: `sostoyanie-promomed-pg-admission` / `srv-davsqk942hec73e1vcr0`
+- Admission deploy: `dep-db1cp1hsrm7s73b381cg` — **LIVE**
+- UI/architecture workflow: `37238330845` — **PASS**
+- Persistence authority workflow: `37238330780` — **PASS**
+- Responsive browser QA: `37238330799` — **PASS**
+- Exact-SHA live Render proof: `37238330866` — **PASS**
+
+Investor surface now includes one consolidated assumption-only economics model plus server-owned committee diligence, risk register and scale-path evidence. Current demo evidence state remains `pilot_diligence_ready`; market traction and production medical governance are explicitly not claimed.
+
+Phase 1 remains gated. External durable PostgreSQL source + restore capacity remains the blocker for Phase 0 COMPLETE.
