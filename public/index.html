@@ -76,6 +76,28 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
   .top{padding-top:max(0px,env(safe-area-inset-top))}
 }
 
+
+/* investor readiness layer */
+.investorStatus{display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;font-size:8px;font-weight:850;letter-spacing:.7px;border:1px solid transparent;white-space:nowrap}
+.investorStatus.live{background:#e8f7f1;color:#12684e;border-color:#cbeadd}
+.investorStatus.ci_proven{background:#eaf2ff;color:#2454a6;border-color:#d1e0fb}
+.investorStatus.demo{background:#fff4db;color:#8a5c06;border-color:#f1dfb7}
+.investorStatus.gated{background:#f2f3f5;color:#667085;border-color:#e2e5e9}
+.investorMatrix{display:grid;grid-template-columns:1fr;gap:9px}
+.investorCapability{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start;padding:15px;border:1px solid var(--l);border-radius:16px;background:#fff}
+.investorCapability b{display:block;margin-bottom:4px}
+.investorRevenueGrid,.investorMoatGrid{display:grid;grid-template-columns:1fr;gap:10px}
+.investorRevenueCard,.investorMoatCard{padding:16px;border:1px solid var(--l);border-radius:18px;background:#fff}
+.investorRevenueCard h3,.investorMoatCard h3{margin:8px 0 5px}
+.investorRuntime{background:linear-gradient(145deg,#071d36,#0d3156);color:#fff;border-radius:22px;padding:18px}
+.investorRuntime .muted{color:#a9bed0}
+.investorRuntimeGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:12px}
+.investorRuntimeMetric{padding:12px;border:1px solid #ffffff20;border-radius:14px;background:#ffffff09}
+.investorRuntimeMetric strong{display:block;font-size:20px;margin-top:4px}
+.investorBlocker{border-left:3px solid #d58b19;background:#fff8e9;border-radius:12px;padding:12px 14px;margin-top:10px}
+.investorDisclaimer{font-size:9px;color:#64748b;line-height:1.55;padding:10px 0;border-top:1px solid var(--l)}
+@media(min-width:800px){.investorMatrix{grid-template-columns:repeat(2,minmax(0,1fr))}.investorRevenueGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.investorMoatGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.investorRuntimeGrid{grid-template-columns:repeat(4,1fr)}}
+
 </style></head><body>
 <main class="app"><header class="top"><div class="brand"><b>с.</b>СОСТОЯНИЕ</div><div class="topActions"><button class="icon" aria-label="Поиск" onclick="openSheet('search')">⌕</button><button class="icon" aria-label="Уведомления" onclick="openNotifications()">●</button><button class="icon" aria-label="Аккаунт и управление" onclick="openSheet('control')">•••</button></div></header>
 
@@ -161,6 +183,9 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 <section id="partnerDash" class="screen partner"><div class="adminbar"><div class="ey">PARTNER CABINET · LIVE DEMO DATA</div><select onchange="switchRole(this.value)"><option value="partner">Партнёр</option><option value="organizer">Организатор</option><option value="participant">Участник</option></select></div><div class="ey blue">CONTRACT → DELIVERY → EVIDENCE</div><h1>Партнёр видит, что было обещано и что реально выполнено.</h1><div id="partnerProof" class="card"><p class="small muted">Загрузка фактического demo-run…</p></div><div class="section"><div class="ey blue">PARTNER CRM · OPERATIONAL PILOT</div><h2>От размещения до продолжения отношений</h2><div id="partnerCRM" class="proofgrid"><div class="proofmetric"><span class="tiny muted">APPOINTMENTS</span><strong id="crmAppointments">0</strong><span class="tiny muted">записи на партнёрские слоты</span></div><div class="proofmetric"><span class="tiny muted">CONSENT</span><strong id="crmConsent">0</strong><span class="tiny muted">добровольный интерес</span></div><div class="proofmetric"><span class="tiny muted">30 DAYS</span><strong id="crm30">0</strong><span class="tiny muted">продолжение маршрута</span></div><div class="proofmetric"><span class="tiny muted">RETURN</span><strong id="crmReturn">0</strong><span class="tiny muted">replay / return</span></div></div></div><div class="section"><h2>Роль партнёра в экосистеме</h2><div class="card"><div class="ey blue">CATEGORY FIT</div><h3>Не спонсорский логотип — закрытая ниша journey</h3><p class="small muted">Партнёр выбирается по роли в маршруте человека: диагностика, питание, движение, сон, восстановление, технологии, клиники или сервис. Для каждой категории — deliverable, disclosure, consented action и post-event continuation.</p></div><div class="card"><div class="ey blue">PARTNER VALUE</div><h3>Контент → участие → добровольный интерес → продолжение</h3><p class="small muted">Партнёр видит не только показы: какие форматы привели к посещению, материалу, добровольному запросу и повторному участию — без передачи чувствительных health-данных.</p></div></div><div class="notice">Здесь нет прогнозных «охватов». До реального пилота показываем только события, созданные текущим Golden Demo.</div><div class="actions"><button class="btn" onclick="loadInvestorProof('partner')">Обновить evidence</button><button class="btn ghost" onclick="showInvestorProof()">Investor proof →</button></div></section>
 
 <section id="investorProof" class="screen sales"><div class="ey blue">INVESTOR MVP PROOF · LIVE DEMO RUN</div><h1>Не презентация функций. Доказательство управляемого продукта.</h1>
+<div class="section"><div class="ey blue">INVESTOR READINESS · VERIFIED STATUS</div><h2>Что уже доказано, а что намеренно ещё не продаём как готовое</h2><p class="small muted">Статусы приходят из server authority. LIVE — работает в текущем runtime; CI-PROVEN — воспроизводимо доказано, но ещё не admitted в production; DEMO — рабочая механика на демонстрационных данных; GATED — зависит от следующей authority.</p><div id="investorRuntime" class="investorRuntime"><p class="small muted">Загрузка runtime proof…</p></div><div id="investorCounts" class="proofgrid" style="margin-top:10px"></div><div id="investorCapabilities" class="investorMatrix" style="margin-top:10px"></div><div id="investorBlockers"></div></div>
+<div class="section"><div class="ey blue">REVENUE ARCHITECTURE · WITHOUT FICTION</div><h2>Несколько коммерческих контуров на одной платформе</h2><p class="small muted">Здесь нет выдуманной выручки или valuation. Показано, какие коммерческие модели уже поддерживает продуктовая архитектура и какие остаются gated.</p><div id="investorRevenue" class="investorRevenueGrid"></div></div>
+<div class="section"><div class="ey blue">DEFENSIBILITY · WHY THIS IS NOT JUST AN EVENT APP</div><h2>Moat строится на связи journey, consent, operations и evidence</h2><div id="investorMoat" class="investorMoatGrid"></div><div id="investorDisclaimers"></div></div>
 <div class="opsboard"><div class="ey" style="color:#7fb2ff">LIVE OPERATIONS BOARD</div><h2 style="color:#fff;margin-bottom:14px">Событие под контролем в реальном времени</h2><div id="opsMetrics" class="proofgrid"></div><div id="opsLine" class="small muted" style="margin-top:14px">Загрузка server authority…</div></div>
 <div class="section"><div class="ey blue">PARTNER CONTRACT PROOF</div><h2>Обещание → выполнение → evidence</h2><div id="deliverableProof" class="card"></div></div>
 <div class="section"><div class="ey blue">DEMO-RUN AUDIT TRAIL</div><h2>Что реально произошло</h2><div id="eventTimeline" class="card"></div></div>
@@ -507,6 +532,33 @@ async function openNotifications(){
  }catch(e){openSheet('notifications')}
 }
 function eventLabel(k){return ({demo_reset:'Demo подготовлено',venue_full:'Зал заполнен',booking_waitlist:'Waitlist',seat_released:'Место освобождено',waitlist_promoted:'Автоповышение',schedule_changed:'Перенос зала',notification_created:'Уведомление',live_state:'Live state',checkin:'QR check-in',placement_active:'Placement',voluntary_lead:'Consented lead',journey_replay:'Post-event replay',journey_attended:'Attendance'})[k]||k}
+function investorStatus(status){
+ const labels={live:'LIVE',ci_proven:'CI-PROVEN',demo:'DEMO',gated:'GATED'};
+ return '<span class="investorStatus '+esc(status)+'">'+(labels[status]||esc(status))+'</span>'
+}
+async function loadInvestorReadiness(){
+ try{
+  const d=await api('/api/investor-proof'),r=d.runtime||{},counts=d.counts||{};
+  const runtime=document.getElementById('investorRuntime');
+  if(runtime)runtime.innerHTML='<div class="ey" style="color:#8edcff">RUNTIME AUTHORITY</div><div class="investorRuntimeGrid">'+[
+   ['Backend',r.backend||'—'],['Durable',r.durable?'YES':'NO'],['Production ready',r.production_ready?'YES':'NO'],['Demo identities',String(r.demo_accounts??0)]
+  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+x[0]+'</span><strong>'+esc(x[1])+'</strong></div>').join('')+'</div>';
+  const countRoot=document.getElementById('investorCounts');
+  if(countRoot)countRoot.innerHTML=[
+   ['PROGRAM',counts.program_items],['CONTENT',counts.content_items],['EXPERTS',counts.speakers],['PARTNER PACKAGES',counts.partner_packages]
+  ].map(x=>'<div class="proofmetric"><span class="tiny muted">'+x[0]+'</span><strong>'+esc(x[1]??0)+'</strong></div>').join('');
+  const caps=document.getElementById('investorCapabilities');
+  if(caps)caps.innerHTML=(d.capabilities||[]).map(x=>'<div class="investorCapability"><div><b>'+esc(x.title)+'</b><div class="tiny muted">'+esc(x.proof)+'</div></div>'+investorStatus(x.status)+'</div>').join('');
+  const blockers=document.getElementById('investorBlockers');
+  if(blockers)blockers.innerHTML=(d.blockers||[]).map(x=>'<div class="investorBlocker"><b>'+esc(x.title)+'</b><div class="tiny muted">'+esc(x.detail)+'</div></div>').join('');
+  const revenue=document.getElementById('investorRevenue');
+  if(revenue)revenue.innerHTML=(d.revenue_architecture||[]).map(x=>'<div class="investorRevenueCard">'+investorStatus(x.status)+'<h3>'+esc(x.title)+'</h3><div class="small"><b>'+esc(x.model)+'</b></div><p class="tiny muted">'+esc(x.evidence)+'</p></div>').join('');
+  const moat=document.getElementById('investorMoat');
+  if(moat)moat.innerHTML=(d.defensibility||[]).map(x=>'<div class="investorMoatCard">'+investorStatus(x.status)+'<h3>'+esc(x.title)+'</h3><p class="small muted">'+esc(x.detail)+'</p></div>').join('');
+  const disclaimers=document.getElementById('investorDisclaimers');
+  if(disclaimers)disclaimers.innerHTML=(d.disclaimers||[]).map(x=>'<div class="investorDisclaimer">'+esc(x)+'</div>').join('');
+ }catch(e){console.warn('Investor readiness',e)}
+}
 async function loadInvestorProof(mode='investor'){
  try{
   const d=await api('/api/demo/evidence'),m=d.metrics||{};
@@ -520,7 +572,7 @@ async function loadInvestorProof(mode='investor'){
   const pp=document.getElementById('partnerProof');if(pp)pp.innerHTML='<div class="proofgrid"><div class="proofmetric"><span class="tiny muted">Delivered</span><strong>'+(d.deliverables||[]).filter(x=>x.status==='delivered').length+'/'+(d.deliverables||[]).length+'</strong></div><div class="proofmetric"><span class="tiny muted">Voluntary leads</span><strong>'+(m.voluntary_leads||0)+'</strong></div><div class="proofmetric"><span class="tiny muted">Replay</span><strong>'+(m.post_event_replay||0)+'</strong></div><div class="proofmetric"><span class="tiny muted">Placement</span><strong style="font-size:16px">'+(m.placement_status||'—')+'</strong></div></div><div style="margin-top:12px">'+(d.deliverables||[]).map(x=>'<div class="evidence-row"><div class="badge">✓</div><div><b>'+x.label+'</b><div class="tiny muted">'+(x.evidence||'Ожидает выполнения')+'</div></div><span class="pill '+(x.status==='delivered'?'green':'')+'">'+x.status+'</span></div>').join('')+'</div>';
  }catch(e){console.warn('Investor proof',e)}
 }
-async function showInvestorProof(){await goldenLogin();show('investorProof');await Promise.all([loadInvestorProof(),loadCommand()])}
+async function showInvestorProof(){await goldenLogin();show('investorProof');await Promise.all([loadInvestorProof(),loadInvestorReadiness(),loadCommand()])}
 const goldenCopy=[
  ['Готово к показу','Исходное состояние сброшено. Один demo run, известные данные, никаких следов предыдущей встречи.','Подготовить полный зал'],
  ['Зал заполнен','Capacity authority показывает 120 / 120. Следующая бронь уже не может стать confirmed.','Поставить P2/P3 в waitlist'],
