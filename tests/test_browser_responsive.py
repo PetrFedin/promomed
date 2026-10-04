@@ -144,6 +144,21 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     )
     assert status == 403, f"{name}: unconfirmed participant DM returned {status}"
 
+    # Investor readiness proof must render as a real responsive product surface.
+    page.evaluate("() => showInvestorProof()")
+    page.wait_for_selector("#investorProof.on")
+    expect(page.locator("#investorRuntime")).to_contain_text("Backend")
+    expect(page.locator("#investorRuntime")).to_contain_text("Production ready")
+    assert page.locator("#investorCapabilities .investorCapability").count() >= 8
+    expect(page.locator("#investorThesis")).to_contain_text("event operating system")
+    assert page.locator("#investorMilestones .investorMilestone").count() >= 5
+    page.locator("#scenarioPlatform").fill("1000000")
+    page.locator("#scenarioPartnerCount").fill("2")
+    page.locator("#scenarioPartnerAvg").fill("500000")
+    expect(page.locator("#investorScenarioResult")).to_contain_text("2 000 000")
+    assert_no_page_overflow(page, width, f"{name}/investor")
+    page.screenshot(path=str(OUT / f"{clean_name(name)}-investor.png"), full_page=True)
+
     assert not errors, f"{name}: page errors: {errors}"
     context.close()
 
