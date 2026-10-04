@@ -45,6 +45,16 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("@media(prefers-reduced-motion:reduce)", INDEX)
         self.assertIn("@media(display-mode:standalone)", INDEX)
 
+    def test_investor_readiness_is_evidence_labeled(self):
+        self.assertIn('id="investorRuntime"', INDEX)
+        self.assertIn('id="investorCapabilities"', INDEX)
+        self.assertIn('id="investorRevenue"', INDEX)
+        self.assertIn('id="investorMoat"', INDEX)
+        self.assertIn("async function loadInvestorReadiness()", INDEX)
+        self.assertIn("CI-PROVEN", INDEX)
+        self.assertIn("REVENUE ARCHITECTURE · WITHOUT FICTION", INDEX)
+        self.assertIn("DEFENSIBILITY · WHY THIS IS NOT JUST AN EVENT APP", INDEX)
+
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)
 
