@@ -152,3 +152,19 @@ Repository/runtime scope:
 The investor layer explicitly distinguishes executable demo mechanics from production authority and future governed modules.
 
 No revenue forecast, valuation, market share or medical outcome is claimed.
+
+
+## Investment Committee Room — 2026-10-05
+
+Investor Readiness was extended from a pitch surface into a diligence-oriented committee view:
+
+- one consolidated assumption-only Scenario Economics Lab;
+- annual revenue, contribution, margin, payback and revenue-line concentration calculations;
+- server-owned diligence domains for product, architecture, durability, commercial execution, traction, economics and medical governance;
+- explicit risk register with blocker / gated / unproven / measure / demo-proven states;
+- strategic scale paths with DEMO vs GATED status;
+- committee state that distinguishes current evidence from claims not yet proven.
+
+The current demo runtime is explicitly `pilot_diligence_ready`, not production-medical-ready and not market-traction-proven.
+
+Phase 1 remains gated behind Phase 0 COMPLETE.
