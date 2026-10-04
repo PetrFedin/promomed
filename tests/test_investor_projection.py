@@ -48,6 +48,18 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(statuses["evidence_claim"], "gated")
         self.assertEqual(statuses["medical_info"], "gated")
 
+    def test_capital_milestones_are_dependency_gated(self):
+        proof = self.investor.snapshot(self.c)
+        milestones = {x["id"]: x["status"] for x in proof["capital_milestones"]}
+        self.assertEqual(milestones["phase0"], "ci_proven")
+        self.assertEqual(milestones["phase1"], "gated")
+        self.assertEqual(milestones["phase2"], "gated")
+        self.assertEqual(milestones["phase3"], "gated")
+        self.assertEqual(milestones["scale"], "gated")
+        thesis = proof["investor_thesis"]
+        self.assertIn("event operating system", thesis["category"])
+        self.assertGreaterEqual(len(thesis["value_creation_logic"]), 4)
+
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
         joined = str(proof).lower()
