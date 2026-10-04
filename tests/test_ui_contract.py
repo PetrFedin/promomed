@@ -45,6 +45,26 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("@media(prefers-reduced-motion:reduce)", INDEX)
         self.assertIn("@media(display-mode:standalone)", INDEX)
 
+    def test_investor_readiness_is_evidence_labeled(self):
+        self.assertIn('id="investorRuntime"', INDEX)
+        self.assertIn('id="investorCapabilities"', INDEX)
+        self.assertIn('id="investorRevenue"', INDEX)
+        self.assertIn('id="investorMoat"', INDEX)
+        self.assertIn('id="investorThesis"', INDEX)
+        self.assertIn('id="investorMilestones"', INDEX)
+        self.assertIn('id="investorScenarioResult"', INDEX)
+        self.assertIn("async function loadInvestorReadiness()", INDEX)
+        self.assertIn("CI-PROVEN", INDEX)
+        self.assertIn("REVENUE ARCHITECTURE · WITHOUT FICTION", INDEX)
+        self.assertIn("DEFENSIBILITY · WHY THIS IS NOT JUST AN EVENT APP", INDEX)
+        self.assertIn("COMMERCIAL SCENARIO BUILDER · INPUTS, NOT FORECAST", INDEX)
+        self.assertIn("function recalcInvestorScenario()", INDEX)
+        self.assertIn("Сценарий не является прогнозом", INDEX)
+        self.assertIn("SCENARIO ECONOMICS LAB · USER INPUT ONLY", INDEX)
+        self.assertIn("function calcInvestorScenario()", INDEX)
+        self.assertIn("Revenue = platform fee + events × event fee", INDEX)
+        self.assertIn("Scenario only · значения не сохраняются и не являются прогнозом.", INDEX)
+
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)
 

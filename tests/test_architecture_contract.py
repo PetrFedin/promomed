@@ -19,6 +19,7 @@ MODULES = {
     "auth.py",
     "core.py",
     "analytics.py",
+    "investor.py",
     "demo.py",
     "programme.py",
     "content.py",
@@ -116,6 +117,13 @@ class ArchitectureContractTests(unittest.TestCase):
             self.assertIn(marker, LIVE_ADMISSION_WORKFLOW)
         self.assertIn('ready.get("production_ready") is not False', LIVE_PROOF_WORKFLOW)
         self.assertIn('backend=="postgres"', LIVE_PROOF_WORKFLOW)
+
+    def test_investor_projection_stays_outside_http_layer(self):
+        investor = (APP / "investor.py").read_text(encoding="utf-8")
+        self.assertIn('def snapshot(c):', investor)
+        self.assertIn('investor.snapshot(c)', SERVER)
+        self.assertIn('p=="/api/investor-proof"', SERVER)
+        self.assertNotIn('"revenue_architecture" =', SERVER)
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 400)

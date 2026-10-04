@@ -213,6 +213,28 @@ PROMO-INT-00 now has explicit live-state verification:
 
 This removes the final manual interpretation step after an external PostgreSQL is connected. The remaining blocker is resource admission itself, not proof logic.
 
+#### Investor readiness checkpoint — 2026-10-05
+
+While PROMO-INT-00 remains blocked on external durable PostgreSQL capacity, the sellability layer is improved without creating new medical/editorial authority.
+
+Implemented:
+
+- investor projection owned by the server rather than static marketing copy;
+- capability truth labels: LIVE / CI-PROVEN / DEMO / GATED;
+- runtime/backend/production-readiness disclosure;
+- revenue architecture with no asserted price/forecast;
+- defensibility map focused on journey + consent + operations + audit;
+- user-input-only Scenario Economics Lab with explicit formulas;
+- investor due-diligence narrative and direct objection handling.
+
+Rules:
+
+- demo metrics are never labelled market traction;
+- GATED modules are not represented as delivered capability;
+- no valuation / ARR / MRR / market-share assumptions are hardcoded;
+- Medical Information / Evidence Intelligence remain gated behind Review/Evidence/Claim authorities;
+- the strongest next investor proof remains live PostgreSQL admission, not additional feature count.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  
