@@ -237,3 +237,28 @@ This deploy remains SQLite on both Render services and therefore remains **demo 
 The public runtime is intentionally still SQLite demo. The dedicated manual live PostgreSQL proof is now present and will accept the admission service only with exact SHA, PostgreSQL durable backend, clean migrations, demo seed disabled, zero demo accounts and `production_ready=true`.
 
 **PROMO-INT-00 repository-side implementation and proof tooling are ready. External isolated PostgreSQL source + restore capacity remains the blocker for Phase 0 COMPLETE.**
+
+
+## Investor readiness live checkpoint — 2026-10-05
+
+- GitHub `main`: `e331d77862890d23ebeeed4c9812255fe1020c10`
+- Public service: `sostoyanie-promomed-live` / `srv-daug7pnlot8c73b1aja0`
+- Public deploy: `dep-db1cg7psrm7s73b275d0` — **LIVE**
+- PostgreSQL admission service: `sostoyanie-promomed-pg-admission` / `srv-davsqk942hec73e1vcr0`
+- Admission deploy: `dep-db1cfm49v7es73eu3b0g` — **LIVE**
+- UI/architecture workflow: `37237046673` — **PASS**
+- Persistence authority workflow: `37237046718` — **PASS**
+- Responsive browser QA: `37237046711` — **PASS**
+- Exact-SHA live Render proof: `37237046666` — **PASS**
+- Live proof statement: `LIVE DEMO PROOF PASS: exact SHA, responsive UI, production_ready=false`
+
+Investor Readiness is now server-backed and live: capability truth labels, runtime proof, revenue architecture, defensibility, capital milestones and a user-input-only scenario economics layer are present without claiming market traction, revenue forecasts, valuation or medical outcomes.
+
+Phase 1 remains gated. External durable PostgreSQL source + restore capacity is still required for Phase 0 COMPLETE.
+
+Zero-cost infrastructure checks on 2026-10-05:
+- Render: second free PostgreSQL rejected with `cannot have more than one active free tier database`;
+- Supabase: no accessible organization/project was available through the connected context;
+- Railway: connected account reported `Your trial has expired. Please upgrade to use agent features.`
+
+No paid infrastructure was created.
