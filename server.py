@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from app import db
+from app import db, investor
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval
@@ -299,6 +299,12 @@ class H(SimpleHTTPRequestHandler):
    streams=[dict(r) for r in c.execute("SELECT item_id,status,health,delay_sec FROM stream_state ORDER BY item_id")]
    c.close()
    return self.out({"by_track":by_track,"by_venue":by_venue,"by_partner":by_partner,"attendance_by_track":attendance_by_track,"attendance_by_partner":attendance_by_partner,"retention":retention,"partner_actions":partner_actions,"consented_interests":consent,"followup_people":follow,"partner_appointments":appts,"confirmed_meetings":meetings+mutual,"replay_users":replay,"funnel":{"registrations":regs,"program_bookings":bookings,"attendance":attended,"partner_appointments":appts,"consent":consent+lead_total,"day30_active":challenges,"return_replay":replay},"venue_ops":venue_ops,"open_incidents":incidents_open,"streams":streams})
+  if p=="/api/investor-proof":
+   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
+   c=conn()
+   try:d=investor.snapshot(c)
+   finally:c.close()
+   return self.out(d)
   if p=="/api/analytics":
    if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
    c=conn(); d=commercial(c); d["seeded_demo"]=False; d["demo_run"]=sval(c,"demo_run","0"); d["demo_step"]=sval(c,"demo_step","-1"); c.close(); return self.out(d)
