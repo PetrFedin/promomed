@@ -54,6 +54,10 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("CI-PROVEN", INDEX)
         self.assertIn("REVENUE ARCHITECTURE · WITHOUT FICTION", INDEX)
         self.assertIn("DEFENSIBILITY · WHY THIS IS NOT JUST AN EVENT APP", INDEX)
+        self.assertIn("SCENARIO ECONOMICS LAB · USER INPUT ONLY", INDEX)
+        self.assertIn("function calcInvestorScenario()", INDEX)
+        self.assertIn("Revenue = platform fee + events × event fee", INDEX)
+        self.assertIn("Scenario only · значения не сохраняются и не являются прогнозом.", INDEX)
 
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)
