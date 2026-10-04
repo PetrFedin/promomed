@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-05 — Investment Committee Room
+
+Consolidated investor economics into one assumption-only model and added a diligence-oriented committee cockpit with explicit risk register, evidence state, unproven claims and gated scale paths. The new surface is designed for investment-committee scrutiny rather than pitch-only storytelling.
+
+
 ## 2026-10-05 — Investor readiness layer
 
 Added server-backed investor proof with LIVE / CI-PROVEN / DEMO / GATED status labels, revenue architecture, defensibility map, runtime blocker disclosure and a zero-default user-input-only scenario economics calculator. Added investor due-diligence narrative. Phase 1 remains gated.
