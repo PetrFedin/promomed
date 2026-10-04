@@ -1461,3 +1461,109 @@ No partner may silently alter published evidence/claims outside editorial author
 
 **Commercial framing:** this can be offered to strategic partners as a governed Medical Information / scientific-engagement module rather than generic sponsored content.
 
+## Premium enterprise wave — scientific knowledge graph and evidence landscape
+
+This wave turns the Evidence Library, Claim Registry, trial radar and expert system into an explorable scientific intelligence graph.
+
+### Scientific Knowledge Graph — ADOPT
+
+Native node types:
+
+- topic/condition;
+- claim;
+- evidence source/publication;
+- clinical study;
+- guideline;
+- expert;
+- institution;
+- intervention/substance;
+- content/session/replay;
+- disclosure/partner context.
+
+Relations may include:
+
+- supports;
+- contradicts/qualifies;
+- cites;
+- studies;
+- authored-by;
+- affiliated-with;
+- discusses;
+- supersedes;
+- mapped-to;
+- reviewed-by.
+
+Promomed remains authority for reviewed claim/evidence relationships.
+
+### OpenAlex enrichment — ADAPT
+
+Current API source:
+
+https://help.openalex.org/api/
+
+Import bounded metadata:
+
+- OpenAlex work/author/institution/topic IDs;
+- citation/cited-by links;
+- publication/source metadata;
+- concept/topic mappings;
+- fetched_at/provider version.
+
+OpenAlex relationships are external bibliographic metadata, not medical conclusions.
+
+### Evidence Landscape View — ADOPT
+
+For a selected topic/claim show:
+
+- reviewed supporting evidence;
+- contradicting/qualifying evidence;
+- active/recent trials;
+- recent publications;
+- key authors/institutions;
+- evidence recency;
+- unresolved review items;
+- related Promomed content/experts.
+
+Do not synthesize a generic public truth score.
+
+### Citation / Influence Navigation — ADOPT
+
+Allow:
+
+claim -> publication -> references/citations -> studies -> author/institution -> reviewed evidence
+
+Every external item is labeled as discovered candidate, reviewed evidence, rejected/out-of-scope, or linked to a published claim.
+
+### Contradiction / Gap Explorer — ADOPT
+
+Surface reviewed gaps such as:
+
+- strong claim with limited reviewed evidence;
+- unresolved contradictory evidence;
+- old sources with newer studies;
+- active trial without published results;
+- partner/product content with weak evidence coverage.
+
+This creates editorial work, not automated medical judgment.
+
+### Graph Visualisation — ADAPT
+
+Reference:
+
+https://github.com/cytoscape/cytoscape.js
+
+The graph is a projection over canonical Promomed records and external metadata.
+
+### Additional acceptance
+
+- every graph edge identifies source provenance;
+- external metadata cannot approve/reject a claim;
+- reviewed vs unreviewed evidence is visually distinct;
+- graph is rebuildable;
+- no public evidence score without validated methodology;
+- disclosure/partner context remains visible.
+
+**Sequencing:** Claim/Evidence/Topic/Trial authorities -> OpenAlex enrichment -> graph projection -> evidence landscape -> contradiction/gap explorer.
+
+**Commercial framing:** scientific evidence intelligence for editors, experts and strategic partners.
+
