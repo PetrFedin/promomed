@@ -130,3 +130,25 @@ Added two complementary release gates:
 - dedicated manual PostgreSQL proof targets the Render admission service and requires durable PostgreSQL, clean migrations, demo seed off, zero demo accounts and `production_ready=true`.
 
 This closes repository-side live verification for PROMO-INT-00. External durable PostgreSQL resource admission remains outstanding.
+
+
+## Investor readiness layer — 2026-10-05
+
+Added an evidence-labelled investor surface without opening Phase 1.
+
+Repository/runtime scope:
+
+- bounded `app/investor.py` projection;
+- role-limited `/api/investor-proof`;
+- LIVE / CI-PROVEN / DEMO / GATED status taxonomy;
+- runtime truth: backend, durability, production readiness, demo/non-demo identities;
+- product evidence counts;
+- revenue architecture without asserted pricing;
+- defensibility map;
+- infrastructure blocker projection;
+- transparent user-input-only Scenario Economics Lab;
+- investor objections / due-diligence narrative in `docs/INVESTOR_READINESS_2026-10-05.md`.
+
+The investor layer explicitly distinguishes executable demo mechanics from production authority and future governed modules.
+
+No revenue forecast, valuation, market share or medical outcome is claimed.
