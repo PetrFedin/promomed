@@ -60,6 +60,24 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertIn("event operating system", thesis["category"])
         self.assertGreaterEqual(len(thesis["value_creation_logic"]), 4)
 
+    def test_investment_committee_truth_boundaries(self):
+        proof = self.investor.snapshot(self.c)
+        committee = proof["committee_state"]
+        self.assertEqual(committee["evidence_state"], "pilot_diligence_ready")
+        self.assertIn("Phase 0 COMPLETE", committee["next_gate"])
+        self.assertIn("Paid market traction", committee["not_claimed"])
+        diligence = {x["id"]: x["status"] for x in proof["diligence_domains"]}
+        self.assertEqual(diligence["product_experience"], "live")
+        self.assertEqual(diligence["technical_architecture"], "ci_proven")
+        self.assertEqual(diligence["market_traction"], "gated")
+        self.assertEqual(diligence["medical_governance"], "gated")
+        risks = {x["id"]: x["severity"] for x in proof["risk_register"]}
+        self.assertEqual(risks["infra_capacity"], "blocking")
+        self.assertEqual(risks["traction"], "unproven")
+        scale = {x["title"]: x["status"] for x in proof["scale_paths"]}
+        self.assertEqual(scale["Governed scientific-information platform"], "gated")
+        self.assertEqual(scale["White-label operating system"], "gated")
+
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
         revenue_text = str(proof["revenue_architecture"]).lower()
