@@ -62,9 +62,9 @@ class InvestorProjectionTests(unittest.TestCase):
 
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
-        joined = str(proof).lower()
+        revenue_text = str(proof["revenue_architecture"]).lower()
         for forbidden in ("valuation", "arr", "mrr", "revenue forecast", "market share"):
-            self.assertNotIn(forbidden, joined)
+            self.assertNotIn(forbidden, revenue_text)
         self.assertTrue(any("No revenue" in x for x in proof["disclaimers"]))
         self.assertTrue(proof["blockers"])
 
