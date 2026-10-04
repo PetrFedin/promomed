@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-05 — Investor readiness layer
+
+Added server-backed investor proof with LIVE / CI-PROVEN / DEMO / GATED status labels, revenue architecture, defensibility map, runtime blocker disclosure and a zero-default user-input-only scenario economics calculator. Added investor due-diligence narrative. Phase 1 remains gated.
+
+
 ## 2026-10-03 — Live admission proof authority
 
 Added fail-closed live-state verification: SQLite public runtime must remain explicitly non-production, while the dedicated PostgreSQL admission workflow requires exact SHA, durable PostgreSQL, clean migrations, demo seed off, zero demo accounts and `production_ready=true`.
