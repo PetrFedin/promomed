@@ -38,6 +38,17 @@ def handle_command(c, path, role, email, data):
     if not charter:
         return error("pilot_charter_not_found", 404)
 
+    if path == "/api/pilot/reset-demo":
+        if role != "sales":
+            return error("forbidden", 403)
+        if not db.demo_seed_enabled():
+            return error("demo_reset_disabled", 403)
+        for table in ("pilot_decisions", "pilot_changes", "pilot_signoffs", "pilot_deliverables", "pilot_kpis", "pilot_charters"):
+            c.execute(f"DELETE FROM {table}")
+        pilot_governance.seed_demo(c)
+        audit(c, "pilot_demo_reset", email, {"charter_id": pilot_governance.CHARTER_ID})
+        return _snapshot(c)
+
     if path == "/api/pilot/kpi-target":
         if role not in ("sales", "organizer"):
             return error("forbidden", 403)
