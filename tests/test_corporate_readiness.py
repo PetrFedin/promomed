@@ -78,6 +78,16 @@ class CorporateReadinessTests(unittest.TestCase):
         self.assertEqual(cert["answer_state"], "not_claimed")
         self.assertIn("No security certification is claimed", cert["answer"])
 
+    def test_framework_crosswalk_is_reference_not_compliance_claim(self):
+        room = self.corporate.snapshot(self.c)
+        crosswalk = room["framework_crosswalk"]
+        nist = [x for x in crosswalk if x["framework"] == "NIST CSF 2.0"]
+        self.assertEqual({x["area"] for x in nist}, {"GOVERN", "IDENTIFY", "PROTECT", "DETECT", "RESPOND", "RECOVER"})
+        asvs = next(x for x in crosswalk if x["framework"] == "OWASP ASVS 5.0.0")
+        self.assertEqual(asvs["status"], "partial")
+        self.assertIn("No full ASVS assessment", asvs["boundary"])
+        self.assertTrue(all("certification" in x["boundary"].lower() or x["framework"].startswith("OWASP") for x in crosswalk if x["framework"] == "NIST CSF 2.0"))
+
     def test_procurement_requires_security_and_production_gates(self):
         room = self.corporate.snapshot(self.c)
         gates = {x["id"]: x["status"] for x in room["procurement_gates"]}
