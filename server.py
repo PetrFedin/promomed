@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from app import corporate, db, executive, investor
+from app import corporate, db, executive, investor, pilot_governance
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval
@@ -12,6 +12,7 @@ from app.participant_commands import handle_command as handle_participant_comman
 from app.programme_commands import handle_command as handle_programme_command
 from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
+from app.pilot_commands import handle_command as handle_pilot_command
 from app.editorial_commands import handle_command as handle_editorial_command
 from app.demo_commands import handle_command as handle_demo_command
 
@@ -28,6 +29,7 @@ def init():
    c.close(); return
   # Deterministic demo seed. Production PostgreSQL requires explicit PROMOMED_SEED_DEMO=true.
   seed_demo_accounts(c)
+  pilot_governance.seed_demo(c)
   defaults={"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"-1","demo_run":"0"}
   for k,v in defaults.items(): c.execute("INSERT OR IGNORE INTO state(k,v) VALUES(?,?)",(k,v))
   c.execute("INSERT OR IGNORE INTO cms(id,status,version,updated) VALUES('A-014','medical_review',1,?)",(int(time.time()),))
@@ -317,6 +319,9 @@ class H(SimpleHTTPRequestHandler):
    try:d=corporate.snapshot(c)
    finally:c.close()
    return self.out(d)
+  if p=="/api/pilot-governance":
+   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
+   c=conn(); d=pilot_governance.snapshot(c); c.close(); return self.out(d)
   if p=="/api/analytics":
    if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
    c=conn(); d=commercial(c); d["seeded_demo"]=False; d["demo_run"]=sval(c,"demo_run","0"); d["demo_step"]=sval(c,"demo_step","-1"); c.close(); return self.out(d)
@@ -377,6 +382,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_programme_command(c,p,role,email,data)
     if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_pilot_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
     if outcome is None: return self.out({"error":"not_found"},404)
