@@ -162,7 +162,7 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 .corpControl .tiny,.corpQuestion .tiny,.corpGate .tiny,.corpData .tiny{overflow-wrap:anywhere;word-break:break-word}
 .corpStatus{display:inline-flex;height:max-content;padding:6px 8px;border-radius:999px;font-size:8px;font-weight:900;letter-spacing:.45px;white-space:nowrap}
 .corpStatus.live,.corpStatus.complete,.corpStatus.available{background:#e8f7f1;color:#12684e}
-.corpStatus.ci_proven{background:#eaf2ff;color:#2454a6}
+.corpStatus.ci_proven{background:#eaf2ff;color:#2454a6}.corpStatus.partial{background:#eaf2ff;color:#2454a6}
 .corpStatus.demo{background:#fff4db;color:#8a5c06}
 .corpStatus.to_prepare,.corpStatus.to_define{background:#fff4db;color:#8a5c06}
 .corpStatus.gated,.corpStatus.not_claimed{background:#f2f3f5;color:#667085}
@@ -299,6 +299,7 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 <div class="section"><div class="ey blue">PRIVACY BOUNDARY</div><h2>Что защищается продуктовой логикой, а что требует policy/legal approval</h2><div id="corpPrivacy" class="corpGrid"></div></div>
 <div class="section"><div class="ey blue">VENDOR QUESTIONNAIRE · FIRST ANSWERS</div><h2>Ответы, которые можно отдать procurement сейчас</h2><div id="corpVendorQuestions"></div></div>
 <div class="section"><div class="ey blue">PROCUREMENT GATES</div><h2>Что должно стать зелёным до production approval</h2><div id="corpProcurement"></div></div>
+<div class="section"><div class="ey blue">FRAMEWORK CROSSWALK · REFERENCE, NOT CERTIFICATION</div><h2>Как текущие evidence и gaps читаются через NIST CSF 2.0 и OWASP ASVS 5.0.0</h2><div id="corpFrameworks" class="corpGrid"></div><div class="notice">Crosswalk ускоряет security review, но не означает сертификацию, аудит соответствия или заявленный ASVS level.</div></div>
 <div class="section"><div class="ey blue">BOUNDARY NOTES</div><div id="corpDisclaimers" class="card"></div></div>
 </section>
 
@@ -772,6 +773,8 @@ function renderCorporateRoom(d){
  if(q)q.innerHTML=(d.vendor_questions||[]).map(x=>'<div class="corpQuestion card"><div><h3>'+esc(x.question)+'</h3><p class="tiny muted">'+esc(x.answer)+'</p></div>'+corpStatus(x.answer_state)+'</div>').join('');
  const g=document.getElementById('corpProcurement');
  if(g)g.innerHTML=(d.procurement_gates||[]).map(x=>'<div class="corpGate"><div><h3>'+esc(x.title)+'</h3><p class="tiny muted">'+esc(x.evidence)+'</p></div>'+corpStatus(x.status)+'</div>').join('');
+ const fw=document.getElementById('corpFrameworks');
+ if(fw)fw.innerHTML=(d.framework_crosswalk||[]).map(x=>'<div class="corpControl"><div><span class="corpDomain">'+esc(x.framework)+'</span><h3>'+esc(x.area)+'</h3><p class="tiny muted">'+esc(x.current_evidence)+'</p><div class="tiny muted"><b>Boundary:</b> '+esc(x.boundary)+'</div></div>'+corpStatus(x.status)+'</div>').join('');
  const dis=document.getElementById('corpDisclaimers');
  if(dis)dis.innerHTML=(d.disclaimers||[]).map(x=>'<div class="investorDisclaimer">'+esc(x)+'</div>').join('');
 }
