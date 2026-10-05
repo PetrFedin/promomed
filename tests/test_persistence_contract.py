@@ -23,6 +23,7 @@ class PersistenceContractTests(unittest.TestCase):
         self.assertIn("001_baseline", status["applied"])
         self.assertIn("002_staff_seed_identity", status["applied"])
         self.assertIn("003_account_authority", status["applied"])
+        self.assertIn("004_pilot_governance", status["applied"])
 
     def test_seed_is_deterministic(self):
         c = server.conn()
@@ -34,7 +35,9 @@ class PersistenceContractTests(unittest.TestCase):
                 "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
                 "staff": c.execute("SELECT COUNT(*) n FROM staff_assignments").fetchone()["n"],
                 "accounts": c.execute("SELECT COUNT(*) n FROM accounts").fetchone()["n"],
-                "accounts": c.execute("SELECT COUNT(*) n FROM accounts").fetchone()["n"],
+                "pilot_charters": c.execute("SELECT COUNT(*) n FROM pilot_charters").fetchone()["n"],
+                "pilot_kpis": c.execute("SELECT COUNT(*) n FROM pilot_kpis").fetchone()["n"],
+                "pilot_deliverables": c.execute("SELECT COUNT(*) n FROM pilot_deliverables").fetchone()["n"],
             }
         finally:
             c.close()
@@ -48,12 +51,18 @@ class PersistenceContractTests(unittest.TestCase):
                 "learning": c.execute("SELECT COUNT(*) n FROM learning_tracks").fetchone()["n"],
                 "staff": c.execute("SELECT COUNT(*) n FROM staff_assignments").fetchone()["n"],
                 "accounts": c.execute("SELECT COUNT(*) n FROM accounts").fetchone()["n"],
+                "pilot_charters": c.execute("SELECT COUNT(*) n FROM pilot_charters").fetchone()["n"],
+                "pilot_kpis": c.execute("SELECT COUNT(*) n FROM pilot_kpis").fetchone()["n"],
+                "pilot_deliverables": c.execute("SELECT COUNT(*) n FROM pilot_deliverables").fetchone()["n"],
             }
         finally:
             c.close()
         self.assertEqual(before, after)
         self.assertGreaterEqual(after["program"], 42)
         self.assertGreaterEqual(after["accounts"], 9)
+        self.assertEqual(after["pilot_charters"], 1)
+        self.assertGreaterEqual(after["pilot_kpis"], 7)
+        self.assertGreaterEqual(after["pilot_deliverables"], 6)
 
     def test_demo_account_authentication_is_database_backed(self):
         c = server.conn()
