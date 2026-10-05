@@ -150,6 +150,31 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 .execFocus{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.execFocus span{padding:6px 8px;border-radius:999px;background:#ffffff12;border:1px solid #ffffff20;font-size:8px;font-weight:800}
 @media(min-width:800px){.execDecisionGrid{grid-template-columns:repeat(4,1fr)}.execTwoCol{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(min-width:1024px){.execModeTabs{top:82px}}
+.corpHero{border-radius:28px;padding:22px;background:linear-gradient(145deg,#091a2a,#153a55 68%,#176a77);color:#fff;position:relative;overflow:hidden}
+.corpHero:after{content:'DILIGENCE';position:absolute;right:-12px;bottom:-22px;font-size:58px;font-weight:900;letter-spacing:-4px;color:#ffffff08}
+.corpHero .muted{color:#bdd0d8}.corpHero h1{color:#fff;margin:8px 0 10px}
+.corpSummary,.corpGrid{display:grid;grid-template-columns:1fr;gap:9px}
+.corpMetric,.corpControl,.corpData,.corpQuestion,.corpGate{min-width:0;border:1px solid var(--l);border-radius:16px;background:#fff;padding:14px}
+.corpMetric strong{display:block;font-size:17px;margin-top:5px;overflow-wrap:anywhere}
+.corpControl{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.corpControl>*,.corpQuestion>*,.corpGate>*{min-width:0}
+.corpControl h3,.corpQuestion h3,.corpGate h3{font-size:15px;margin:5px 0}
+.corpControl .tiny,.corpQuestion .tiny,.corpGate .tiny,.corpData .tiny{overflow-wrap:anywhere;word-break:break-word}
+.corpStatus{display:inline-flex;height:max-content;padding:6px 8px;border-radius:999px;font-size:8px;font-weight:900;letter-spacing:.45px;white-space:nowrap}
+.corpStatus.live,.corpStatus.complete,.corpStatus.available{background:#e8f7f1;color:#12684e}
+.corpStatus.ci_proven{background:#eaf2ff;color:#2454a6}
+.corpStatus.demo{background:#fff4db;color:#8a5c06}
+.corpStatus.to_prepare,.corpStatus.to_define{background:#fff4db;color:#8a5c06}
+.corpStatus.gated,.corpStatus.not_claimed{background:#f2f3f5;color:#667085}
+.corpStatus.blocking{background:#ffeaec;color:#9c2530}
+.corpDomain{display:inline-flex;padding:5px 7px;border-radius:999px;background:#eef3f7;color:#42566b;font-size:8px;font-weight:850}
+.corpData{display:grid;grid-template-columns:1fr;gap:8px}
+.corpData b{overflow-wrap:anywhere}.corpDataRow{display:grid;grid-template-columns:110px 1fr;gap:8px;font-size:9px;line-height:1.45}.corpDataRow>*{min-width:0;overflow-wrap:anywhere}
+.corpQuestion{display:grid;grid-template-columns:1fr auto;gap:10px}
+.corpGate{display:grid;grid-template-columns:1fr auto;gap:10px;margin-top:8px}
+.corpTruth{background:#081d35;color:#fff;border-radius:22px;padding:17px}.corpTruth .muted{color:#9db1c8}
+@media(min-width:800px){.corpSummary{grid-template-columns:repeat(3,1fr)}.corpGrid{grid-template-columns:repeat(2,minmax(0,1fr))}.corpData{grid-template-columns:1fr}.corpDataRow{grid-template-columns:140px 1fr}}
+
 
 
 </style></head><body>
@@ -254,7 +279,7 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 <div class="card" style="background:#eaf3ff"><div class="section"><div class="ey blue">CUSTOMER RELATIONSHIP LOOP</div><h2>Конференция — начало отношений, а не конец кампании</h2><div class="funnel"><div><b>01 · DISCOVER</b><span>тема / эксперт / партнёр</span></div><div><b>02 · PARTICIPATE</b><span>контент / событие / практика</span></div><div><b>03 · CONSENT</b><span>добровольный интерес / материалы</span></div><div><b>04 · CONTINUE</b><span>1 / 7 / 30 дней</span></div><div><b>05 · RETURN</b><span>клуб / эфир / следующее событие</span></div></div><div class="notice">Для Промомед это измеримый relationship asset: какие темы создают доверие, какие форматы возвращают аудиторию и где пользователь сам просит продолжение.</div></div><div class="ey blue">INVESTMENT ASK</div><h2>Финансировать не «конференцию», а первый доказательный цикл платформы</h2><p class="small muted">Проектирование → ограниченный пилот → реальное событие → post-event → коммерческий и операционный отчёт → решение о масштабировании.</p><div class="actions"><button class="btn" onclick="guidedStart()">Пройти Golden Demo заново</button><button class="btn ghost" onclick="show('sales')">К предложению этапа</button></div></div></section>
 
 <section id="executiveRoom" class="screen sales">
-<div class="execHero"><div class="ey" style="color:#8edcff">EXECUTIVE / CVC DECISION ROOM</div><h1>Не «понравился ли прототип». Какое решение можно принять сейчас — и на каких доказательствах.</h1><p class="small muted">Один truth-boundary для CEO, investment committee, strategic partner и procurement/security. Разные вопросы — одни и те же факты.</p><div class="actions"><button class="btn white" onclick="copyExecutiveMemo(this)">Скопировать Board Memo</button><button class="btn" style="background:#ffffff12;border:1px solid #ffffff30" onclick="window.print()">Печать / PDF</button><button class="btn" style="background:#ffffff12;border:1px solid #ffffff30" onclick="showInvestorProof()">← Investor Proof</button></div></div>
+<div class="execHero"><div class="ey" style="color:#8edcff">EXECUTIVE / CVC DECISION ROOM</div><h1>Не «понравился ли прототип». Какое решение можно принять сейчас — и на каких доказательствах.</h1><p class="small muted">Один truth-boundary для CEO, investment committee, strategic partner и procurement/security. Разные вопросы — одни и те же факты.</p><div class="actions"><button class="btn white" onclick="copyExecutiveMemo(this)">Скопировать Board Memo</button><button class="btn" style="background:#ffffff12;border:1px solid #ffffff30" onclick="window.print()">Печать / PDF</button><button class="btn" style="background:#ffffff12;border:1px solid #ffffff30" onclick="showInvestorProof()">← Investor Proof</button><button class="btn" style="background:#ffffff12;border:1px solid #ffffff30" onclick="showCorporateRoom()">Security / Procurement →</button></div></div>
 <div class="section"><div class="ey blue">AUDIENCE LENS</div><h2>Один продукт — четыре корпоративных вопроса</h2><div id="execModeTabs" class="execModeTabs"></div><div id="execModeHero" class="card"></div></div>
 <div class="section"><div class="ey blue">BOARD DECISION · CURRENT STATE</div><h2>Что можно одобрить сегодня</h2><div id="execBoardSummary" class="execDecisionGrid"></div></div>
 <div class="section"><div class="ey blue">MILESTONE FUNDING · RELEASE CAPITAL AGAINST EVIDENCE</div><h2>Следующий транш открывается только доказательством предыдущего</h2><div id="execTranches"></div></div>
@@ -264,6 +289,17 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 <div class="section"><div class="ey blue">STRATEGIC PARTNER VALUE EXCHANGE</div><h2>Ценность партнёра без скрытого доступа к данным или редакционной власти</h2><div class="execTwoCol"><div class="card"><h3>Партнёр предоставляет</h3><ul id="execPartnerProvides" class="execList"></ul></div><div class="card"><h3>Платформа предоставляет</h3><ul id="execPlatformProvides" class="execList"></ul></div></div><div class="card"><h3>Никогда не подразумевается</h3><ul id="execNeverImplied" class="execList"></ul></div></div>
 <div class="section"><div class="ey blue">DUE-DILIGENCE DATA ROOM · INDEX</div><h2>Где лежит evidence и чего ещё нет</h2><div id="execDataRoom"></div></div>
 <div class="section"><div class="ey blue">TRUTH BOUNDARY</div><div id="execTruth" class="execTruth"></div></div>
+</section>
+
+<section id="corporateRoom" class="screen sales">
+<div class="corpHero"><div class="ey" style="color:#8fe4db">CORPORATE SECURITY / PROCUREMENT ROOM</div><h1>Не сертификат на словах. Контроль → evidence → владелец → что ещё нужно закрыть.</h1><p class="small muted">Эта поверхность подготовлена для InfoSec, privacy, legal, procurement и enterprise architecture review. CI-PROVEN не подменяется production approval.</p><div class="actions"><button class="btn white" onclick="copyCorporateMemo(this)">Скопировать Security Memo</button><button class="btn" style="background:#ffffff12;border:1px solid #ffffff30" onclick="window.print()">Печать / PDF</button><button class="btn" style="background:#ffffff12;border:1px solid #ffffff30" onclick="showExecutiveRoom()">← Executive / CVC</button></div></div>
+<div class="section"><div class="ey blue">SECURITY TRUTH · FAIL CLOSED</div><h2>Что можно и нельзя заявлять сегодня</h2><div id="corpSummary" class="corpSummary"></div><div id="corpTruth" class="corpTruth" style="margin-top:10px"></div></div>
+<div class="section"><div class="ey blue">CONTROL MATRIX · EVIDENCE BACKED</div><h2>Технические controls и корпоративные пробелы</h2><div id="corpControls" class="corpGrid"></div></div>
+<div class="section"><div class="ey blue">DATA INVENTORY · BEFORE REAL DATA</div><h2>Какие категории данных есть в модели и зачем</h2><div id="corpDataInventory" class="corpGrid"></div></div>
+<div class="section"><div class="ey blue">PRIVACY BOUNDARY</div><h2>Что защищается продуктовой логикой, а что требует policy/legal approval</h2><div id="corpPrivacy" class="corpGrid"></div></div>
+<div class="section"><div class="ey blue">VENDOR QUESTIONNAIRE · FIRST ANSWERS</div><h2>Ответы, которые можно отдать procurement сейчас</h2><div id="corpVendorQuestions"></div></div>
+<div class="section"><div class="ey blue">PROCUREMENT GATES</div><h2>Что должно стать зелёным до production approval</h2><div id="corpProcurement"></div></div>
+<div class="section"><div class="ey blue">BOUNDARY NOTES</div><div id="corpDisclaimers" class="card"></div></div>
 </section>
 
 <section id="staff" class="screen staff"><div class="adminbar"><div class="ey">EVENT STAFF · DEMO</div><select onchange="switchRole(this.value)"><option value="staff">Check-in staff</option><option value="editor">Редактор</option><option value="moderator">Модератор</option><option value="organizer">Организатор</option><option value="participant">Участник</option></select></div><div class="ey blue">GATE / CAMERA QR SCANNER</div><h1>Быстрый вход с понятным fallback.</h1><div class="card"><video id="qrVideo" playsinline muted style="width:100%;border-radius:18px;background:#061b34;aspect-ratio:4/3;object-fit:cover"></video><div class="actions"><button class="btn" onclick="startQRScanner(this)">Включить камеру</button><button class="btn ghost" onclick="stopQRScanner()">Остановить</button></div><p class="tiny muted" id="qrHint">На поддерживаемом iPhone/браузере камера открывается напрямую. BarcodeDetector используется, если доступен; иначе остаётся ручной fallback.</p></div><div class="card center"><div class="qr" style="width:145px;height:145px"></div><span class="pill green" id="staffScan">ГОТОВ К СКАНИРОВАНИЮ</span><div class="actions" style="justify-content:center"><button class="btn" onclick="apiCheckin()">Valid ticket</button><button class="btn ghost" onclick="apiCheckin()">Duplicate</button></div></div><div class="card"><div class="ey blue">FALLBACK STATES</div><div class="listrow"><div class="badge">✓</div><div><b>Valid</b><div class="tiny muted">Разрешённый вход / зона / день</div></div></div><div class="listrow"><div class="badge">×</div><div><b>Wrong zone / cancelled</b><div class="tiny muted">Показываем причину и следующий шаг</div></div></div><div class="listrow"><div class="badge">↻</div><div><b>Offline</b><div class="tiny muted">Локальная проверка + последующая синхронизация и duplicate reconciliation</div></div></div></div></section>
@@ -709,6 +745,47 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let corporateData=null;
+function corpStatus(status){
+ const labels={live:'LIVE',ci_proven:'CI-PROVEN',demo:'DEMO',to_prepare:'TO PREPARE',to_define:'TO DEFINE',gated:'GATED',not_claimed:'NOT CLAIMED',complete:'COMPLETE',available:'AVAILABLE',blocking:'BLOCKING'};
+ return '<span class="corpStatus '+esc(status)+'">'+(labels[status]||esc(status).replaceAll('_',' ').toUpperCase())+'</span>'
+}
+function renderCorporateRoom(d){
+ corporateData=d;
+ const t=d.security_truth||{},summary=document.getElementById('corpSummary');
+ if(summary)summary.innerHTML=[
+  ['CURRENT STATE',String(t.current_state||'—').replaceAll('_',' ').toUpperCase()],
+  ['LIVE POSTGRES',t.can_claim_live_postgres?'YES':'NO'],
+  ['AUTH + RESTORE CI',t.can_claim_auth_restore_controls_ci_proven?'YES':'NO']
+ ].map(x=>'<div class="corpMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+esc(x[1])+'</strong></div>').join('');
+ const truth=document.getElementById('corpTruth');
+ if(truth)truth.innerHTML='<div class="ey" style="color:#8fe4db">NOT CLAIMED WITHOUT EVIDENCE</div><div class="proofgrid" style="margin-top:10px">'+[
+  ['SECURITY CERTIFICATION',t.can_claim_certification],['APPROVED RTO/RPO',t.can_claim_approved_rto_rpo],['APPROVED DPA/SLA',t.can_claim_approved_dpa_sla],['CENTRAL SIEM',t.can_claim_central_siem]
+ ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
+ const controls=document.getElementById('corpControls');
+ if(controls)controls.innerHTML=(d.controls||[]).map(x=>'<div class="corpControl"><div><span class="corpDomain">'+esc(x.domain)+'</span><h3>'+esc(x.title)+'</h3><p class="tiny muted">'+esc(x.evidence)+'</p><div class="tiny muted"><b>Evidence:</b> '+esc(x.source)+'</div><div class="tiny muted"><b>Owner:</b> '+esc(x.owner)+'</div></div>'+corpStatus(x.status)+'</div>').join('');
+ const inv=document.getElementById('corpDataInventory');
+ if(inv)inv.innerHTML=(d.data_inventory||[]).map(x=>'<div class="corpData"><b>'+esc(x.category)+'</b><div class="corpDataRow"><span class="muted">Examples</span><span>'+esc(x.examples)+'</span></div><div class="corpDataRow"><span class="muted">Purpose</span><span>'+esc(x.purpose)+'</span></div><div class="corpDataRow"><span class="muted">Sensitivity</span><span>'+esc(x.sensitivity)+'</span></div><div class="corpDataRow"><span class="muted">Retention</span><span>'+corpStatus(x.production_retention)+'</span></div></div>').join('');
+ const privacy=document.getElementById('corpPrivacy');
+ if(privacy)privacy.innerHTML=(d.privacy_principles||[]).map(x=>'<div class="corpControl"><div><h3>'+esc(x.title)+'</h3><p class="tiny muted">'+esc(x.detail)+'</p></div>'+corpStatus(x.status)+'</div>').join('');
+ const q=document.getElementById('corpVendorQuestions');
+ if(q)q.innerHTML=(d.vendor_questions||[]).map(x=>'<div class="corpQuestion card"><div><h3>'+esc(x.question)+'</h3><p class="tiny muted">'+esc(x.answer)+'</p></div>'+corpStatus(x.answer_state)+'</div>').join('');
+ const g=document.getElementById('corpProcurement');
+ if(g)g.innerHTML=(d.procurement_gates||[]).map(x=>'<div class="corpGate"><div><h3>'+esc(x.title)+'</h3><p class="tiny muted">'+esc(x.evidence)+'</p></div>'+corpStatus(x.status)+'</div>').join('');
+ const dis=document.getElementById('corpDisclaimers');
+ if(dis)dis.innerHTML=(d.disclaimers||[]).map(x=>'<div class="investorDisclaimer">'+esc(x)+'</div>').join('');
+}
+async function loadCorporateRoom(){const d=await api('/api/corporate-readiness');renderCorporateRoom(d);return d}
+async function showCorporateRoom(){closeSheet();await goldenLogin();show('corporateRoom');await loadCorporateRoom();window.scrollTo({top:0,behavior:'instant'})}
+async function copyCorporateMemo(button){
+ try{
+  const d=corporateData||await loadCorporateRoom(),t=d.security_truth||{};
+  const controls=(d.controls||[]).map(x=>x.domain+' / '+x.title+': '+x.status).join('\n');
+  const gates=(d.procurement_gates||[]).map(x=>x.title+': '+x.status).join('\n');
+  const memo=['СОСТОЯНИЕ · Security / Privacy / Vendor Readiness','State: '+String(t.current_state||'—').replaceAll('_',' '),'Live PostgreSQL: '+!!t.can_claim_live_postgres,'Security certification claimed: '+!!t.can_claim_certification,'Approved RTO/RPO: '+!!t.can_claim_approved_rto_rpo,'Approved DPA/SLA: '+!!t.can_claim_approved_dpa_sla,'','Controls:',controls,'','Procurement gates:',gates].join('\n');
+  await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
+ }catch(e){if(button)button.textContent='Copy недоступен'}
+}
 async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await loadExecutiveRoom();window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
