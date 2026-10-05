@@ -290,10 +290,10 @@ def snapshot(c):
         },
         {
             "id": "security_pack",
-            "title": "Security / privacy / vendor pack",
-            "status": "to_prepare",
-            "reference": "future corporate diligence pack",
-            "purpose": "Production security controls, vendor terms, privacy and incident-response evidence.",
+            "title": "Security / privacy / vendor readiness pack",
+            "status": "available",
+            "reference": "docs/CORPORATE_SECURITY_PRIVACY_VENDOR_PACK_2026-10-05.md",
+            "purpose": "Evidence-backed current controls, data inventory, procurement gaps and production security exit criteria. Not a certification or approval.",
         },
         {
             "id": "pilot_actuals",

@@ -279,3 +279,23 @@ No paid infrastructure was created.
 Investor surface now includes one consolidated assumption-only economics model plus server-owned committee diligence, risk register and scale-path evidence. Current demo evidence state remains `pilot_diligence_ready`; market traction and production medical governance are explicitly not claimed.
 
 Phase 1 remains gated. External durable PostgreSQL source + restore capacity remains the blocker for Phase 0 COMPLETE.
+
+
+## Executive / CVC Decision Room live checkpoint — 2026-10-05
+
+- GitHub feature SHA: `c344f476e66ab15e9bece1c72466752bb71f5d73`
+- Public Render service: `sostoyanie-promomed-live`
+- Public deploy: `dep-db1sucajnfac73egb3qg` — **LIVE**
+- Admission service: `sostoyanie-promomed-pg-admission`
+- Admission deploy: `dep-db1sufrbc2fs73do26lg` — **LIVE**
+- UI quality: run `37338174140` — **PASS**
+- Persistence authority: run `37338174078` — **PASS**
+- Responsive browser QA: run `37338173913` — **PASS**
+- Live Render proof: run `37338174131`
+  - first attempt: **FAIL — deploy handoff timeout**, public Render still served prior exact SHA;
+  - after the exact SHA was deployed, failed jobs were rerun;
+  - rerun job `111867479775`: **PASS**.
+
+The first live-proof failure was a provider deployment-handoff timing condition, not a runtime-readiness failure. The proof workflow is hardened in the following security-readiness wave to distinguish `DEPLOY_HANDOFF_TIMEOUT` from bad application readiness.
+
+Executive / CVC current demo decision remains `CONTROLLED PILOT ONLY`.

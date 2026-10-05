@@ -269,6 +269,25 @@ Specification: `docs/EXECUTIVE_CVC_ROOM_2026-10-05.md`.
 
 This checkpoint makes the product suitable for structured corporate review but does **not** satisfy Phase 0. External durable PostgreSQL source + restore capacity remains required before Phase 1.
 
+##### Corporate Security / Privacy / Vendor Due Diligence checkpoint — 2026-10-05
+
+Before opening medical/editorial authority, the product now exposes a separate enterprise diligence layer:
+
+- evidence-backed identity/session/authorization/consent controls;
+- versioned migration integrity and fail-closed readiness;
+- PostgreSQL backup -> isolated restore -> fingerprint proof;
+- data-category inventory with retention explicitly left `to_define`;
+- privacy boundary and strategic-partner data restrictions;
+- vendor questionnaire;
+- procurement gate model;
+- NIST CSF 2.0 / OWASP ASVS 5.0.0 reference crosswalk with no certification/compliance claim;
+- explicit `TO PREPARE` status for production incident response, RTO/RPO, DPA/SLA, encryption evidence, dependency/SBOM scanning, retention/deletion, centralized SIEM and production observability;
+- exact-SHA release proof distinguishes `DEPLOY_HANDOFF_TIMEOUT` from application-readiness failure.
+
+Pack: `docs/CORPORATE_SECURITY_PRIVACY_VENDOR_PACK_2026-10-05.md`.
+
+This makes the current product materially easier to review by InfoSec, privacy, legal and procurement. It does **not** satisfy Phase 0, production security approval or any certification.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  

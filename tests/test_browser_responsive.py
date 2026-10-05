@@ -181,6 +181,22 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     assert_no_page_overflow(page, width, f"{name}/executive")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-executive.png"), full_page=True)
 
+    # Corporate security/procurement room must remain responsive and truth-labeled.
+    page.evaluate("() => showCorporateRoom()")
+    page.wait_for_selector("#corporateRoom.on")
+    expect(page.locator("#corpSummary")).to_contain_text("PRE PRODUCTION SECURITY REVIEW")
+    assert page.locator("#corpControls .corpControl").count() >= 17
+    assert page.locator("#corpDataInventory .corpData").count() >= 6
+    assert page.locator("#corpVendorQuestions .corpQuestion").count() >= 7
+    assert page.locator("#corpProcurement .corpGate").count() >= 6
+    assert page.locator("#corpFrameworks .corpControl").count() >= 7
+    expect(page.locator("#corpTruth")).to_contain_text("SECURITY CERTIFICATION")
+    expect(page.locator("#corpTruth")).to_contain_text("APPROVED RTO/RPO")
+    expect(page.locator("#corpTruth")).to_contain_text("APPROVED DPA/SLA")
+    expect(page.locator("#corpTruth")).to_contain_text("NO")
+    assert_no_page_overflow(page, width, f"{name}/corporate")
+    page.screenshot(path=str(OUT / f"{clean_name(name)}-corporate.png"), full_page=True)
+
     assert not errors, f"{name}: page errors: {errors}"
     context.close()
 

@@ -192,3 +192,25 @@ Repository/runtime scope:
 Specification: `docs/EXECUTIVE_CVC_ROOM_2026-10-05.md`.
 
 Phase 1 remains gated behind Phase 0 COMPLETE.
+
+
+## Corporate Security / Privacy / Vendor Due Diligence — 2026-10-05
+
+Added a separate corporate diligence layer without claiming certification or production approval:
+
+- bounded `app/corporate.py` projection;
+- role-limited `/api/corporate-readiness`;
+- evidence-backed control matrix for identity, sessions, authorization, consent, migration integrity, backup/restore and fail-closed release readiness;
+- explicit `TO PREPARE` controls for incident response, RTO/RPO, DPA/SLA, encryption evidence, SBOM/CVE scanning, retention/deletion and centralized SIEM;
+- data inventory with production retention deliberately left `to_define`;
+- privacy-boundary view;
+- vendor questionnaire with current answer states;
+- procurement gates;
+- NIST CSF 2.0 / OWASP ASVS 5.0.0 reference crosswalk, explicitly not a compliance/certification claim;
+- mobile/desktop Corporate Security / Procurement Room;
+- Security Memo copy surface and print/PDF-friendly layout;
+- hardened live Render proof with manual dispatch, longer provider-handoff window and explicit `DEPLOY_HANDOFF_TIMEOUT`.
+
+Diligence pack: `docs/CORPORATE_SECURITY_PRIVACY_VENDOR_PACK_2026-10-05.md`.
+
+Security/privacy approval itself remains open. Phase 1 remains gated behind Phase 0 COMPLETE.
