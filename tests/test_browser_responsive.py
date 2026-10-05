@@ -164,6 +164,23 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     assert_no_page_overflow(page, width, f"{name}/investor")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-investor.png"), full_page=True)
 
+    # Executive / CVC decision room must remain responsive and fail-closed.
+    page.evaluate("() => showExecutiveRoom()")
+    page.wait_for_selector("#executiveRoom.on")
+    expect(page.locator("#execBoardSummary")).to_contain_text("CONTROLLED PILOT ONLY")
+    assert page.locator("#execModeTabs .execModeTab").count() == 4
+    assert page.locator("#execTranches .execTranche").count() == 4
+    assert page.locator("#execKpis .execKpi").count() >= 7
+    assert page.locator("#execReadiness .execReadiness").count() >= 7
+    assert page.locator("#execDataRoom .execDataRoom").count() >= 6
+    expect(page.locator("#execTruth")).to_contain_text("PRODUCTION READY")
+    expect(page.locator("#execTruth")).to_contain_text("MARKET TRACTION")
+    expect(page.locator("#execTruth")).to_contain_text("NO")
+    page.locator('#execModeTabs .execModeTab[data-mode="procurement"]').click()
+    expect(page.locator("#execModeHero")).to_contain_text("Procurement / Security")
+    assert_no_page_overflow(page, width, f"{name}/executive")
+    page.screenshot(path=str(OUT / f"{clean_name(name)}-executive.png"), full_page=True)
+
     assert not errors, f"{name}: page errors: {errors}"
     context.close()
 
