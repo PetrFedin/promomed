@@ -89,6 +89,23 @@ class UIContractTests(unittest.TestCase):
         self.assertNotIn("Guaranteed commercial uplift", INDEX)
         self.assertNotIn("100M", INDEX)
 
+    def test_corporate_security_room_is_truth_labeled(self):
+        self.assertIn('id="corporateRoom"', INDEX)
+        self.assertIn('id="corpSummary"', INDEX)
+        self.assertIn('id="corpTruth"', INDEX)
+        self.assertIn('id="corpControls"', INDEX)
+        self.assertIn('id="corpDataInventory"', INDEX)
+        self.assertIn('id="corpPrivacy"', INDEX)
+        self.assertIn('id="corpVendorQuestions"', INDEX)
+        self.assertIn('id="corpProcurement"', INDEX)
+        self.assertIn("async function showCorporateRoom()", INDEX)
+        self.assertIn("CORPORATE SECURITY / PROCUREMENT ROOM", INDEX)
+        self.assertIn("CONTROL MATRIX · EVIDENCE BACKED", INDEX)
+        self.assertIn("DATA INVENTORY · BEFORE REAL DATA", INDEX)
+        self.assertIn("VENDOR QUESTIONNAIRE · FIRST ANSWERS", INDEX)
+        self.assertIn("PROCUREMENT GATES", INDEX)
+        self.assertIn("This is an evidence-backed readiness pack, not a security certification.", (ROOT / "app" / "corporate.py").read_text(encoding="utf-8"))
+
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)
 
