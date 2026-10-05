@@ -115,8 +115,15 @@ def snapshot(c):
         for k in kpis
     )
     deliverables_accepted = all(x["status"] == "accepted" for x in deliverables)
-    readiness = db.readiness()
-    production = bool(readiness.get("production_ready"))
+    demo_accounts = int(
+        c.execute("SELECT COUNT(*) n FROM accounts WHERE email LIKE ?", ("%@demo.ru",)).fetchone()["n"]
+    )
+    production = bool(
+        db.backend_name() == "postgres"
+        and db.require_postgres()
+        and not db.demo_seed_enabled()
+        and demo_accounts == 0
+    )
 
     gates = {
         "targets_ready": targets_ready,
