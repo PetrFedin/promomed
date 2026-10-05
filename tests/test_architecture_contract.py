@@ -21,6 +21,7 @@ MODULES = {
     "analytics.py",
     "investor.py",
     "executive.py",
+    "corporate.py",
     "demo.py",
     "programme.py",
     "content.py",
@@ -131,8 +132,15 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("def snapshot(c):", executive)
         self.assertIn("executive.snapshot(c)", SERVER)
         self.assertIn('p=="/api/executive-room"', SERVER)
-        self.assertIn("from app import db, executive, investor", SERVER)
+        self.assertIn("from app import corporate, db, executive, investor", SERVER)
         self.assertNotIn('"funding_tranches" =', SERVER)
+
+    def test_corporate_projection_stays_outside_http_layer(self):
+        corporate = (APP / "corporate.py").read_text(encoding="utf-8")
+        self.assertIn("def snapshot(c):", corporate)
+        self.assertIn("corporate.snapshot(c)", SERVER)
+        self.assertIn('p=="/api/corporate-readiness"', SERVER)
+        self.assertNotIn('"procurement_gates" =', SERVER)
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 400)
