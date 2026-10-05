@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-05 — Corporate Security / Privacy / Vendor Due Diligence
+
+Added an evidence-backed procurement/InfoSec surface: current security controls, data inventory, privacy boundaries, vendor questionnaire, procurement gates, NIST CSF 2.0 / OWASP ASVS 5.0.0 reference crosswalk and explicit TO PREPARE gaps. Hardened exact-SHA Render proof to distinguish provider deployment handoff timeout from runtime-readiness failure. No security certification, RTO/RPO, DPA/SLA or production medical-governance claim is introduced.
+
+
 ## 2026-10-05 — Executive / CVC Decision Room
 
 Added a separate corporate decision surface for CEO, CVC/IC, strategic partner and procurement/security audiences. It converts Investor Proof into a controlled decision package: evidence-gated funding tranches, pilot contract, KPI definitions, corporate readiness, partner data boundaries and a due-diligence Data Room index. The current demo state remains fail-closed to CONTROLLED PILOT ONLY.
