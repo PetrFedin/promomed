@@ -70,6 +70,25 @@ class UIContractTests(unittest.TestCase):
         self.assertNotIn("COMMERCIAL SCENARIO BUILDER · INPUTS, NOT FORECAST", INDEX)
         self.assertEqual(INDEX.count("function calcInvestorScenario()"), 1)
 
+    def test_executive_cvc_room_is_decision_oriented(self):
+        self.assertIn('id="executiveRoom"', INDEX)
+        self.assertIn('id="execModeTabs"', INDEX)
+        self.assertIn('id="execBoardSummary"', INDEX)
+        self.assertIn('id="execTranches"', INDEX)
+        self.assertIn('id="execKpis"', INDEX)
+        self.assertIn('id="execReadiness"', INDEX)
+        self.assertIn('id="execDataRoom"', INDEX)
+        self.assertIn('id="execTruth"', INDEX)
+        self.assertIn("async function showExecutiveRoom()", INDEX)
+        self.assertIn("EXECUTIVE / CVC DECISION ROOM", INDEX)
+        self.assertIn("MILESTONE FUNDING · RELEASE CAPITAL AGAINST EVIDENCE", INDEX)
+        self.assertIn("PILOT KPI DICTIONARY · FORMULA BEFORE TARGET", INDEX)
+        self.assertIn("CORPORATE READINESS · PROCUREMENT / SECURITY VIEW", INDEX)
+        self.assertIn("STRATEGIC PARTNER VALUE EXCHANGE", INDEX)
+        self.assertIn("DUE-DILIGENCE DATA ROOM · INDEX", INDEX)
+        self.assertNotIn("Guaranteed commercial uplift", INDEX)
+        self.assertNotIn("100M", INDEX)
+
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)
 

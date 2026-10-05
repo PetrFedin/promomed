@@ -168,3 +168,27 @@ Investor Readiness was extended from a pitch surface into a diligence-oriented c
 The current demo runtime is explicitly `pilot_diligence_ready`, not production-medical-ready and not market-traction-proven.
 
 Phase 1 remains gated behind Phase 0 COMPLETE.
+
+
+## Executive / CVC Decision Room — 2026-10-05
+
+Added a separate corporate decision surface above Investor Proof.
+
+Repository/runtime scope:
+
+- bounded `app/executive.py` projection;
+- role-limited `/api/executive-room`;
+- four audience lenses: CEO, CVC / Investment Committee, Strategic Partner, Procurement / Security;
+- current decision state is fail-closed to `CONTROLLED PILOT ONLY` while Phase 0 is incomplete;
+- milestone funding tranches use evidence gates without hard-coded funding amounts;
+- pilot contract defines in-scope, out-of-scope, client inputs and GO / ITERATE / STOP exit decision;
+- KPI dictionary stores formula + source before target;
+- corporate-readiness matrix separates CI-proven, demo and gated controls;
+- strategic-partner value exchange explicitly excludes sensitive health-data access, silent contact export and editorial/medical control;
+- Data Room index links current evidence and marks missing corporate packs as to-prepare/gated;
+- Board Memo can be copied from the UI and the room is print/PDF friendly;
+- truth boundary explicitly prevents claims of market traction, validated unit economics or production medical governance.
+
+Specification: `docs/EXECUTIVE_CVC_ROOM_2026-10-05.md`.
+
+Phase 1 remains gated behind Phase 0 COMPLETE.

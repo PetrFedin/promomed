@@ -248,6 +248,27 @@ While PROMO-INT-00 remains blocked only by external durable PostgreSQL capacity,
 
 This layer is commercial/diligence presentation of already governed product evidence; it does not introduce medical/editorial authority.
 
+##### Executive / CVC Decision Room checkpoint — 2026-10-05
+
+The corporate decision layer is now separated from the Investor Proof layer while Phase 0 remains incomplete.
+
+Implemented without opening any medical/editorial authority:
+
+- CEO / CVC / Strategic Partner / Procurement-Security audience lenses;
+- fail-closed current decision: `CONTROLLED PILOT ONLY`;
+- milestone funding model with no embedded funding amounts;
+- pilot contract with explicit scope, exclusions, client inputs and GO / ITERATE / STOP exit state;
+- KPI dictionary that fixes formula and source before negotiated target;
+- corporate readiness matrix across architecture, identity, continuity, privacy boundary, vendor diligence, medical governance and observability;
+- strategic-partner value exchange and explicit prohibited assumptions;
+- due-diligence Data Room index;
+- copyable Board Memo / print-PDF surface;
+- truth boundary that prevents claims of production readiness, paid traction, validated economics or medical governance before evidence exists.
+
+Specification: `docs/EXECUTIVE_CVC_ROOM_2026-10-05.md`.
+
+This checkpoint makes the product suitable for structured corporate review but does **not** satisfy Phase 0. External durable PostgreSQL source + restore capacity remains required before Phase 1.
+
 ### Phase 1 — Editorial & Medical Review Authority
 
 Primary reference/service: https://github.com/directus/directus  

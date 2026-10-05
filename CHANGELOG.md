@@ -1,5 +1,10 @@
 # Release Ledger
 
+## 2026-10-05 — Executive / CVC Decision Room
+
+Added a separate corporate decision surface for CEO, CVC/IC, strategic partner and procurement/security audiences. It converts Investor Proof into a controlled decision package: evidence-gated funding tranches, pilot contract, KPI definitions, corporate readiness, partner data boundaries and a due-diligence Data Room index. The current demo state remains fail-closed to CONTROLLED PILOT ONLY.
+
+
 ## 2026-10-05 — Investment Committee Room
 
 Consolidated investor economics into one assumption-only model and added a diligence-oriented committee cockpit with explicit risk register, evidence state, unproven claims and gated scale paths. The new surface is designed for investment-committee scrutiny rather than pitch-only storytelling.
