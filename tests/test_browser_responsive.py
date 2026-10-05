@@ -189,6 +189,7 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     assert page.locator("#corpDataInventory .corpData").count() >= 6
     assert page.locator("#corpVendorQuestions .corpQuestion").count() >= 7
     assert page.locator("#corpProcurement .corpGate").count() >= 6
+    assert page.locator("#corpFrameworks .corpControl").count() >= 7
     expect(page.locator("#corpTruth")).to_contain_text("SECURITY CERTIFICATION")
     expect(page.locator("#corpTruth")).to_contain_text("APPROVED RTO/RPO")
     expect(page.locator("#corpTruth")).to_contain_text("APPROVED DPA/SLA")
