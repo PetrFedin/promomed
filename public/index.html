@@ -126,7 +126,7 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 .execHero{border-radius:28px;padding:22px;background:linear-gradient(145deg,#071c34,#0e426d 72%,#136f94);color:#fff;position:relative;overflow:hidden}
 .execHero:after{content:'DECISION';position:absolute;right:-12px;bottom:-24px;font-size:64px;font-weight:900;letter-spacing:-4px;color:#ffffff08}
 .execHero .muted{color:#bad0df}.execHero h1{color:#fff;margin:8px 0 10px}
-.execModeTabs{display:flex;gap:7px;overflow:auto;padding:4px 0 10px;scrollbar-width:none}.execModeTabs::-webkit-scrollbar{display:none}
+.execModeTabs{display:flex;gap:7px;overflow:auto;padding:8px 0 10px;scrollbar-width:none;position:sticky;top:calc(8px + env(safe-area-inset-top));z-index:9;background:#f7f9fc;scroll-margin-top:84px;scroll-margin-bottom:100px}.execModeTabs::-webkit-scrollbar{display:none}
 .execModeTab{border:1px solid var(--l);background:#fff;color:#34485f;border-radius:999px;padding:9px 12px;white-space:nowrap;font-size:9px;font-weight:850}
 .execModeTab.on{background:#102f54;color:#fff;border-color:#102f54}
 .execDecisionGrid,.execTwoCol{display:grid;grid-template-columns:1fr;gap:10px}
@@ -146,6 +146,7 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 .execTruth{background:#081d35;color:#fff;border-radius:22px;padding:17px}.execTruth .muted{color:#9db1c8}
 .execFocus{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.execFocus span{padding:6px 8px;border-radius:999px;background:#ffffff12;border:1px solid #ffffff20;font-size:8px;font-weight:800}
 @media(min-width:800px){.execDecisionGrid{grid-template-columns:repeat(4,1fr)}.execTwoCol{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1024px){.execModeTabs{top:82px}}
 
 
 </style></head><body>
