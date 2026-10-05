@@ -119,6 +119,9 @@ class ArchitectureContractTests(unittest.TestCase):
             self.assertIn(marker, LIVE_ADMISSION_WORKFLOW)
         self.assertIn('ready.get("production_ready") is not False', LIVE_PROOF_WORKFLOW)
         self.assertIn('backend=="postgres"', LIVE_PROOF_WORKFLOW)
+        self.assertIn("workflow_dispatch:", LIVE_PROOF_WORKFLOW)
+        self.assertIn("DEPLOY_HANDOFF_TIMEOUT", LIVE_PROOF_WORKFLOW)
+        self.assertIn("range(1, 121)", LIVE_PROOF_WORKFLOW)
 
     def test_investor_projection_stays_outside_http_layer(self):
         investor = (APP / "investor.py").read_text(encoding="utf-8")
