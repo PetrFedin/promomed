@@ -22,6 +22,8 @@ MODULES = {
     "investor.py",
     "executive.py",
     "corporate.py",
+    "pilot_governance.py",
+    "pilot_commands.py",
     "demo.py",
     "programme.py",
     "content.py",
@@ -144,6 +146,16 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("corporate.snapshot(c)", SERVER)
         self.assertIn('p=="/api/corporate-readiness"', SERVER)
         self.assertNotIn('"procurement_gates" =', SERVER)
+
+    def test_pilot_governance_stays_outside_http_layer(self):
+        pilot = (APP / "pilot_governance.py").read_text(encoding="utf-8")
+        commands = (APP / "pilot_commands.py").read_text(encoding="utf-8")
+        self.assertIn("def snapshot(c):", pilot)
+        self.assertIn("def handle_command(c, path, role, email, data):", commands)
+        self.assertIn("pilot_governance.snapshot(c)", SERVER)
+        self.assertIn('p=="/api/pilot-governance"', SERVER)
+        self.assertIn("handle_pilot_command", SERVER)
+        self.assertNotIn('p=="/api/pilot/kpi-target"', SERVER)
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 400)
