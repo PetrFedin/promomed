@@ -327,6 +327,58 @@ def snapshot(c):
         },
     ]
 
+    framework_crosswalk = [
+        {
+            "framework": "NIST CSF 2.0",
+            "area": "GOVERN",
+            "status": "to_prepare",
+            "current_evidence": "Owners and decision gates are explicit; approved security/privacy/vendor policies and risk acceptance remain corporate work.",
+            "boundary": "Crosswalk only — not a NIST assessment or certification.",
+        },
+        {
+            "framework": "NIST CSF 2.0",
+            "area": "IDENTIFY",
+            "status": "demo",
+            "current_evidence": "Data categories, runtime state, architecture boundaries and procurement blockers are inventoried in the readiness pack.",
+            "boundary": "Production asset inventory and formal risk register require approved corporate scope.",
+        },
+        {
+            "framework": "NIST CSF 2.0",
+            "area": "PROTECT",
+            "status": "ci_proven",
+            "current_evidence": "scrypt credentials, hashed sessions, TTL/revocation, role gates and explicit-consent command boundaries are test-backed.",
+            "boundary": "No claim of complete NIST Protect coverage.",
+        },
+        {
+            "framework": "NIST CSF 2.0",
+            "area": "DETECT",
+            "status": "to_prepare",
+            "current_evidence": "Application operational events exist, but centralized production monitoring/SIEM and detection procedures are not approved.",
+            "boundary": "No continuous-monitoring maturity claim.",
+        },
+        {
+            "framework": "NIST CSF 2.0",
+            "area": "RESPOND",
+            "status": "to_prepare",
+            "current_evidence": "Demo incident/recovery mechanics exist; production incident severity, escalation, notification and evidence handling remain to prepare.",
+            "boundary": "No production incident-response readiness claim.",
+        },
+        {
+            "framework": "NIST CSF 2.0",
+            "area": "RECOVER",
+            "status": "ci_proven",
+            "current_evidence": "PostgreSQL backup -> isolated restore -> fingerprint equivalence is CI-proven.",
+            "boundary": "Contractual RTO/RPO and disaster-recovery operating procedure remain to prepare.",
+        },
+        {
+            "framework": "OWASP ASVS 5.0.0",
+            "area": "Web application verification reference",
+            "status": "partial",
+            "current_evidence": "Identity, session, authorization and selected input/command boundaries have automated evidence.",
+            "boundary": "No full ASVS assessment has been performed and no ASVS compliance level is claimed.",
+        },
+    ]
+
     security_truth = {
         "current_state": "production_security_review" if production else "pre_production_security_review",
         "can_claim_certification": False,
@@ -344,6 +396,7 @@ def snapshot(c):
         "privacy_principles": privacy_principles,
         "vendor_questions": vendor_questions,
         "procurement_gates": procurement_gates,
+        "framework_crosswalk": framework_crosswalk,
         "security_truth": security_truth,
         "disclaimers": [
             "This is an evidence-backed readiness pack, not a security certification.",
