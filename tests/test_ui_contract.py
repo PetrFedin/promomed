@@ -108,6 +108,24 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("FRAMEWORK CROSSWALK · REFERENCE, NOT CERTIFICATION", INDEX)
         self.assertIn("This is an evidence-backed readiness pack, not a security certification.", (ROOT / "app" / "corporate.py").read_text(encoding="utf-8"))
 
+    def test_pilot_deal_desk_is_governance_not_presentation(self):
+        self.assertIn('id="pilotDealDesk"', INDEX)
+        self.assertIn('id="pilotCharter"', INDEX)
+        self.assertIn('id="pilotGates"', INDEX)
+        self.assertIn('id="pilotSignoffs"', INDEX)
+        self.assertIn('id="pilotKpis"', INDEX)
+        self.assertIn('id="pilotDeliverables"', INDEX)
+        self.assertIn('id="pilotChanges"', INDEX)
+        self.assertIn('id="pilotDecisions"', INDEX)
+        self.assertIn("async function showPilotDealDesk()", INDEX)
+        self.assertIn("async function pilotResetDemo()", INDEX)
+        self.assertIn("async function pilotLockBaseline()", INDEX)
+        self.assertIn("async function pilotRequestChange()", INDEX)
+        self.assertIn("async function pilotDecision(decision)", INDEX)
+        self.assertIn("PILOT GOVERNANCE / DEAL DESK", INDEX)
+        self.assertIn("CHANGE CONTROL · AFTER BASELINE LOCK", INDEX)
+        self.assertIn("GO остаётся fail-closed", INDEX)
+
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)
 
