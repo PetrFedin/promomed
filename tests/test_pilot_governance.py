@@ -205,6 +205,22 @@ class PilotGovernanceTests(unittest.TestCase):
         self.assertEqual(out.status, 200)
         self.assertEqual(out.payload["decisions"][0]["decision"], "ITERATE")
 
+    def test_demo_reset_restores_clean_draft_and_is_role_gated(self):
+        self._set_all_targets()
+        denied = self.commands.handle_command(
+            self.c, "/api/pilot/reset-demo", "organizer", "organizer@demo.ru", {}
+        )
+        self.assertEqual(denied.status, 403)
+        out = self.commands.handle_command(
+            self.c, "/api/pilot/reset-demo", "sales", "sales@demo.ru", {}
+        )
+        self.assertEqual(out.status, 200)
+        self.assertEqual(out.payload["charter"]["status"], "draft")
+        self.assertTrue(all(x["target"] == "TO_AGREE" for x in out.payload["kpis"]))
+        self.assertTrue(all(x["status"] == "pending" for x in out.payload["signoffs"]))
+        self.assertEqual(out.payload["changes"], [])
+        self.assertEqual(out.payload["decisions"], [])
+
     def test_partner_cannot_set_kpi_target_or_sign_baseline(self):
         target = self.commands.handle_command(
             self.c,
