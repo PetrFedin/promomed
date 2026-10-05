@@ -55,7 +55,6 @@ def seed_demo(c):
             "INSERT OR IGNORE INTO pilot_signoffs(id,charter_id,role,status) VALUES(?,?,?,'pending')",
             (f"SIGN-{role.upper()}", CHARTER_ID, role),
         )
-    c.commit()
 
 
 def _charter(c):
