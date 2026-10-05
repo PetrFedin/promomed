@@ -705,7 +705,7 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
-async function showExecutiveRoom(){await goldenLogin();show('executiveRoom');await loadExecutiveRoom();window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await loadExecutiveRoom();window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{};
@@ -715,7 +715,7 @@ async function copyExecutiveMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Board Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showInvestorProof(){await goldenLogin();show('investorProof');calcInvestorScenario();await Promise.all([loadInvestorProof(),loadInvestorReadiness(),loadCommand()])}
+async function showInvestorProof(){closeSheet();await goldenLogin();show('investorProof');calcInvestorScenario();await Promise.all([loadInvestorProof(),loadInvestorReadiness(),loadCommand()])}
 const goldenCopy=[
  ['Готово к показу','Исходное состояние сброшено. Один demo run, известные данные, никаких следов предыдущей встречи.','Подготовить полный зал'],
  ['Зал заполнен','Capacity authority показывает 120 / 120. Следующая бронь уже не может стать confirmed.','Поставить P2/P3 в waitlist'],
