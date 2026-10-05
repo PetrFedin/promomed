@@ -282,6 +282,13 @@ def snapshot(c):
             "purpose": "Positioning logic and external research used by the investor layer.",
         },
         {
+            "id": "executive_room",
+            "title": "Executive / CVC decision specification",
+            "status": "available",
+            "reference": "docs/EXECUTIVE_CVC_ROOM_2026-10-05.md",
+            "purpose": "Decision state, milestone funding, pilot contract, KPI and truth-boundary specification.",
+        },
+        {
             "id": "security_pack",
             "title": "Security / privacy / vendor pack",
             "status": "to_prepare",
