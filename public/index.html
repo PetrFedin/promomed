@@ -332,6 +332,12 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
 <div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
 </div>
+<div class="section"><div class="ey blue">CAPITAL RECOVERY & REALLOCATION COCKPIT</div><h2>Recovery path vs reallocation fallback → approval simulation</h2>
+<div id="reforecastRecommendation" class="card"><p class="small muted">Загрузка reforecast…</p></div>
+<div id="reforecastScenarios"></div>
+<div id="reforecastApproval" class="card"></div>
+<div class="notice"><b>PAYBACK BOUNDARY:</b> payback не рассчитывается, пока Finance не принял экономический value. Сроки и spend ниже — явные demo assumptions.</div>
+</div>
 <div class="section"><div class="ey blue">FORECAST VARIANCE · INTERVENTION ENGINE</div><h2>Отклонение → capital at risk → downstream impact → intervention</h2>
 <div id="interventionSummary" class="card"><p class="small muted">Загрузка intervention engine…</p></div>
 <div id="interventionDiagnostics"></div>
@@ -879,6 +885,20 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let recoveryReforecastData=null;
+async function loadRecoveryReforecast(){
+ const d=await api('/api/recovery-reforecast');recoveryReforecastData=d;renderRecoveryReforecast(d);return d
+}
+function renderRecoveryReforecast(d){
+ const r=d.recommendation||{},root=document.getElementById('reforecastRecommendation');
+ if(root)root.innerHTML='<div class="row"><div><div class="ey blue">RECOMMENDATION</div><h3>'+esc(r.decision||'—')+'</h3><p class="small muted">'+esc(r.why||'')+'</p></div><span class="execStatus live">'+esc(r.primary||'—')+'</span></div>';
+ const sc=document.getElementById('reforecastScenarios');
+ if(sc)sc.innerHTML=(d.scenarios||[]).map(x=>'<div class="card"><div class="row"><div><div class="ey blue">'+esc(x.title)+'</div><h3>'+esc(x.decision)+'</h3></div><span class="pill">'+x.days_to_decision+' days</span></div><div class="proofgrid">'+[
+ ['ADD. ACTUAL',x.additional_actual_spend_rub],['NEW COMMITMENT',x.new_commitment_rub],['REALLOC CANDIDATE',x.reallocation_candidate_rub],['NEXT UNLOCK',x.next_unlock_rub]
+ ].map(v=>'<div class="proofmetric"><span class="tiny muted">'+v[0]+'</span><strong>'+formatMoney(v[1]||0)+'</strong></div>').join('')+'</div><p class="small muted"><b>Reason:</b> '+esc(x.reason)+'</p><div class="tiny muted"><b>Freeze:</b> '+(x.capital_freeze||[]).map(esc).join(' · ')+'</div><div class="tiny muted"><b>Evidence:</b> '+(x.evidence_expected||[]).map(esc).join(' · ')+'</div><div class="tiny muted"><b>Next unlock condition:</b> '+esc(x.next_unlock_condition||'')+'</div><div class="notice"><b>Expected payback:</b> '+esc(x.expected_payback_status||'')+'</div>'+(x.reallocation_proposal?'<div class="small"><b>Reallocation proposal:</b><br>'+x.reallocation_proposal.map(z=>formatMoney(z.amount_rub)+' → '+esc(z.target)+' · '+esc(z.unlock_dependency)).join('<br>')+'</div>':'')+'</div>').join('');
+ const ap=document.getElementById('reforecastApproval'),a=d.approval_simulation||{};
+ if(ap)ap.innerHTML='<div class="ey blue">APPROVAL SIMULATION</div><div class="execTwoCol"><div><h3>Recovery path</h3><ul class="execList">'+(a.recovery_requires||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div><div><h3>Reallocation path</h3><ul class="execList">'+(a.reallocation_requires||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></div></div><div class="notice"><b>AUTOMATIC ACTIONS:</b> '+(a.automatic_actions?'YES':'NO')+'</div>';
+}
 let interventionData=null;
 async function loadInterventionEngine(){
  const d=await api('/api/intervention-engine');interventionData=d;renderInterventionEngine(d);return d
@@ -1130,7 +1150,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan(),loadCapitalExecution(),loadInterventionEngine()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan(),loadCapitalExecution(),loadInterventionEngine(),loadRecoveryReforecast()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
