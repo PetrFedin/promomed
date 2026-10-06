@@ -89,6 +89,8 @@ class UIContractTests(unittest.TestCase):
         self.assertNotIn("Guaranteed commercial uplift", INDEX)
         self.assertIn("PROGRAMME VALUE CASE · 50–100M ₽", INDEX)
         self.assertIn("FORMULA · NOT FORECAST", INDEX)
+        self.assertIn("BOARD VALUE BRIDGE · FROM CAPITAL TO ACCEPTED VALUE", INDEX)
+        self.assertIn('id="execValueBridge"', INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
