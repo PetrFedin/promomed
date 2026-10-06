@@ -21,4 +21,4 @@ jobs:
         with:
           node-version: "22"
       - name: Run UI and architecture contract tests
-        run: python -m unittest -v tests/test_ui_contract.py tests/test_architecture_contract.py tests/test_command_boundaries.py tests/test_investor_projection.py tests/test_executive_projection.py tests/test_investment_proof.py
+        run: python -m unittest -v tests/test_ui_contract.py tests/test_architecture_contract.py tests/test_command_boundaries.py tests/test_investor_projection.py tests/test_executive_projection.py tests/test_investment_proof.py tests/test_contract_builder.py
