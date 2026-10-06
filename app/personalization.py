@@ -126,7 +126,48 @@ def snapshot(c, email=None):
             "reason": _reason(code, row.get("theme") or ""),
         })
 
-    # 3) Experts followed by the participant -> connected Studio/session.
+    # 3) Studio and programme items matching explicit topic signals.
+    for ep in cont.get("studio_episodes", []):
+        topic = ep.get("topic") or ""
+        if _topic_match(topic, subscriptions):
+            code, score = "subscribed_topic", 90
+        elif _topic_match(topic, interests):
+            code, score = "profile_interest", 80
+        else:
+            continue
+        items.append({
+            "id": f"studio-topic:{ep['id']}",
+            "kind": "studio",
+            "title": ep["title"],
+            "subtitle": ep.get("dek") or "",
+            "topic": topic,
+            "target_kind": "studio",
+            "target_ref": ep["id"],
+            "priority": score,
+            "reason": _reason(code, topic),
+        })
+
+    for row in prog.get("program", []):
+        topic = row.get("track") or ""
+        if _topic_match(topic, subscriptions):
+            code, score = "subscribed_topic", 86
+        elif _topic_match(topic, interests):
+            code, score = "profile_interest", 74
+        else:
+            continue
+        items.append({
+            "id": f"event-topic:{row['id']}",
+            "kind": "event",
+            "title": row["title"],
+            "subtitle": f"{row['start']} · {row['venue']}",
+            "topic": topic,
+            "target_kind": "event",
+            "target_ref": row["id"],
+            "priority": score,
+            "reason": _reason(code, topic),
+        })
+
+    # 4) Experts followed by the participant -> connected Studio/session.
     session_speakers = {}
     for link in prog.get("session_speakers", []):
         session_speakers.setdefault(link["id"], set()).add(link["item_id"])
@@ -144,7 +185,7 @@ def snapshot(c, email=None):
                 "reason": _reason("follows_expert", ep.get("speaker_name") or ""),
             })
 
-    # 4) Replay / continuation after booked or attended sessions.
+    # 5) Replay / continuation after booked or attended sessions.
     program_by_id = {x["id"]: x for x in prog.get("program", [])}
     for item_id in sorted(attended | booked):
         row = program_by_id.get(item_id)
@@ -163,7 +204,7 @@ def snapshot(c, email=None):
             "reason": _reason(code, row.get("track") or ""),
         })
 
-    # 5) If user has little explicit history, add one deterministic editorial item.
+    # 6) If user has little explicit history, add one deterministic editorial item.
     if len(items) < 3:
         published = next(
             (x for x in cont.get("content_catalog", []) if x.get("status") == "published"),
