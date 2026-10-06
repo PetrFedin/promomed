@@ -163,7 +163,10 @@ def assign_candidate(c,candidate_id,reviewer_email,assigned_by,scope_key=DEFAULT
         "SELECT reviewer,status FROM evidence_admission_reviews WHERE candidate_id=? AND review_role='editorial'",
         (candidate_id,),
     ).fetchone()
-    if editorial and editorial["reviewer"] and editorial["reviewer"].lower()==reviewer_email.lower():
+    accepted_editorial=("accepted_demo","accepted_editorial")
+    if not editorial or editorial["status"] not in accepted_editorial:
+        raise ValueError("editorial_review_required_before_assignment")
+    if editorial["reviewer"] and editorial["reviewer"].lower()==reviewer_email.lower():
         raise ValueError("separation_of_duties_violation")
     active=c.execute(
         "SELECT id,status FROM review_assignments WHERE candidate_id=? AND review_role='scientific' AND status IN ('assigned','completed') ORDER BY assigned_at DESC LIMIT 1",
@@ -209,6 +212,8 @@ def declare_conflict(c,assignment_id,reviewer_email,conflict_state,details=""):
     )
     if conflict_state=="material":
         c.execute("UPDATE review_assignments SET status='recused' WHERE id=?",(assignment_id,))
+    elif conflict_state=="potential":
+        c.execute("UPDATE review_assignments SET status='conflict_hold' WHERE id=?",(assignment_id,))
     _append_event(c,"conflict_disclosed",reviewer_email,{"state":conflict_state,"details":str(details or "")[:1200]},row["candidate_id"],assignment_id,row["demo_only"])
     return disclosure_id
 
