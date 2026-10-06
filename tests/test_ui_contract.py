@@ -126,6 +126,11 @@ class UIContractTests(unittest.TestCase):
         self.assertIn('id="verifiedValueOutput"', INDEX)
         self.assertIn("function calcVerifiedValue()", INDEX)
         self.assertIn("No double counting.", INDEX)
+        self.assertIn('id="valueCaptureMap"', INDEX)
+        self.assertIn('id="valueEvidenceProtocol"', INDEX)
+        self.assertIn('id="valueReuse"', INDEX)
+        self.assertIn('id="valueAudience"', INDEX)
+        self.assertIn("OWNER → BASELINE → FORMULA → PROOF", INDEX)
 
     def test_investor_presentation_mode_is_shareable_and_reset_safe(self):
         self.assertIn('id="presentationLauncher"', INDEX)
