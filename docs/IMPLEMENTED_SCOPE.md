@@ -251,3 +251,42 @@ The Home surface shows:
 - direct continuation into event, replay, content, expert, Studio, community or learning surfaces.
 
 Boundary: this is a behavioural relationship journey for year-round product retention. It is not a clinical patient journey and does not infer diagnosis, treatment or individual medical risk.
+
+
+## Discovery & Search Authority — Phase 3 repository checkpoint
+
+Added a native, rebuildable discovery layer over existing Promomed canonical tables.
+
+Search surface now spans:
+
+- editorial/content catalogue;
+- experts/speakers;
+- programme events;
+- Studio episodes;
+- replay projections;
+- learning tracks;
+- derived topics;
+- partners;
+- product context.
+
+Supported facets:
+
+- kind;
+- topic;
+- content type;
+- expert;
+- event;
+- replay availability;
+- review status.
+
+The native engine provides deterministic explainable scoring and exposes why a result matched. It does not become a second source of truth.
+
+Participant feedback loop:
+
+`Search -> Open -> Save -> Continue Journey -> Relationship 365`.
+
+Saved discovery items are persisted under `discovery_saves`, become an explicit `saved_for_later` signal in Personalised Continue Journey, and count as route-building activity in the BEFORE stage of Relationship 365.
+
+Meilisearch remains an optional future sidecar for scale/performance. The MVP does not require it to prove the search contract. Any future external index must remain rebuildable from Promomed authority.
+
+Medical boundary: search/ranking performs no diagnosis, treatment recommendation, drug recommendation or individual health-risk inference.
