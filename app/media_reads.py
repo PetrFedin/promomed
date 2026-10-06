@@ -5,7 +5,7 @@ from app import db, transcript_intelligence, evidence_graph, evidence_seal
 
 def serve(raw_path, role):
     parsed=urlparse(raw_path)
-    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/evidence-seal"):
+    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/evidence-seal","/api/evidence-bundle"):
         return None
     q=parse_qs(parsed.query)
     c=db.connect()
@@ -23,6 +23,12 @@ def serve(raw_path, role):
             if not artifact_kind or not artifact_ref:
                 return {"error":"artifact_required"},422
             return evidence_seal.build(c,artifact_kind=artifact_kind,artifact_ref=artifact_ref),200
+        if parsed.path=="/api/evidence-bundle":
+            artifact_kind=(q.get("artifact_kind") or [""])[0][:30]
+            artifact_ref=(q.get("artifact_ref") or [""])[0][:80]
+            if not artifact_kind or not artifact_ref:
+                return {"error":"artifact_required"},422
+            return evidence_seal.portable_bundle(c,artifact_kind=artifact_kind,artifact_ref=artifact_ref),200
         return evidence_graph.snapshot(
             c,
             artifact_kind=(q.get("artifact_kind") or [""])[0][:30] or None,
