@@ -108,6 +108,18 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("FRAMEWORK CROSSWALK · REFERENCE, NOT CERTIFICATION", INDEX)
         self.assertIn("This is an evidence-backed readiness pack, not a security certification.", (ROOT / "app" / "corporate.py").read_text(encoding="utf-8"))
 
+    def test_investor_presentation_mode_is_shareable_and_reset_safe(self):
+        self.assertIn('id="presentationLauncher"', INDEX)
+        self.assertIn("const presentationModes=new Set(['menu','golden','owner','investor','executive','security'])", INDEX)
+        self.assertIn("function applyPresentationDeepLink()", INDEX)
+        self.assertIn("new URLSearchParams(location.search).get('presentation')", INDEX)
+        self.assertIn("if(mode==='golden')return guidedStart()", INDEX)
+        self.assertIn("if(mode==='owner'){await goldenLogin();await api('/api/demo/reset'", INDEX)
+        self.assertIn("if(mode==='investor')return showInvestorProof()", INDEX)
+        self.assertIn("if(mode==='executive')return showExecutiveRoom()", INDEX)
+        self.assertIn("if(mode==='security')return showCorporateRoom()", INDEX)
+        self.assertIn("Truth boundary:", INDEX)
+
     def test_no_legacy_undefined_token_helper(self):
         self.assertNotIn("if(token)o.headers.Authorization", INDEX)
 
