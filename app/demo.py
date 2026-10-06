@@ -23,6 +23,7 @@ def reset_demo(c, actor):
         "checkins","leads","registrations","bookings","questions","journeys","notifications",
         "direct_messages","events","meetings","session_feedback","takeaways","product_interests",
         "followups","topic_subscriptions","expert_follows","learning_enrollments","community_posts",
+        "investment_acceptances",
     ):
         c.execute("DELETE FROM " + t)
     for k, v in {
