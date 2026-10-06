@@ -290,3 +290,25 @@ Saved discovery items are persisted under `discovery_saves`, become an explicit 
 Meilisearch remains an optional future sidecar for scale/performance. The MVP does not require it to prove the search contract. Any future external index must remain rebuildable from Promomed authority.
 
 Medical boundary: search/ranking performs no diagnosis, treatment recommendation, drug recommendation or individual health-risk inference.
+
+
+## Transcript Intelligence — evidence-first media checkpoint
+
+Added a bounded evidence model for Studio/replay intelligence:
+
+`recording/replay -> timecoded transcript segment -> generated takeaway -> human review -> public takeaway`.
+
+Repository/runtime scope:
+
+- `transcript_segments` with exact start/end time ranges, speaker reference and review state;
+- `generated_takeaways` with exact source range, reviewer identity and publication status;
+- participant-facing Transcript Intelligence in Studio;
+- editor-only approval/rejection command;
+- participant API hides unreviewed/generated takeaways;
+- Discovery indexes reviewed transcript segments and approved takeaways only;
+- search results can navigate back to the source replay;
+- Golden Demo reset restores deterministic transcript evidence.
+
+Publication rule: a takeaway is public only after human review and must resolve to an exact transcript time range.
+
+This checkpoint does not claim automated transcription provider integration, production speech-to-text accuracy or automatic medical publication. AI-generated text remains draft evidence until reviewed.
