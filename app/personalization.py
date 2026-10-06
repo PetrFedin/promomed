@@ -9,6 +9,7 @@ REASON_LABELS = {
     "booked_related_session": "Связано с вашим расписанием",
     "profile_interest": "Совпадает с вашими интересами",
     "relationship_stage": "Следующий шаг вашего маршрута",
+    "saved_for_later": "Вы сохранили это для продолжения",
     "editorial_default": "Редакционный выбор",
 }
 
@@ -77,6 +78,27 @@ def snapshot(c, email=None):
 
     all_topic_signals = interests | subscriptions
     items = []
+
+    # 0) Explicit saved discovery items are strong user intent signals.
+    try:
+        saved_rows = [dict(x) for x in c.execute(
+            "SELECT target_kind,target_ref,title,topic FROM discovery_saves WHERE email=? ORDER BY created_at DESC LIMIT 12",
+            (email,),
+        )]
+    except Exception:
+        saved_rows = []
+    for row in saved_rows:
+        items.append({
+            "id": f"saved:{row['target_kind']}:{row['target_ref']}",
+            "kind": row["target_kind"],
+            "title": row["title"],
+            "subtitle": "Сохранено из Discovery",
+            "topic": row.get("topic") or "",
+            "target_kind": row["target_kind"],
+            "target_ref": row["target_ref"],
+            "priority": 96,
+            "reason": _reason("saved_for_later", row.get("topic") or ""),
+        })
 
     # 1) Continue an enrolled learning journey first.
     steps_by_track = {}
@@ -245,6 +267,7 @@ def snapshot(c, email=None):
             "attended_count": len(attended),
             "booked_count": len(booked),
             "active_learning_count": len(enrollments),
+            "saved_discovery_count": len(saved_rows),
         },
         "personalized_items": ranked,
         "personalization_reason_codes": REASON_LABELS,
