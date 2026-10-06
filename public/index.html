@@ -869,7 +869,7 @@ async function copyPresentationLink(mode,button){
 async function openPresentationMenu(){
  document.body.classList.add('presentationMode');
  try{await goldenLogin()}catch(e){}
- sheets.presentation='<div class="ey blue">INVESTOR PRESENTATION MODE</div><h2>Один вход для 7–10-минутного показа</h2><p class="small muted">Каждый маршрут открывается напрямую. Golden Demo всегда начинает с детерминированного reset, чтобы встреча не зависела от предыдущего прогона.</p>'+
+ sheets.presentation='<div class="ey blue">INVESTOR PRESENTATION MODE · RELEASE CANDIDATE</div><h2>Один вход для 7–10-минутного показа</h2><p class="small muted">Каждый маршрут открывается напрямую. Golden Demo всегда начинает с детерминированного reset, чтобы встреча не зависела от предыдущего прогона.</p>'+
  '<div class="presentationMenuGrid">'+
  '<button class="presentationMenuCard" onclick="runPresentationMode(\'golden\')"><b>▶ Golden Demo</b><span>Reset → live operations → waitlist → replay → consented lead → evidence.</span></button>'+
  '<button class="presentationMenuCard" onclick="runPresentationMode(\'owner\')"><b>Owner Route</b><span>Пользователь → контент → конференция → operations → partner proof → investment decision.</span></button>'+
