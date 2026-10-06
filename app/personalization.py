@@ -32,6 +32,17 @@ def _is_held(c,kind,ref):
         return False
 
 
+def _held_topics(c):
+    try:
+        return {
+            str(r["artifact_ref"])[6:].strip().lower()
+            for r in c.execute("SELECT artifact_ref FROM publication_holds WHERE artifact_kind='recommendation' AND status='active'")
+            if str(r["artifact_ref"]).startswith("topic:")
+        }
+    except Exception:
+        return set()
+
+
 def _reason(code, detail=""):
     return {
         "code": code,
@@ -84,6 +95,7 @@ def snapshot(c, email=None):
     }
 
     all_topic_signals = interests | subscriptions
+    blocked_topics = _held_topics(c)
     items = []
 
     # 0) Explicit saved discovery items are strong user intent signals.
@@ -260,6 +272,9 @@ def snapshot(c, email=None):
     seen = set()
     ranked = []
     for row in sorted(items, key=lambda x: (-int(x["priority"]), x["id"])):
+        topic=str(row.get("topic") or "").strip().lower()
+        if topic and any(bt in topic or topic in bt for bt in blocked_topics):
+            continue
         key = (row["target_kind"], row["target_ref"])
         if key in seen:
             continue
@@ -279,6 +294,7 @@ def snapshot(c, email=None):
             "booked_count": len(booked),
             "active_learning_count": len(enrollments),
             "saved_discovery_count": len(saved_rows),
+            "held_topic_count": len(blocked_topics),
         },
         "personalized_items": ranked,
         "personalization_reason_codes": REASON_LABELS,
