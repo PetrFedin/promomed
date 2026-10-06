@@ -103,6 +103,17 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("async function acceptDemoRequirement(", INDEX)
         self.assertIn("LEGAL EFFECT:", INDEX)
         self.assertIn("not an electronic signature", INDEX)
+        self.assertIn("CONTRACT BUILDER · SCOPE → PAYMENT → EVIDENCE → BOARD", INDEX)
+        self.assertIn('id="contractBuilderTabs"', INDEX)
+        self.assertIn('id="contractBuilderSummary"', INDEX)
+        self.assertIn('id="contractScope"', INDEX)
+        self.assertIn('id="contractAcceptance"', INDEX)
+        self.assertIn('id="contractPayments"', INDEX)
+        self.assertIn('id="contractEvidenceRoom"', INDEX)
+        self.assertIn('id="contractBoardCertificate"', INDEX)
+        self.assertIn("async function loadContractBuilder()", INDEX)
+        self.assertIn("function renderContractPackage(", INDEX)
+        self.assertIn("not a commercial quote", INDEX.lower())
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
