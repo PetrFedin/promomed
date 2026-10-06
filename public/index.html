@@ -332,6 +332,19 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
 <div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
 </div>
+<div class="section"><div class="ey blue">CONTRACT BUILDER · SCOPE → PAYMENT → EVIDENCE → BOARD</div><h2>Выберите инвестиционный контур и получите управляемый договорный каркас</h2>
+<div class="chiprow" id="contractBuilderTabs">
+<button class="chip on" data-contract="t50" onclick="selectContractPackage('t50',this)">50 млн ₽</button>
+<button class="chip" data-contract="t75" onclick="selectContractPackage('t75',this)">75 млн ₽</button>
+<button class="chip" data-contract="t100" onclick="selectContractPackage('t100',this)">100 млн ₽</button>
+</div>
+<div id="contractBuilderSummary" class="card"><p class="small muted">Загрузка Contract Builder…</p></div>
+<div class="execTwoCol"><div id="contractScope" class="card"></div><div id="contractAcceptance" class="card"></div></div>
+<div class="card"><div class="ey blue">PAYMENT MILESTONES · ILLUSTRATIVE TEMPLATE</div><div id="contractPayments"></div></div>
+<div class="card"><div class="ey blue">EVIDENCE ROOM</div><div id="contractEvidenceRoom"></div></div>
+<div id="contractBoardCertificate" class="card"></div>
+<div class="notice"><b>COMMERCIAL BOUNDARY:</b> milestone percentages are an editable control-model template, not a commercial quote or binding payment schedule.</div>
+</div>
 <div class="section"><div class="ey blue">CONTRACTUAL KPI → EVIDENCE → ACCEPTANCE</div><h2>Каждый KPI имеет формулу, источник и владельца приёмки</h2><div id="investmentProofKpis" class="card"></div><div id="investmentProofLedger" class="card"></div></div>
 <div class="section"><div class="ey blue">PILOT CONTRACT · WHAT EXACTLY IS BEING FUNDED</div><h2>Пилот как управляемый договор на доказательство</h2><div class="execTwoCol"><div class="card"><h3>In scope</h3><ul id="execPilotIn" class="execList"></ul></div><div class="card"><h3>Out of scope</h3><ul id="execPilotOut" class="execList"></ul></div></div><div class="execTwoCol"><div class="card"><h3>Что должен дать заказчик</h3><ul id="execClientInputs" class="execList"></ul></div><div id="execPilotDecision" class="card"></div></div></div>
 <div class="section"><div class="ey blue">PILOT KPI DICTIONARY · FORMULA BEFORE TARGET</div><h2>Сначала определяем, что именно измеряем</h2><div id="execKpis" class="card"></div><div class="notice">Коммерческие и аудиторные target values фиксируются сторонами до оплачиваемого пилота. Продукт не подставляет их сам.</div></div>
@@ -822,6 +835,31 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let contractBuilderData=null,selectedContractPackage='t50';
+async function loadContractBuilder(){
+ const d=await api('/api/contract-builder');contractBuilderData=d;renderContractPackage(selectedContractPackage);return d
+}
+function selectContractPackage(id,button){
+ selectedContractPackage=id;
+ document.querySelectorAll('#contractBuilderTabs .chip').forEach(x=>x.classList.toggle('on',x.dataset.contract===id));
+ renderContractPackage(id)
+}
+function renderContractPackage(id){
+ if(!contractBuilderData)return;
+ const p=(contractBuilderData.packages||[]).find(x=>x.id===id);if(!p)return;
+ const s=document.getElementById('contractBuilderSummary');
+ if(s)s.innerHTML='<div class="row"><div><div class="ey blue">'+esc(p.title)+'</div><h3>'+formatMoney(p.amount_rub)+'</h3></div><span class="pill">'+esc(p.contract_state).replaceAll('_',' ').toUpperCase()+'</span></div><p class="small muted">'+esc(p.stop_go_rule)+'</p>';
+ const scope=document.getElementById('contractScope');
+ if(scope)scope.innerHTML='<div class="ey blue">SCOPE OF WORK</div><h3>Что покупается</h3><ul class="execList">'+(p.scope_of_work?.in_scope||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><div class="tiny muted"><b>Out of scope:</b> '+(p.scope_of_work?.out_of_scope||[]).map(esc).join(' · ')+'</div>';
+ const acc=document.getElementById('contractAcceptance'),ast=p.acceptance_matrix||{};
+ if(acc)acc.innerHTML='<div class="ey blue">ACCEPTANCE MATRIX</div><h3>'+Number(ast.accepted_demo_count||0)+' / '+Number(ast.required_count||0)+' demo accepted</h3>'+(ast.items||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.key.replaceAll('_',' '))+'</b><div class="tiny muted">'+esc(x.expected_owner)+'</div></div><span class="execStatus '+(x.status==='accepted_demo'?'live':'gated')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+ const pay=document.getElementById('contractPayments');
+ if(pay)pay.innerHTML=(p.payment_milestones||[]).map(x=>'<div class="execTranche"><div><div class="ey blue">'+esc(x.title)+'</div><h3>'+formatMoney(x.amount_rub)+' · '+x.share_pct+'%</h3><div class="tiny muted"><b>Responsible:</b> '+esc(x.responsible)+'</div><div class="small muted"><b>Deliverable:</b> '+esc(x.deliverable)+'</div><div class="small muted"><b>KPI:</b> '+esc(x.kpi)+'</div><div class="small muted"><b>Evidence:</b> '+esc(x.evidence)+'</div><div class="small muted"><b>Payment:</b> '+esc(x.payment_rule)+'</div><div class="tiny muted"><b>STOP/GO:</b> '+esc(x.stop_go)+'</div></div><span class="execStatus demo">'+esc(x.commercial_state).replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+ const er=document.getElementById('contractEvidenceRoom');
+ if(er)er.innerHTML=(p.evidence_room||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.title)+'</b><div class="tiny muted">Owner: '+esc(x.owner)+'</div><div class="tiny muted">'+esc(x.evidence)+'</div><div class="tiny muted">Required for: '+(x.required_for||[]).map(esc).join(', ')+'</div></div><span class="execStatus '+(String(x.status).includes('accepted')||String(x.status).includes('proven')?'live':'gated')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+ const bc=document.getElementById('contractBoardCertificate'),cert=p.board_decision_certificate||{};
+ if(bc)bc.innerHTML='<div class="ey blue">BOARD DECISION CERTIFICATE PREVIEW</div><h3>'+esc(cert.decision||'HOLD')+'</h3><div class="tiny muted">Certificate: '+esc(cert.certificate_id||'—')+'</div><div class="tiny muted">SHA-256: '+esc((cert.certificate_hash||'—').slice(0,28))+'…</div><div class="small muted" style="margin-top:8px"><b>Blockers:</b> '+(cert.blockers||[]).map(esc).join(' · ')+'</div><div class="notice"><b>LEGAL EFFECT:</b> '+esc(cert.legal_effect||'NONE')+' · <b>CAPITAL RELEASE:</b> '+esc(cert.capital_release_effect||'NONE')+'<br>'+esc(cert.note||'')+'</div>';
+}
 async function loadInvestmentProofSystem(){
  const d=await api('/api/investment-proof-system');
  const dec=d.decision_state||{},root=document.getElementById('investmentProofDecision');
@@ -893,7 +931,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
