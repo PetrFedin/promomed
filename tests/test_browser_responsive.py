@@ -161,6 +161,14 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     page.locator("#econEventFee").fill("500000")
     expect(page.locator("#investorEconomicsOutput")).to_contain_text(re.compile(r"2\s*000\s*000"))
     expect(page.locator("#investorEconomicsOutput")).to_contain_text("MAX REVENUE-LINE CONCENTRATION")
+    # Finance-input value lab: 75m investment and 75m annual net verified value -> 12 month payback.
+    page.locator("#valueInvestment").fill("75000000")
+    page.locator("#valueAvoided").fill("30000000")
+    page.locator("#valuePartner").fill("30000000")
+    page.locator("#valueOps").fill("20000000")
+    page.locator("#valueRunCost").fill("5000000")
+    expect(page.locator("#verifiedValueOutput")).to_contain_text(re.compile(r"75\s*000\s*000"))
+    expect(page.locator("#verifiedValueOutput")).to_contain_text("12.0 мес.")
     assert_no_page_overflow(page, width, f"{name}/investor")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-investor.png"), full_page=True)
 
