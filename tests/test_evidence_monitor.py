@@ -102,4 +102,54 @@ class ExternalEvidenceAdmissionTests(unittest.TestCase):
         self.assertFalse(d["truth_boundary"]["automatic_medical_truth"])
 
 
+    def test_monitor_job_retries_with_exponential_backoff_then_dead_letters(self):
+        target_id=self.monitor.ensure_target(self.c,"pubmed","999001","editor@demo.ru",0)
+        original=self.monitor.fetch_live
+        try:
+            def fail(*args,**kwargs):
+                raise TimeoutError("provider timeout")
+            self.monitor.fetch_live=fail
+            now=1700000000
+            for expected_attempt in range(1,self.monitor.MAX_PROVIDER_ATTEMPTS+1):
+                result=self.monitor.run_due_jobs(self.c,now=now,email="monitor@example.com")
+                self.assertEqual(result["processed"],1)
+                job=self.c.execute("SELECT status,next_run_at,attempt_count FROM evidence_monitor_jobs WHERE target_id=?",(target_id,)).fetchone()
+                if expected_attempt<self.monitor.MAX_PROVIDER_ATTEMPTS:
+                    self.assertEqual(job["status"],"retry")
+                    self.assertEqual(job["attempt_count"],expected_attempt)
+                    expected_delay=self.monitor._retry_delay(expected_attempt)
+                    self.assertEqual(job["next_run_at"],now+expected_delay)
+                    now=job["next_run_at"]
+                else:
+                    self.assertEqual(job["status"],"dead")
+                    self.assertEqual(job["attempt_count"],expected_attempt)
+        finally:
+            self.monitor.fetch_live=original
+
+    def test_successful_monitor_job_reschedules_and_resets_attempts(self):
+        target_id=self.monitor.ensure_target(self.c,"crossref","10.1000/test.monitor","editor@demo.ru",0)
+        original=self.monitor.fetch_live
+        try:
+            self.monitor.fetch_live=lambda *args,**kwargs: {"message":{"DOI":"10.1000/test.monitor","title":["Monitor test"],"publisher":"Test","issued":{"date-parts":[[2026,10,6]]},"update-to":[]}}
+            now=1700001000
+            result=self.monitor.run_due_jobs(self.c,now=now,email="monitor@example.com")
+            self.assertEqual(result["processed"],1)
+            job=self.c.execute("SELECT status,next_run_at,attempt_count,last_error FROM evidence_monitor_jobs WHERE target_id=?",(target_id,)).fetchone()
+            self.assertEqual(job["status"],"queued")
+            self.assertEqual(job["attempt_count"],0)
+            self.assertEqual(job["last_error"],"")
+            self.assertEqual(job["next_run_at"],now+self.monitor.POLL_INTERVAL_SECONDS)
+        finally:
+            self.monitor.fetch_live=original
+
+    def test_dead_job_requires_explicit_requeue(self):
+        target_id=self.monitor.ensure_target(self.c,"pubmed","999002","editor@demo.ru",0)
+        self.c.execute("UPDATE evidence_monitor_jobs SET status='dead',attempt_count=5 WHERE target_id=?",(target_id,))
+        self.monitor.requeue_dead_job(self.c,target_id,now=1700002000)
+        job=self.c.execute("SELECT status,next_run_at,attempt_count FROM evidence_monitor_jobs WHERE target_id=?",(target_id,)).fetchone()
+        self.assertEqual(job["status"],"queued")
+        self.assertEqual(job["next_run_at"],1700002000)
+        self.assertEqual(job["attempt_count"],0)
+
+
 if __name__=="__main__":unittest.main()
