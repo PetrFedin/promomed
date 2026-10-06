@@ -5,7 +5,7 @@ from app import db, transcript_intelligence, evidence_graph
 
 def serve(raw_path, role):
     parsed=urlparse(raw_path)
-    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph"):
+    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage"):
         return None
     q=parse_qs(parsed.query)
     c=db.connect()
@@ -13,6 +13,10 @@ def serve(raw_path, role):
         if parsed.path=="/api/transcript-intelligence":
             item=(q.get("item_id") or [""])[0][:40] or None
             return transcript_intelligence.snapshot(c,item_id=item,editor=role=="editor"),200
+        if parsed.path=="/api/evidence-coverage":
+            if role!="editor":
+                return {"error":"forbidden"},403
+            return evidence_graph.coverage(c),200
         return evidence_graph.snapshot(
             c,
             artifact_kind=(q.get("artifact_kind") or [""])[0][:30] or None,
