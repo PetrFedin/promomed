@@ -193,8 +193,7 @@ class H(SimpleHTTPRequestHandler):
   b=json.dumps(obj,ensure_ascii=False).encode(); self.send_response(status)
   self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors()
   self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
- def do_OPTIONS(self):
-  self.send_response(204); self.cors(); self.end_headers()
+ def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
   if p=="/health":
@@ -212,8 +211,7 @@ class H(SimpleHTTPRequestHandler):
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
-  if p.startswith("/api/discovery"):
-   d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
+  if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
   if p=="/api/product-quality-proof":
    c=conn()
    proof={
