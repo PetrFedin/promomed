@@ -446,11 +446,11 @@ Native entities:
 
 Production separation-of-duties rules:
 
-1. Editor performs editorial review and may assign a scientific reviewer, but cannot satisfy the production scientific gate.
+1. Editorial acceptance is required before scientific assignment. Editor may assign a scientific reviewer, but cannot satisfy the production scientific gate.
 2. Scientific reviewer must authenticate with the dedicated `reviewer` role and have an active authorized scope.
 3. Production reviewer credential state must be `verified`, independence must be explicitly attested, and expiry is fail-closed.
 4. Every assigned reviewer must disclose conflict state before a decision.
-5. `material` conflict causes recusal and blocks decision; `potential` conflict also blocks decision until governance resolves/reassigns it.
+5. `material` conflict causes recusal; `potential` conflict places the assignment on conflict hold. Either state blocks decision, and the conflicted reviewer cannot be reassigned to the same candidate.
 6. Scientific decision is immutable after write and is bound to the exact evidence snapshot hash.
 7. Current decision attestation is an authenticated-session SHA-256 digest, **not a legal electronic signature**.
 8. Final production admission requires a separate authenticated `governance` actor who is neither the editorial reviewer nor the scientific reviewer.
