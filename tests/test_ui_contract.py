@@ -174,6 +174,10 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("function renderPersonalizedJourney(", INDEX)
         self.assertIn("function openPersonalizedTarget(", INDEX)
         self.assertIn("medical inference", INDEX.lower())
+        self.assertIn("RELATIONSHIP 365", INDEX)
+        self.assertIn('id="journey365Timeline"', INDEX)
+        self.assertIn("function renderJourney365(", INDEX)
+        self.assertIn("function openJourney365Action(", INDEX)
         self.assertIn("async function acceptReallocationRole(", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
