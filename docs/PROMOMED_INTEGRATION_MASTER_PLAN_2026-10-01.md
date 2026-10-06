@@ -423,7 +423,7 @@ Production hardening before continuous monitoring:
 
 - provider retry/backoff/rate-limit policy;
 - NCBI registered `tool` / `email` and secret-stored API key if required by request volume;
-- durable polling worker state — IMPLEMENTED IN REPOSITORY (2026-10-06); external production scheduler still required;
+- durable polling worker state — IMPLEMENTED IN REPOSITORY (2026-10-06), including self-healing creation of missing jobs for pre-existing active watch targets; external production scheduler still required;
 - retry/backoff + dead-letter job state — IMPLEMENTED IN REPOSITORY (2026-10-06); operational alerting still required;
 - independent scientific/medical reviewer identity and authorization;
 - retention policy for raw provider payloads;
