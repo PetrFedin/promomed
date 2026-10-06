@@ -5,6 +5,7 @@ from app import corporate, db, executive, investor, investment_proof, contract_b
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval
+from app.commanding import finalize_command
 from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 from app.community_commands import handle_command as handle_community_command
 from app.learning_commands import handle_command as handle_learning_command
@@ -389,7 +390,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_intervention_command(c,p,role,email,data)
     if outcome is None: outcome=handle_reallocation_command(c,p,role,email,data)
     if outcome is None: return self.out({"error":"not_found"},404)
-    c.commit()
+    finalize_command(c,outcome)
     payload=state(c,email) if outcome.use_state else outcome.payload
     return self.out(payload,outcome.status)
    finally: c.close()
