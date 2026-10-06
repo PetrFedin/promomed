@@ -206,6 +206,17 @@ body.presentationMode .presentationLauncher{display:block}
 
 
 
+
+.evidenceGovernanceCard{border:1px solid #b9d5e9;background:linear-gradient(145deg,#f7fbff,#fff)}
+.evidenceReviewForm{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.evidenceReviewForm label{display:grid;gap:5px;font-size:10px;font-weight:800;color:#35516a}
+.evidenceReviewForm input,.evidenceReviewForm select,.evidenceReviewForm textarea{width:100%;box-sizing:border-box;border:1px solid #cad8e4;border-radius:12px;background:#fff;padding:10px;font:inherit;color:#102f54}
+.evidenceReviewForm .wide{grid-column:1/-1}.evidenceSealGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
+.evidenceSealGrid div{padding:10px;border-radius:12px;background:#eef5fa}.evidenceSealGrid span{display:block;font-size:8px;letter-spacing:.06em;color:#60788d}.evidenceSealGrid b{display:block;margin-top:3px;font-size:13px}
+.evidenceHash{margin-top:9px;padding:10px;border:1px solid #dce8f0;border-radius:12px}.evidenceHash span{display:block;font-size:8px;color:#60788d}.evidenceHash code{display:block;margin-top:5px;font-size:9px;overflow-wrap:anywhere}
+.evidenceSources{display:grid;gap:6px;margin-top:9px}.evidenceSources div{display:grid;grid-template-columns:120px 1fr;gap:8px;padding:8px 0;border-top:1px solid #e4edf3}.evidenceSources b,.evidenceSources span{font-size:9px;overflow-wrap:anywhere}
+.contentEvidenceSeal{margin:10px 0;padding:11px;border-radius:14px;background:#eef7fb;border:1px solid #d4e6ef}.contentEvidenceSeal p{margin:7px 0 0}
+@media(max-width:640px){.evidenceReviewForm{grid-template-columns:1fr}.evidenceReviewForm .wide{grid-column:auto}.evidenceSealGrid{grid-template-columns:1fr 1fr}.evidenceReviewForm input,.evidenceReviewForm select,.evidenceReviewForm textarea{font-size:16px}.evidenceSources div{grid-template-columns:1fr}}
 </style></head><body>
 <main class="app"><header class="top"><div class="brand"><b>с.</b>СОСТОЯНИЕ</div><div class="topActions"><button class="icon" aria-label="Поиск" onclick="openSheet('search')">⌕</button><button class="icon" aria-label="Уведомления" onclick="openNotifications()">●</button><button class="icon" aria-label="Аккаунт и управление" onclick="openSheet('control')">•••</button></div></header>
 
@@ -435,7 +446,21 @@ body.presentationMode .presentationLauncher{display:block}
 
 <section id="staff" class="screen staff"><div class="adminbar"><div class="ey">EVENT STAFF · DEMO</div><select onchange="switchRole(this.value)"><option value="staff">Check-in staff</option><option value="editor">Редактор</option><option value="moderator">Модератор</option><option value="organizer">Организатор</option><option value="participant">Участник</option></select></div><div class="ey blue">GATE / CAMERA QR SCANNER</div><h1>Быстрый вход с понятным fallback.</h1><div class="card"><video id="qrVideo" playsinline muted style="width:100%;border-radius:18px;background:#061b34;aspect-ratio:4/3;object-fit:cover"></video><div class="actions"><button class="btn" onclick="startQRScanner(this)">Включить камеру</button><button class="btn ghost" onclick="stopQRScanner()">Остановить</button></div><p class="tiny muted" id="qrHint">На поддерживаемом iPhone/браузере камера открывается напрямую. BarcodeDetector используется, если доступен; иначе остаётся ручной fallback.</p></div><div class="card center"><div class="qr" style="width:145px;height:145px"></div><span class="pill green" id="staffScan">ГОТОВ К СКАНИРОВАНИЮ</span><div class="actions" style="justify-content:center"><button class="btn" onclick="apiCheckin()">Valid ticket</button><button class="btn ghost" onclick="apiCheckin()">Duplicate</button></div></div><div class="card"><div class="ey blue">FALLBACK STATES</div><div class="listrow"><div class="badge">✓</div><div><b>Valid</b><div class="tiny muted">Разрешённый вход / зона / день</div></div></div><div class="listrow"><div class="badge">×</div><div><b>Wrong zone / cancelled</b><div class="tiny muted">Показываем причину и следующий шаг</div></div></div><div class="listrow"><div class="badge">↻</div><div><b>Offline</b><div class="tiny muted">Локальная проверка + последующая синхронизация и duplicate reconciliation</div></div></div></div></section>
 
-<section id="editor" class="screen editor"><div class="adminbar"><div class="ey">EDITORIAL CMS · DEMO</div><select onchange="switchRole(this.value)"><option value="editor">Редактор</option><option value="moderator">Модератор</option><option value="staff">Check-in staff</option><option value="organizer">Организатор</option></select></div><div class="ey blue">CONTENT AUTHORITY</div><h1>Публикация — это workflow, а не кнопка.</h1><div class="card"><div class="ey blue">МАТЕРИАЛ #A-014</div><h3>Сон: что действительно меняет следующий день</h3><div class="timeline"><div><b>Draft ✓</b><p class="tiny muted">Автор и источники заполнены</p></div><div><b>Editorial review ✓</b><p class="tiny muted">Структура и фактчекинг</p></div><div><b>Medical review</b><p class="tiny muted" id="medReview">Ожидает решения</p></div><div><b>Legal / disclosure</b><p class="tiny muted">Проверка при наличии партнёрского участия</p></div></div><div class="actions"><button class="btn" onclick="apiCMS(this,'approved')">Approve demo</button><button class="btn ghost" onclick="apiCMS(this,'changes_requested')">Request changes</button></div></div><div class="notice">Существенное изменение медицинского claim в целевой архитектуре инвалидирует предыдущее approval и создаёт новую версию.</div></section>
+<section id="editor" class="screen editor"><div class="adminbar"><div class="ey">EDITORIAL CMS · DEMO</div><select onchange="switchRole(this.value)"><option value="editor">Редактор</option><option value="moderator">Модератор</option><option value="staff">Check-in staff</option><option value="organizer">Организатор</option></select></div><div class="ey blue">CONTENT AUTHORITY</div><h1>Публикация — это workflow, а не кнопка.</h1><div class="card"><div class="ey blue">МАТЕРИАЛ #A-014</div><h3>Сон: что действительно меняет следующий день</h3><div class="timeline"><div><b>Draft ✓</b><p class="tiny muted">Автор и источники заполнены</p></div><div><b>Editorial review ✓</b><p class="tiny muted">Структура и фактчекинг</p></div><div><b>Medical review</b><p class="tiny muted" id="medReview">Ожидает решения</p></div><div><b>Legal / disclosure</b><p class="tiny muted">Проверка при наличии партнёрского участия</p></div></div><div class="actions"><button class="btn" onclick="apiCMS(this,'approved')">Approve demo</button><button class="btn ghost" onclick="apiCMS(this,'changes_requested')">Request changes</button></div></div><div class="notice">Существенное изменение медицинского claim в целевой архитектуре инвалидирует предыдущее approval и создаёт новую версию.</div>
+<div class="card evidenceGovernanceCard">
+  <div class="row"><div><div class="ey blue">EVIDENCE GOVERNANCE V1</div><h3>Source → reviewer → disclosure → seal</h3></div><span class="pill" id="evidenceSealStatus">NO SEAL</span></div>
+  <p class="small muted">Seal подтверждает прохождение evidence workflow для конкретной версии материала. Он не является медицинским сертификатом эффективности.</p>
+  <div id="evidenceManifestSummary" class="evidenceManifestSummary"><p class="tiny muted">Выберите материал из server authority — manifest загрузится автоматически.</p></div>
+  <form id="evidenceReviewForm" class="evidenceReviewForm">
+    <label>Материал<select name="content_id" id="evidenceContentId"></select></label>
+    <label>Тип источника<select name="source_type"><option value="study">Study</option><option value="guideline">Guideline</option><option value="primary">Primary source</option><option value="registry">Registry</option><option value="institutional">Institutional</option><option value="review">Review</option><option value="other">Other</option></select></label>
+    <label class="wide">Источник / DOI / registry ref<input name="source_ref" required placeholder="doi:10.... / guideline:... / registry:..."></label>
+    <label>Роль reviewer<input name="reviewer_role" value="medical_editor" required></label>
+    <label>Решение<select name="decision"><option value="approved">Approved</option><option value="needs_changes">Needs changes</option><option value="rejected">Rejected</option></select></label>
+    <label class="wide">Disclosure<textarea name="disclosure" rows="3" required placeholder="Конфликт интересов / партнёрство / отсутствие конфликта"></textarea></label>
+    <button class="btn wide" type="submit">ЗАПИСАТЬ REVIEW И ПЕРЕСЧИТАТЬ SEAL</button>
+  </form>
+</div></section>
 
 <section id="moderator" class="screen moderator"><div class="adminbar"><div class="ey">MODERATION DESK · DEMO</div><select onchange="switchRole(this.value)"><option value="moderator">Модератор</option><option value="editor">Редактор</option><option value="staff">Check-in staff</option><option value="organizer">Организатор</option></select></div><div class="ey blue">LIVE Q&A + COMMUNITY</div><h1>Участие без потери контроля.</h1><div class="card"><div class="row"><div><div class="ey blue">ВОПРОС #Q-042</div><h3>Как отличать корреляцию от причинности?</h3></div><span class="pill">NEW</span></div><p class="small muted">Главная сцена · участник скрыт в demo</p><div class="actions"><button class="btn green" onclick="this.textContent='На сцену ✓'">Одобрить</button><button class="btn ghost" onclick="this.textContent='Скрыто ✓'">Скрыть</button></div></div><div class="card"><div class="ey blue">COMMUNITY REPORT</div><h3>Жалоба на медицинский совет в комментарии</h3><p class="small muted">Moderation → content safety → при необходимости специальный маршрут в согласованный процесс.</p><div class="actions"><button class="btn" onclick="this.textContent='Передано на review ✓'">Передать на review</button></div></div></section>
 
@@ -459,7 +484,7 @@ control:`<div class="ey blue">DEMO CONTROL CENTER</div><h2>Platform Control</h2>
 onboarding:`<div class="ey blue">ONBOARDING</div><h2>Настроить СОСТОЯНИЕ под себя</h2><p class="small muted">Просматривать можно без регистрации. Аккаунт нужен в момент полезного действия.</p><div class="field"><label>ЧТО ВАМ ИНТЕРЕСНО</label><div class="chiprow"><button class="chip on">Сон</button><button class="chip">Питание</button><button class="chip on">Движение</button><button class="chip">Долголетие</button></div></div><div class="field"><label>КАК УДОБНЕЕ</label><div class="chiprow"><button class="chip on">Короткие видео</button><button class="chip">Статьи</button><button class="chip on">События</button></div></div><div class="actions"><button class="btn" onclick="saveSmartProfile()">Сохранить и собрать маршрут</button></div>`,
 registration:`<div class="ey blue">REGISTRATION FLOW</div><h2>СОСТОЯНИЕ / 2027</h2><div class="timeline"><div><b>Формат участия</b><p class="tiny muted">Очный участник · DEMO</p></div><div><b>Данные участника</b><p class="tiny muted">Покупатель и участник — разные сущности при групповой покупке</p></div><div><b>Условия и согласия</b><p class="tiny muted">Отдельно сервисные и маркетинговые коммуникации</p></div><div><b>Подтверждение</b><p class="tiny muted">Ticket ID + QR + программа</p></div></div><div class="actions"><button class="btn" onclick="apiRegister(this)">Получить demo-билет →</button></div>`,
 map:`<div class="ey blue">SMART WAYFINDING · DEMO</div><h2>Следующая точка без поиска по карте</h2><div class="card" style="background:#09233f;color:#fff"><div class="ey" style="color:#82c7ff">ВАШ МАРШРУТ · 4 МИН</div><h3>Регистрация → Лекторий</h3><p class="small" style="color:#c4d7e9">Прямо до центрального атриума → направо к зоне 02 → вход B.</p><div class="progress"><i style="width:58%"></i></div></div><div class="stagegrid"><div class="stage"><div class="num">01</div><b>Главная</b><p class="tiny muted">2 мин</p></div><div class="stage"><div class="num">02</div><b>Лекторий</b><p class="tiny muted">4 мин</p></div><div class="stage"><div class="num">03</div><b>Практика</b><p class="tiny muted">5 мин</p></div><div class="stage"><div class="num">04</div><b>Клуб</b><p class="tiny muted">3 мин</p></div></div><div class="notice">MVP использует понятную интерактивную схему и event-aware маршрут. Indoor positioning добавляется только при доказанной необходимости.</div>`,
-content:`<div class="ey blue">ARTICLE DETAIL</div><h2>Почему громкий заголовок ещё не означает сильный вывод</h2><p class="small muted">Анна Миронова · медицинский рецензент: demo · обновлено 28.09.2026</p><span class="pill green">Редакционный материал</span><p class="small">MVP показывает обязательные поля доверия: автор, рецензент, источники, дата обновления, история исправлений и раскрытие партнёрства.</p><div class="card"><div class="ey blue">СВЯЗАНО</div><b>Лекция → эксперт → сессия конференции</b></div><div class="actions"><button class="btn" onclick="openSheet('expert')">Профиль эксперта →</button></div>`,
+content:`<div class="ey blue">ARTICLE DETAIL</div><h2>Почему громкий заголовок ещё не означает сильный вывод</h2><p class="small muted">Анна Миронова · медицинский рецензент: demo · обновлено 28.09.2026</p><span class="pill green">Редакционный материал</span><div id="contentEvidenceSeal" class="contentEvidenceSeal"><span class="pill">EVIDENCE: CHECKING</span><p class="tiny muted">Проверяем evidence manifest конкретной версии материала.</p></div><p class="small">MVP показывает обязательные поля доверия: автор, рецензент, источники, дата обновления, история исправлений и раскрытие партнёрства.</p><div class="card"><div class="ey blue">СВЯЗАНО</div><b>Лекция → эксперт → сессия конференции</b></div><div class="actions"><button class="btn" onclick="openSheet('expert')">Профиль эксперта →</button></div>`,
 expert:`<div class="expert"><div class="avatar">АМ</div><div><div class="ey blue">ЭКСПЕРТ · DEMO</div><h2 style="margin:4px 0">Анна Миронова</h2><p class="tiny muted">Исследователь · профиль вымышлен</p></div></div><p class="small">Профиль показывает подтверждаемые профессиональные сведения, темы, материалы, ближайшие выступления и раскрытие конфликтов/партнёрских отношений.</p><div class="card"><div class="ey blue">БЛИЖАЙШАЯ СЕССИЯ</div><b>Сон, энергия и следующий день</b><p class="tiny muted">13:30 · Зал «Диалог»</p></div><div class="actions"><button class="btn" onclick="closeSheet();show('events')">В программу →</button></div>`,
 schedule:`<div class="ey blue">PROGRAM</div><h2>Программа без тупиков</h2><div class="card"><b>10:00 · Здоровье как культура жизни</b><p class="tiny muted">Главная сцена · сохранено</p></div><div class="card"><b id="sheetSession">11:00 · Как читать исследования</b><p class="tiny muted">Лекторий · бронь подтверждена</p></div><div class="card"><b>13:30 · Сон, энергия и следующий день</b><p class="tiny muted">Диалог · свободно 22 места</p></div><div class="notice">Сохранение ≠ бронь места. MVP демонстрирует обе механики отдельно.</div>`,
 search:`<div class="ey blue">GLOBAL SEARCH</div><h2>Найти всё из одного места</h2><div class="field"><input value="сон" placeholder="Тема, эксперт, событие, материал..."></div><div class="card"><div class="ey blue">МАТЕРИАЛ</div><b>Сон: что действительно меняет следующий день</b></div><div class="card"><div class="ey blue">ЭКСПЕРТ</div><b>Анна Миронова · demo</b></div><div class="card"><div class="ey blue">СЕССИЯ</div><b>Сон, энергия и следующий день · 13:30</b></div><div class="notice">В production-плане поиск объединяет темы, транскрипты, экспертов, события, бренды и коллаборации.</div>`,
@@ -472,7 +497,7 @@ gift:`<div class="ey blue">CURATED HEALTH KIT · DEMO</div><h2>Подарок д
 };
 function show(id){if(id==='me'&&!apiToken){openSheet('login');return}if(id==='partnerDash')setTimeout(()=>loadInvestorProof('partner'),0);if(id==='investorProof')setTimeout(()=>loadInvestorProof(),0);document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('on',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.s===id));scrollTo(0,0)}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.s));
-function openSheet(k){document.getElementById('sheet').innerHTML='<div class="row"><span></span><button class="icon" aria-label="Закрыть" onclick="closeSheet()">×</button></div>'+(sheets[k]||'');document.getElementById('overlay').classList.add('on')}
+function openSheet(k){document.getElementById('sheet').innerHTML='<div class="row"><span></span><button class="icon" aria-label="Закрыть" onclick="closeSheet()">×</button></div>'+(sheets[k]||'');document.getElementById('overlay').classList.add('on');if(k==='content')setTimeout(renderContentEvidenceSeal,0)}
 function closeSheet(){document.getElementById('overlay').classList.remove('on')}
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeSheet()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
@@ -505,7 +530,7 @@ switchRole=async function(r){currentEmail=demoAccounts[r]||currentEmail;
  try{
   const loginEmail=demoAccounts[r];const j=await api('/api/login',{method:'POST',body:JSON.stringify({email:loginEmail,password:'demo2027'})});
   apiToken=j.token;currentEmail=loginEmail;localStorage.setItem('sostoyanie_token',apiToken);localStorage.setItem('sostoyanie_role',r);localStorage.setItem('sostoyanie_email',loginEmail);
-  localSwitchRole(r); await syncState(true);
+  localSwitchRole(r); await syncState(true); if(r==='editor')hydrateEvidenceGovernance();
  }catch(e){alert('Demo login: '+e.message)}
 }
 let programMode='grid',qrStream=null,qrTimer=null;
@@ -700,15 +725,71 @@ async function apiLive(b){
 async function apiCheckin(){
  try{const s=await api('/api/checkin',{method:'POST',body:JSON.stringify({ticket:'DEMO-2027-001'})});document.getElementById('staffScan').textContent='VALID · DEMO-2027-001 · total '+s.checkins;document.getElementById('staffScan').className='pill green'}catch(e){document.getElementById('staffScan').textContent=e.status===409?'ALREADY USED · DUPLICATE':'ERROR · '+e.message;document.getElementById('staffScan').className='pill red'}
 }
+function evidenceContentRows(){return Array.isArray(serverState&&serverState.content_catalog)?serverState.content_catalog:[]}
+function selectedEvidenceContentId(){
+ const select=document.getElementById('evidenceContentId');
+ if(select&&select.value)return select.value;
+ const rows=evidenceContentRows();
+ const sleep=rows.find(x=>/сон|sleep/i.test(String(x.title||'')));
+ return (sleep||rows[0]||{}).id||'';
+}
+function evidenceSealLabel(status){
+ return ({valid:'VALID EVIDENCE SEAL',expired:'EXPIRED',missing_review:'NO REVIEW',missing_source:'NO SOURCE',missing_disclosure:'NO DISCLOSURE',not_approved:'NOT APPROVED'})[status]||String(status||'NO SEAL').toUpperCase();
+}
+function renderEvidenceManifest(manifest){
+ const box=document.getElementById('evidenceManifestSummary'),pill=document.getElementById('evidenceSealStatus');if(!box||!pill)return;
+ if(!manifest){pill.textContent='NO MANIFEST';pill.className='pill';box.innerHTML='<p class="tiny muted">Manifest недоступен для выбранного материала.</p>';return}
+ const seal=manifest.seal||{},review=manifest.review||{},sources=manifest.sources||[];
+ pill.textContent=evidenceSealLabel(seal.status);pill.className='pill '+(seal.valid?'green':'');
+ box.innerHTML='<div class="evidenceSealGrid">'+
+  '<div><span>CONTENT VERSION</span><b>v'+h(manifest.content&&manifest.content.version||'—')+'</b></div>'+
+  '<div><span>SOURCES</span><b>'+h(sources.length)+'</b></div>'+
+  '<div><span>DECISION</span><b>'+h(review.decision||'—')+'</b></div>'+
+  '<div><span>DISCLOSURE</span><b>'+(review.disclosure?'YES':'NO')+'</b></div>'+
+  '</div><div class="evidenceHash"><span>SHA-256 evidence package</span><code>'+h(manifest.evidencePackageSha256||'—')+'</code></div>'+
+  (sources.length?'<div class="evidenceSources">'+sources.map(x=>'<div><b>'+h(String(x.source_type||'').toUpperCase())+'</b><span>'+h(x.source_ref||'')+'</span></div>').join('')+'</div>':'');
+}
+async function loadEvidenceManifest(contentId){
+ if(!contentId)return renderEvidenceManifest(null);
+ try{const out=await api('/api/evidence/manifest/'+encodeURIComponent(contentId));renderEvidenceManifest(out.data||null)}
+ catch(e){renderEvidenceManifest(null)}
+}
+function hydrateEvidenceGovernance(){
+ const select=document.getElementById('evidenceContentId');if(!select)return;
+ const rows=evidenceContentRows();
+ select.innerHTML=rows.map(x=>'<option value="'+h(x.id)+'">'+h(x.title||x.id)+' · '+h(x.status||'')+'</option>').join('');
+ if(rows.length){select.value=selectedEvidenceContentId();loadEvidenceManifest(select.value)}
+ select.onchange=()=>loadEvidenceManifest(select.value);
+}
+async function renderContentEvidenceSeal(){
+ const holder=document.getElementById('contentEvidenceSeal');if(!holder)return;
+ const contentId=selectedEvidenceContentId();if(!contentId){holder.innerHTML='<span class="pill">EVIDENCE: UNAVAILABLE</span><p class="tiny muted">Нет content authority record.</p>';return}
+ try{
+  const out=await api('/api/evidence/verify/'+encodeURIComponent(contentId)),v=out.data||{},seal=v.seal||{};
+  holder.innerHTML='<span class="pill '+(seal.valid?'green':'')+'">EVIDENCE: '+h(evidenceSealLabel(seal.status))+'</span>'+
+    '<p class="tiny muted">v'+h(v.contentVersion||'—')+' · '+h(v.sourceCount||0)+' source(s) · disclosure '+(v.disclosurePresent?'present':'missing')+
+    ' · SHA-256 '+h(String(v.evidencePackageSha256||'').slice(0,16))+'…</p>';
+ }catch(e){holder.innerHTML='<span class="pill">EVIDENCE: NOT VERIFIED</span><p class="tiny muted">Для этого material/version нет действующего evidence seal.</p>'}
+}
+async function submitEvidenceReview(e){
+ e.preventDefault();const form=e.currentTarget,fd=new FormData(form),payload=Object.fromEntries(fd.entries());
+ if(!payload.content_id)return;
+ try{
+  const out=await api('/api/evidence/review',{method:'POST',body:JSON.stringify(payload)});
+  renderEvidenceManifest(out.data||null);
+ }catch(err){alert('Evidence review: '+err.message)}
+}
 async function apiCMS(b,status){try{const s=await api('/api/cms',{method:'POST',body:JSON.stringify({status})});b.textContent=status==='approved'?'Approved ✓':'Возвращено ✓';document.getElementById('medReview').textContent=s.cms_status+' · v'+s.cms_version}catch(e){alert(e.message)}}
 async function apiLead(b){try{const s=await api('/api/lead',{method:'POST',body:JSON.stringify({kind:'materials'})});b.textContent='Lead создан на сервере · '+s.leads+' ✓'}catch(e){alert(e.message)}}
 async function apiQuestion(b){try{const s=await api('/api/question',{method:'POST',body:JSON.stringify({text:'Как отличать корреляцию от причинности?'})});b.textContent='Отправлено на сервер ✓';document.getElementById('qStatus').textContent='Статус: на модерации · вопросов в authority: '+s.questions}catch(e){alert(e.message)}}
 (async()=>{
+ const evidenceForm=document.getElementById('evidenceReviewForm');if(evidenceForm)evidenceForm.onsubmit=submitEvidenceReview;
  const savedRole=localStorage.getItem('sostoyanie_role')||'participant';
  if(apiToken){
   try{const me=await api('/api/me');if(me.authenticated){role=me.role||savedRole;routeRole();await syncState(true)}else{apiToken='';localStorage.removeItem('sostoyanie_token');show('today');updateTag()}}
   catch(e){show('today');updateTag()}
  }else{role='participant';show('today');updateTag();await syncState(true)}
+ if(role==='editor')hydrateEvidenceGovernance();
  setInterval(()=>syncState(false),3000)
 })();
 </script><div id="guidedDemo" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(4,18,38,.72);backdrop-filter:blur(12px);padding:24px;align-items:flex-end">
