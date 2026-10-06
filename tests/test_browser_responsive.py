@@ -223,11 +223,10 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     page.wait_for_selector("#executiveRoom.on")
     page.evaluate("""async () => {
       const token = localStorage.getItem('sostoyanie_token');
-      await fetch('/api/deal-room/reset-demo', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:'{}'
-      });
+      const headers={'Content-Type':'application/json','Authorization':'Bearer '+token};
+      for (const path of ['/api/deal-room/reset-demo','/api/capital-plan-execution/reset-demo','/api/intervention-engine/reset-demo']) {
+        await fetch(path,{method:'POST',headers,body:'{}'});
+      }
     }""")
     page.reload(wait_until="domcontentloaded")
     page.wait_for_selector("#executiveRoom.on")
