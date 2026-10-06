@@ -26,6 +26,7 @@ def read(c, raw_path, role, email):
         query=(q.get("q") or [""])[0][:160],
         kind=(q.get("kind") or [""])[0][:30],
         topic=(q.get("topic") or [""])[0][:120],
+        content_type=(q.get("content_type") or [""])[0][:80],
         expert=(q.get("expert") or [""])[0][:120],
         event=(q.get("event") or [""])[0][:40],
         replay=replay,
