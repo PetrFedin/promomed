@@ -225,6 +225,11 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     expect(page.locator("#execProgrammeValue")).to_contain_text("50 000 000")
     expect(page.locator("#execValueBridge")).to_contain_text("Finance")
     expect(page.locator("#execValueBridge")).to_contain_text("Replace fragmented external spend")
+    expect(page.locator("#investmentProofDecision")).to_contain_text("CONTROLLED PILOT ONLY")
+    expect(page.locator("#investmentProofDecision")).to_contain_text("RELEASE 50M")
+    expect(page.locator("#investmentProofTranches")).to_contain_text("50m · Controlled Platform Pilot")
+    expect(page.locator("#investmentProofKpis")).to_contain_text("Finance-accepted annualized net value")
+    expect(page.locator("#investmentProofLedger")).to_contain_text("TRANCHE DECISION")
     assert_no_page_overflow(page, width, f"{name}/presentation-executive")
 
     page.goto(BASE_URL + "?presentation=security", wait_until="domcontentloaded")
