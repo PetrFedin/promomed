@@ -2,6 +2,7 @@ import time
 
 from app.commanding import error, ok
 from app.core import audit, notify
+from app import discovery
 
 ROUTES = {
     "/api/journey",
@@ -11,6 +12,8 @@ ROUTES = {
     "/api/passport",
     "/api/product-interest",
     "/api/followup-enroll",
+    "/api/discovery/save",
+    "/api/discovery/unsave",
 }
 
 
@@ -75,6 +78,28 @@ def handle_command(c, route, role, email, data):
             return error("bad_dimension", 400)
         c.execute("UPDATE passport SET " + dimension + "=1,updated=? WHERE email=?", (int(time.time()), email))
         audit(c, "passport_" + dimension, email, {})
+        return ok()
+
+    if route in ("/api/discovery/save", "/api/discovery/unsave"):
+        kind = str(data.get("target_kind", ""))[:30].strip()
+        ref = str(data.get("target_ref", ""))[:120].strip()
+        if not kind or not ref:
+            return error("target_required", 422)
+        if route == "/api/discovery/unsave":
+            c.execute("DELETE FROM discovery_saves WHERE email=? AND target_kind=? AND target_ref=?", (email, kind, ref))
+            audit(c, "discovery_unsaved", email, {"target_kind": kind, "target_ref": ref})
+            return ok()
+        found = [x for x in discovery.search(c, kind=kind, limit=100, email=email)["results"] if x["ref"] == ref]
+        if not found:
+            return error("discovery_target_not_found", 404)
+        row = found[0]
+        c.execute(
+            "INSERT INTO discovery_saves(email,target_kind,target_ref,title,topic,created_at,demo_only) VALUES(?,?,?,?,?,?,1) "
+            "ON CONFLICT(email,target_kind,target_ref) DO UPDATE SET title=excluded.title,topic=excluded.topic,created_at=excluded.created_at",
+            (email, kind, ref, row["title"], row.get("topic") or "", int(time.time())),
+        )
+        audit(c, "discovery_saved", email, {"target_kind": kind, "target_ref": ref})
+        notify(c, email, "discovery_saved", "Сохранено в ваш маршрут", row["title"])
         return ok()
 
     if route == "/api/product-interest":
