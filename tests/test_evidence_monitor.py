@@ -110,6 +110,7 @@ class ExternalEvidenceAdmissionTests(unittest.TestCase):
                 raise TimeoutError("provider timeout")
             self.monitor.fetch_live=fail
             now=1700000000
+            self.c.execute("UPDATE evidence_monitor_jobs SET next_run_at=? WHERE target_id=?",(now,target_id))
             for expected_attempt in range(1,self.monitor.MAX_PROVIDER_ATTEMPTS+1):
                 result=self.monitor.run_due_jobs(self.c,now=now,email="monitor@example.com")
                 self.assertEqual(result["processed"],1)
@@ -132,6 +133,7 @@ class ExternalEvidenceAdmissionTests(unittest.TestCase):
         try:
             self.monitor.fetch_live=lambda *args,**kwargs: {"message":{"DOI":"10.1000/test.monitor","title":["Monitor test"],"publisher":"Test","issued":{"date-parts":[[2026,10,6]]},"update-to":[]}}
             now=1700001000
+            self.c.execute("UPDATE evidence_monitor_jobs SET next_run_at=? WHERE target_id=?",(now,target_id))
             result=self.monitor.run_due_jobs(self.c,now=now,email="monitor@example.com")
             self.assertEqual(result["processed"],1)
             job=self.c.execute("SELECT status,next_run_at,attempt_count,last_error FROM evidence_monitor_jobs WHERE target_id=?",(target_id,)).fetchone()
