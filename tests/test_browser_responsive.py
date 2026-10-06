@@ -358,6 +358,34 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     expect(page.locator("#corpSummary")).to_contain_text("PRE PRODUCTION SECURITY REVIEW")
     assert_no_page_overflow(page, width, f"{name}/presentation-security")
 
+    # Knowledge change impact must fail-close affected content and recover only after remediation.
+    page.goto(BASE_URL, wait_until="domcontentloaded")
+    page.evaluate("""async () => {
+      const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'editor@demo.ru',password:'demo2027'})});
+      const d=await r.json();
+      localStorage.setItem('sostoyanie_token',d.token);
+      localStorage.setItem('sostoyanie_role',d.role);
+      localStorage.setItem('sostoyanie_email','editor@demo.ru');
+    }""")
+    page.reload(wait_until="domcontentloaded")
+    page.evaluate("show('editor')")
+    expect(page.locator("#evidenceCoverage")).to_contain_text("75.0%")
+    page.get_by_role("button", name="DEMO · источник отозван").click()
+    expect(page.locator("#changeImpactControl")).to_contain_text("SOURCE_RETRACTED")
+    expect(page.locator("#changeImpactControl")).to_contain_text("PUBLICATION HOLD")
+    page.evaluate("openContent('CT01')")
+    expect(page.locator("#sheet")).to_contain_text("UNDER REVIEW · PUBLICATION HOLD")
+    page.keyboard.press("Escape")
+    page.get_by_role("button", name="DEMO · retract affected claim").click()
+    page.get_by_role("button", name="Review + release hold").click()
+    expect(page.locator("#changeImpactControl")).not_to_contain_text("PUBLICATION HOLD:")
+    # Return shared demo authority to a deterministic baseline for the next viewport.
+    page.evaluate("""async () => {
+      const lr=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'organizer@demo.ru',password:'demo2027'})});
+      const ld=await lr.json();
+      await fetch('/api/demo/reset',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+ld.token},body:'{}'});
+    }""")
+
     assert not errors, f"{name}: page errors: {errors}"
     context.close()
 
