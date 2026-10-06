@@ -99,10 +99,14 @@ def _trust_status(claim,citations,links):
     has_source=bool(active_citations)
     has_locator=bool(active_citations and all(str(x.get("locator") or "").strip() for x in active_citations))
     has_trace=bool(links)
-    superseded=str(claim.get("status") or "").startswith("superseded")
-    reviewed=claim.get("status") in ("reviewed","reviewed_demo")
-    trusted=reviewed and has_reviewer and has_source and has_locator and has_trace and not superseded
-    if superseded:
+    claim_status=str(claim.get("status") or "")
+    superseded=claim_status.startswith("superseded")
+    retracted=claim_status.startswith("retracted")
+    reviewed=claim_status in ("reviewed","reviewed_demo")
+    trusted=reviewed and has_reviewer and has_source and has_locator and has_trace and not superseded and not retracted
+    if retracted:
+        status="RETRACTED"
+    elif superseded:
         status="SUPERSEDED"
     elif trusted:
         status="VERIFIED_DEMO"
@@ -119,6 +123,7 @@ def _trust_status(claim,citations,links):
         "has_exact_locator":has_locator,
         "has_graph_trace":has_trace,
         "superseded":superseded,
+        "retracted":retracted,
     }
 
 
