@@ -95,8 +95,18 @@ def snapshot(c):
         "envelopes": proof.get("investment_envelopes", []),
         "payback_reference": proof.get("payback_reference", []),
         "value_levers": proof.get("value_levers", []),
+        "value_capture_map": proof.get("value_capture_map", []),
+        "evidence_protocol": proof.get("value_evidence_protocol", {}),
         "public_company_context": proof.get("public_company_context", {}),
         "truth": proof.get("value_case_truth", {}),
+        "board_sequence": [
+            "1 · Approve investment envelope and scope",
+            "2 · Lock current-cost / partner / operations baselines",
+            "3 · Run controlled pilot and capture actuals",
+            "4 · Finance accepts each counted value line once",
+            "5 · Compare accepted annual net value with payback threshold",
+            "6 · Release next tranche only after evidence gate",
+        ],
     }
 
     pilot_contract = {
