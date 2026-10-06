@@ -91,6 +91,12 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("FORMULA · NOT FORECAST", INDEX)
         self.assertIn("BOARD VALUE BRIDGE · FROM CAPITAL TO ACCEPTED VALUE", INDEX)
         self.assertIn('id="execValueBridge"', INDEX)
+        self.assertIn("INVESTMENT PROOF SYSTEM · TRANCHE CONTROL", INDEX)
+        self.assertIn('id="investmentProofDecision"', INDEX)
+        self.assertIn('id="investmentProofTranches"', INDEX)
+        self.assertIn('id="investmentProofKpis"', INDEX)
+        self.assertIn('id="investmentProofLedger"', INDEX)
+        self.assertIn("async function loadInvestmentProofSystem()", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
