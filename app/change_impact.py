@@ -195,10 +195,25 @@ def snapshot(c,event_id=None):
     }
 
 
+def _event_claims_release_ready(c,event_id):
+    claim_ids={r["claim_id"] for r in c.execute("SELECT DISTINCT claim_id FROM knowledge_impacts WHERE event_id=?",(event_id,))}
+    for claim_id in claim_ids:
+        d=evidence_graph.snapshot(c,claim_id=claim_id)
+        if not d["claims"]:
+            return False
+        claim=d["claims"][0]
+        if claim["trust"]["trusted"] or claim["trust"]["superseded"] or claim["trust"]["retracted"]:
+            continue
+        return False
+    return True
+
+
 def resolve_case(c,event_id,resolution,actor,release_holds=False):
     case=c.execute("SELECT id,status FROM knowledge_review_cases WHERE event_id=? AND status='open'",(event_id,)).fetchone()
     if not case:
         raise ValueError("open_review_case_not_found")
+    if release_holds and not _event_claims_release_ready(c,event_id):
+        raise ValueError("evidence_remediation_required")
     now=int(time.time())
     c.execute(
         "UPDATE knowledge_review_cases SET status='resolved',resolution=?,resolved_by=?,resolved_at=? WHERE id=?",
