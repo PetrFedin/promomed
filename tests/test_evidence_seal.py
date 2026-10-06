@@ -43,3 +43,16 @@ def test_no_claims_never_gets_seal():
     seal=build(c,artifact_kind="content",artifact_ref="CT99")
     assert seal["state"]=="NO_CURRENT_CLAIMS"
     assert seal["validForProcess"] is False
+
+
+def test_portable_bundle_is_redacted_and_hash_stable():
+    c=_db()
+    one=__import__("app.evidence_seal", fromlist=["portable_bundle"]).portable_bundle(c,artifact_kind="content",artifact_ref="CT01")
+    two=__import__("app.evidence_seal", fromlist=["portable_bundle"]).portable_bundle(c,artifact_kind="content",artifact_ref="CT01")
+    assert one["schemaVersion"]=="promomed-content-evidence-bundle-v1"
+    assert one["disclosureBoundary"]["reviewerIdentityIncluded"] is False
+    assert one["disclosureBoundary"]["medicalEfficacyCertified"] is False
+    assert one["signature"]["status"]=="unsigned"
+    assert len(one["bundleSha256"])==64
+    assert one["bundleSha256"]==two["bundleSha256"]
+    assert "reviewer" not in one["claims"][0]
