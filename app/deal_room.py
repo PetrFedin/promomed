@@ -1,6 +1,7 @@
 import hashlib
 import json
 import time
+from datetime import datetime, timezone
 
 from app import contract_builder
 
@@ -53,6 +54,79 @@ DEMO_OBLIGATIONS = {
 }
 
 
+def _evidence_rows(c):
+    try:
+        return [dict(r) for r in c.execute(
+            "SELECT id,tranche_id,milestone_id,obligation_id,title,document_type,storage_ref,content_sha256,status,owner,registered_by,registered_at,demo_only "
+            "FROM deal_evidence_documents ORDER BY registered_at,id"
+        )]
+    except Exception:
+        return []
+
+
+def _sla_rows(c):
+    try:
+        return [dict(r) for r in c.execute(
+            "SELECT id,tranche_id,milestone_id,obligation_id,owner,due_at,escalation_owner,escalation_level,escalated_at,updated_at,demo_only "
+            "FROM deal_obligation_sla ORDER BY due_at,id"
+        )]
+    except Exception:
+        return []
+
+
+def _payment_rows(c):
+    try:
+        return [dict(r) for r in c.execute(
+            "SELECT id,tranche_id,milestone_id,amount_rub,status,requested_by,requested_at,finance_owner,evidence_packet_hash,payment_authorized,demo_only "
+            "FROM deal_payment_requests ORDER BY requested_at,id"
+        )]
+    except Exception:
+        return []
+
+
+def _iso(ts):
+    return datetime.fromtimestamp(int(ts), tz=timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def register_demo_evidence(c, tranche_id, milestone_id, obligation_id, actor, title, document_type, storage_ref):
+    allowed = {
+        (tid, mid, item["id"]): item
+        for tid, mids in DEMO_OBLIGATIONS.items()
+        for mid, items in mids.items()
+        for item in items
+    }
+    item = allowed.get((tranche_id, milestone_id, obligation_id))
+    if not item:
+        raise ValueError("unknown_obligation")
+    if not storage_ref.strip():
+        raise ValueError("storage_ref_required")
+    now = int(time.time())
+    digest = hashlib.sha256(storage_ref.strip().encode("utf-8")).hexdigest()
+    doc_id = f"doc:{tranche_id}:{milestone_id}:{obligation_id}:{digest[:12]}"
+    c.execute(
+        "INSERT INTO deal_evidence_documents(id,tranche_id,milestone_id,obligation_id,title,document_type,storage_ref,content_sha256,status,owner,registered_by,registered_at,demo_only) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1) ON CONFLICT(id) DO UPDATE SET title=excluded.title,document_type=excluded.document_type,storage_ref=excluded.storage_ref,content_sha256=excluded.content_sha256,status=excluded.status,registered_by=excluded.registered_by,registered_at=excluded.registered_at",
+        (doc_id,tranche_id,milestone_id,obligation_id,title or item["required_evidence"],document_type or "evidence_reference",storage_ref,digest,"registered_demo",item["owner"],actor,now),
+    )
+    return {"id": doc_id, "sha256": digest}
+
+
+def create_demo_payment_request(c, actor):
+    d = snapshot(c)
+    if not d["readiness"]["demo_payment_eligible"]:
+        raise ValueError("milestone_not_eligible")
+    now = int(time.time())
+    packet_hash = d["board_packet"]["packet_hash"]
+    req_id = f"payreq:t50:m3:{packet_hash[:12]}"
+    c.execute(
+        "INSERT INTO deal_payment_requests(id,tranche_id,milestone_id,amount_rub,status,requested_by,requested_at,finance_owner,evidence_packet_hash,payment_authorized,demo_only) "
+        "VALUES(?,?,?,?,?,?,?,?,?,0,1) "
+        "ON CONFLICT(tranche_id,milestone_id) DO UPDATE SET id=excluded.id,status=excluded.status,requested_by=excluded.requested_by,requested_at=excluded.requested_at,finance_owner=excluded.finance_owner,evidence_packet_hash=excluded.evidence_packet_hash,payment_authorized=0,demo_only=1",
+        (req_id,"t50","m3",d["deal"]["amount_rub"],"finance_review_demo",actor,now,"Finance",packet_hash),
+    )
+    return req_id
+
+
 def _rows(c):
     try:
         return [dict(r) for r in c.execute(
@@ -98,6 +172,13 @@ def seed_demo_case(c, actor="system"):
                     ),
                 )
             partner = next(x for x in obligations if x["id"] == "partner_delivery")
+            due_at = now + 3 * 24 * 60 * 60
+            sla_id = f"sla:{tranche_id}:{milestone_id}:partner_delivery"
+            c.execute(
+                "INSERT INTO deal_obligation_sla(id,tranche_id,milestone_id,obligation_id,owner,due_at,escalation_owner,escalation_level,escalated_at,updated_at,demo_only) "
+                "VALUES(?,?,?,?,?,?,?,'none',NULL,?,1) ON CONFLICT(tranche_id,milestone_id,obligation_id) DO NOTHING",
+                (sla_id,tranche_id,milestone_id,partner["id"],partner["owner"],due_at,"Executive Sponsor",now),
+            )
             issue_id = f"issue:{tranche_id}:{milestone_id}:partner_delivery"
             c.execute(
                 "INSERT INTO deal_issues(id,tranche_id,milestone_id,obligation_id,severity,title,status,remediation,owner,created_by,created_at,resolved_by,resolved_at,demo_only) "
@@ -117,6 +198,9 @@ def seed_demo_case(c, actor="system"):
 
 
 def reset_demo(c, actor="system"):
+    c.execute("DELETE FROM deal_payment_requests WHERE demo_only=1")
+    c.execute("DELETE FROM deal_evidence_documents WHERE demo_only=1")
+    c.execute("DELETE FROM deal_obligation_sla WHERE demo_only=1")
     c.execute("DELETE FROM deal_issues WHERE demo_only=1")
     c.execute("DELETE FROM deal_obligation_records WHERE demo_only=1")
     seed_demo_case(c, actor)
@@ -146,6 +230,11 @@ def attach_and_accept_demo(c, tranche_id, milestone_id, obligation_id, actor, ev
         "UPDATE deal_issues SET status='resolved_demo',remediation=?,resolved_by=?,resolved_at=? "
         "WHERE tranche_id=? AND milestone_id=? AND obligation_id=? AND status='open' AND demo_only=1",
         (f"Evidence accepted: {evidence_ref}", actor, now, tranche_id, milestone_id, obligation_id),
+    )
+    c.execute(
+        "UPDATE deal_obligation_sla SET escalation_level='resolved',updated_at=? "
+        "WHERE tranche_id=? AND milestone_id=? AND obligation_id=? AND demo_only=1",
+        (now,tranche_id,milestone_id,obligation_id),
     )
 
 
@@ -184,6 +273,18 @@ def snapshot(c):
         if x["tranche_id"] == "t50" and x["milestone_id"] == "m3"
     ]
     open_issues = [x for x in issues if x["status"] == "open"]
+    evidence_docs = [
+        x for x in _evidence_rows(c)
+        if x["tranche_id"] == "t50" and x["milestone_id"] == "m3"
+    ]
+    sla_rows = [
+        x for x in _sla_rows(c)
+        if x["tranche_id"] == "t50" and x["milestone_id"] == "m3"
+    ]
+    payment_requests = [
+        x for x in _payment_rows(c)
+        if x["tranche_id"] == "t50" and x["milestone_id"] == "m3"
+    ]
     accepted_count = sum(1 for x in obligations if x["status"] == "accepted_demo")
     required_count = len(obligations)
     evidence_complete = required_count > 0 and accepted_count == required_count
@@ -216,6 +317,36 @@ def snapshot(c):
         },
         "obligations": obligations,
         "issues": issues,
+        "evidence_registry": [
+            {
+                **x,
+                "registered_at_iso": _iso(x["registered_at"]),
+            }
+            for x in evidence_docs
+        ],
+        "owner_inbox": [
+            {
+                "obligation_id": x["obligation_id"],
+                "title": next((o["title"] for o in obligations if o["id"] == x["obligation_id"]), x["obligation_id"]),
+                "owner": x["owner"],
+                "due_at": x["due_at"],
+                "due_at_iso": _iso(x["due_at"]),
+                "days_remaining": max(0, (int(x["due_at"]) - int(time.time()) + 86399) // 86400),
+                "escalation_owner": x["escalation_owner"],
+                "escalation_level": x["escalation_level"],
+                "status": next((o["status"] for o in obligations if o["id"] == x["obligation_id"]), "awaiting"),
+                "required_evidence": next((o["required_evidence"] for o in obligations if o["id"] == x["obligation_id"]), ""),
+            }
+            for x in sla_rows
+        ],
+        "payment_requests": [
+            {
+                **x,
+                "requested_at_iso": _iso(x["requested_at"]),
+                "payment_authorized": bool(x["payment_authorized"]),
+            }
+            for x in payment_requests
+        ],
         "readiness": {
             "accepted_count": accepted_count,
             "required_count": required_count,
@@ -248,6 +379,12 @@ def snapshot(c):
             ],
             "legal_effect": "NONE",
             "payment_authority": "NONE",
+            "export": {
+                "format": "json/text-preview",
+                "filename": f"promomed-pilot-board-{packet_hash[:12]}.json",
+                "ready": True,
+                "payload": packet_payload,
+            },
         },
         "truth_boundary": {
             "demo_only": True,
