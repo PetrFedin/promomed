@@ -1,6 +1,6 @@
 import time
 
-from app.commanding import error, ok
+from app.commanding import custom, error, ok
 from app.core import audit
 from app import transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority
 
@@ -73,7 +73,7 @@ def handle_command(c, route, role, email, data):
             except ValueError as e:
                 return error(str(e),409)
             audit(c,"scientific_review_assigned",email,{"candidate_id":candidate_id,"assignment_id":assignment_id})
-            return ok({"assignment_id":assignment_id},201)
+            return custom({"assignment_id":assignment_id},201)
         if route == "/api/evidence-monitor/conflict":
             assignment_id=str(data.get("assignment_id",""))[:260]
             try:
@@ -81,7 +81,7 @@ def handle_command(c, route, role, email, data):
             except ValueError as e:
                 return error(str(e),409)
             audit(c,"reviewer_conflict_disclosed",email,{"candidate_id":candidate_id,"assignment_id":assignment_id,"disclosure_id":disclosure_id})
-            return ok({"disclosure_id":disclosure_id},201)
+            return custom({"disclosure_id":disclosure_id},201)
         if route == "/api/evidence-monitor/decision":
             assignment_id=str(data.get("assignment_id",""))[:260]
             try:
@@ -89,7 +89,7 @@ def handle_command(c, route, role, email, data):
             except ValueError as e:
                 return error(str(e),409)
             audit(c,"scientific_review_decision",email,{"candidate_id":candidate_id,"assignment_id":assignment_id,"decision_digest":decision["decision_digest"]})
-            return ok(decision,201)
+            return custom(decision,201)
         try:
             admitted=evidence_monitor.admit_candidate(c,candidate_id,email)
         except ValueError as e:
