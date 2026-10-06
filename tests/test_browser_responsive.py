@@ -230,6 +230,13 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     expect(page.locator("#investmentProofTranches")).to_contain_text("50m · Controlled Platform Pilot")
     expect(page.locator("#investmentProofKpis")).to_contain_text("Finance-accepted annualized net value")
     expect(page.locator("#investmentProofLedger")).to_contain_text("TRANCHE DECISION")
+    expect(page.locator("#digitalContractAcceptances")).to_contain_text("T50 acceptance")
+    expect(page.locator("#digitalContractCertificates")).to_contain_text("LEGAL EFFECT: NONE")
+    page.locator("#digitalContractAcceptances").get_by_role("button", name="Demo accept").first.click()
+    expect(page.locator("#digitalContractAcceptances")).to_contain_text("ACCEPTED DEMO")
+    expect(page.locator("#digitalContractCertificates")).to_contain_text("LEGAL EFFECT: NONE")
+    expect(page.locator("#investmentProofDecision")).to_contain_text("RELEASE 50M")
+    expect(page.locator("#investmentProofDecision")).to_contain_text("NO")
     assert_no_page_overflow(page, width, f"{name}/presentation-executive")
 
     page.goto(BASE_URL + "?presentation=security", wait_until="domcontentloaded")
