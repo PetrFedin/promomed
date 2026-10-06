@@ -1,6 +1,6 @@
 import time
 
-from app import community, content, learning, operations, participant, partners, programme, personalization
+from app import community, content, learning, operations, participant, partners, programme, personalization, journey365
 
 
 def commercial(c):
@@ -41,6 +41,7 @@ def state(c, email=None):
         operations.snapshot(c),
         participant.snapshot(c, email),
         personalization.snapshot(c, email),
+        journey365.snapshot(c, email),
     ):
         d.update(projection)
 
