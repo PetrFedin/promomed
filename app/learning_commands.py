@@ -18,6 +18,12 @@ def handle_command(c, route, role, email, data):
         track = c.execute("SELECT id,title FROM learning_tracks WHERE id=?", (track_id,)).fetchone()
         if not track:
             return error("learning_track_not_found", 404)
+        try:
+            held = c.execute("SELECT reason FROM publication_holds WHERE artifact_kind='learning' AND artifact_ref=? AND status='active' LIMIT 1",(track_id,)).fetchone()
+        except Exception:
+            held = None
+        if held:
+            return error("learning_under_review", 409, reason=held["reason"])
         total = c.execute("SELECT COUNT(*) n FROM learning_steps WHERE track_id=?", (track_id,)).fetchone()["n"]
         if action == "enroll":
             c.execute(
