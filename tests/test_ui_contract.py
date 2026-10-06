@@ -114,6 +114,14 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("async function loadContractBuilder()", INDEX)
         self.assertIn("function renderContractPackage(", INDEX)
         self.assertIn("not a commercial quote", INDEX.lower())
+        self.assertIn("PILOT DEAL ROOM · OBLIGATION → EVIDENCE → REMEDIATION → PAYMENT", INDEX)
+        self.assertIn('id="dealRoomSummary"', INDEX)
+        self.assertIn('id="dealRoomObligations"', INDEX)
+        self.assertIn('id="dealRoomIssues"', INDEX)
+        self.assertIn('id="dealRoomBoardPacket"', INDEX)
+        self.assertIn("async function loadDealRoom()", INDEX)
+        self.assertIn("async function acceptDealObligation(", INDEX)
+        self.assertIn("PAYMENT AUTHORITY:", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
