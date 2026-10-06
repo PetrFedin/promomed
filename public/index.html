@@ -332,6 +332,13 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
 <div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
 </div>
+<div class="section"><div class="ey blue">EXECUTABLE CAPITAL ALLOCATION PLAN · SECURITY 10M ₽</div><h2>Recommendation → work packages → owners → deadlines → evidence gates → portfolio trajectory</h2>
+<div id="capitalPlanSummary" class="card"><p class="small muted">Загрузка executable plan…</p></div>
+<div id="capitalPlanPackages"></div>
+<div id="capitalPlanTrajectory" class="card"></div>
+<div id="capitalPlanRules" class="card"></div>
+<div class="notice"><b>PLAN BOUNDARY:</b> суммы и сроки — иллюстративный execution-control template, не утверждённый бюджет, quote или платёжный график.</div>
+</div>
 <div class="section"><div class="ey blue">CAPITAL ALLOCATION OPTIMIZER · NEXT 10M ₽</div><h2>Куда направить следующий капитал — и где капитал вообще не нужен</h2>
 <div id="capitalOptimizerRecommendation" class="card"><p class="small muted">Загрузка recommendation…</p></div>
 <div id="capitalOptimizerScenarios"></div>
@@ -858,6 +865,22 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let capitalAllocationPlanData=null;
+async function loadCapitalAllocationPlan(){
+ const d=await api('/api/capital-allocation-plan');capitalAllocationPlanData=d;renderCapitalAllocationPlan(d);return d
+}
+function renderCapitalAllocationPlan(d){
+ const p=d.plan||{},pre=p.precondition||{},s=document.getElementById('capitalPlanSummary');
+ if(s)s.innerHTML='<div class="row"><div><div class="ey blue">'+esc(p.title||'')+'</div><h3>'+formatMoney(p.allocation_rub||0)+'</h3></div><span class="pill">'+esc(p.capital_release_mode||'').replaceAll('_',' ').toUpperCase()+'</span></div><div class="notice"><b>STEP 0 · NO NEW CAPITAL:</b> '+esc(pre.deliverable||'')+'<br><b>Owner:</b> '+esc(pre.owner||'')+' · '+esc(pre.deadline||'')+' · potential unlock '+formatMoney(pre.potential_unlock_rub||0)+'</div>';
+ const packs=document.getElementById('capitalPlanPackages');
+ if(packs)packs.innerHTML=(p.packages||[]).map(x=>'<div class="card"><div class="row"><div><div class="ey blue">'+esc(x.title)+'</div><h3>'+formatMoney(x.allocation_rub||0)+'</h3></div><span class="pill">'+esc(x.deadline)+'</span></div><div class="tiny muted"><b>Owner:</b> '+esc(x.owner)+'</div><div class="small muted"><b>Deliverables:</b> '+(x.deliverables||[]).map(esc).join(' · ')+'</div><div class="small muted"><b>Evidence gate:</b> '+esc(x.evidence_gate)+'</div><div class="tiny muted"><b>STOP rule:</b> '+esc(x.stop_rule)+'</div><div class="proofgrid"><div class="proofmetric"><span class="tiny muted">CUMULATIVE CAPITAL</span><strong>'+formatMoney(x.cumulative_allocation_rub||0)+'</strong></div><div class="proofmetric"><span class="tiny muted">UNLOCK AT STEP</span><strong>'+formatMoney(x.unlock_rub_at_step||0)+'</strong></div></div></div>').join('');
+ const tr=document.getElementById('capitalPlanTrajectory');
+ if(tr)tr.innerHTML='<div class="ey blue">75M PORTFOLIO TRAJECTORY</div><h3>Как меняется портфель после каждого шага</h3>'+(d.trajectory||[]).map(x=>{const q=x.state||{};return '<div class="execKpi"><div><b>'+esc(x.step)+' · '+esc(x.title)+'</b><div class="tiny muted">'+esc(x.effect)+'</div><div class="tiny muted">Capital used: '+formatMoney(x.capital_used_rub||0)+'</div></div><div class="tiny" style="text-align:right">Eligible '+formatMoney(q.eligible||0)+'<br>Blocked '+formatMoney(q.blocked||0)+'<br>At risk '+formatMoney(q.at_risk||0)+'<br>'+esc(q.decision||'')+'</div></div>'}).join('');
+ const rules=document.getElementById('capitalPlanRules'),fin=d.final_projection||{};
+ if(rules)rules.innerHTML='<div class="ey blue">FINAL PROJECTION · IF ALL GATES PASS</div><div class="proofgrid">'+[
+ ['ELIGIBLE',fin.eligible_rub],['BLOCKED',fin.blocked_rub],['AT RISK',fin.at_risk_rub],['EVIDENCE',Number(fin.evidence_confidence||0).toFixed(1)+'%'],['OVERDUE',fin.overdue_obligations],['DECISION',fin.programme_decision]
+ ].map(x=>'<div class="proofmetric"><span class="tiny muted">'+x[0]+'</span><strong>'+(typeof x[1]==='number'&&x[0]!=='OVERDUE'?formatMoney(x[1]):x[1])+'</strong></div>').join('')+'</div><ul class="execList">'+(d.release_rules||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+}
 let capitalOptimizerData=null;
 async function loadCapitalOptimizer(){
  const d=await api('/api/capital-allocation-optimizer');capitalOptimizerData=d;renderCapitalOptimizer(d);return d
@@ -1039,7 +1062,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
