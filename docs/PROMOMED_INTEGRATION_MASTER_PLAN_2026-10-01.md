@@ -1741,5 +1741,108 @@ Generate:
 
 **Sequencing:** Learning Tracks + Evidence/Expert/Disclosure -> programme authority -> completion/assessment -> credential issuance -> accreditor integration -> professional passport.
 
-**Commercial framing:** opens a separate medical professional education / partner academy line with verifiable portable credentials. Open Badges 3.0 is aligned with verifiable credentials and portable achievement evidence. 
+**Commercial framing:** opens a separate medical professional education / partner academy line with verifiable portable credentials. Open Badges 3.0 is aligned with verifiable credentials and portable achievement evidence.
+
+## Platform economics wave — Medical Knowledge Syndication API and embedded evidence widgets
+
+This wave turns reviewed Promomed knowledge into a licensable distribution product for partner portals, professional communities and corporate education environments.
+
+### Syndication API Authority — ADOPT
+
+Expose only reviewed/publishable resources:
+
+- approved content;
+- approved claims and supporting source references;
+- topic vocabulary;
+- public expert profiles/disclosures;
+- public sessions/replays/chapters;
+- approved education programmes;
+- credential verification metadata;
+- evidence freshness/public status.
+
+Unreviewed evidence candidates and internal editorial notes remain private.
+
+### Claim / Evidence Embed — ADOPT
+
+Create embeddable components for partner sites:
+
+- evidence-backed topic card;
+- reviewed claim/source card;
+- expert profile;
+- programme/course card;
+- replay/chapter;
+- credential verification badge/link.
+
+Widget output is generated from canonical Promomed publishable state and includes source/update context.
+
+### Content Syndication Contract — ADOPT
+
+Partner receives:
+
+- content ID/version;
+- locale;
+- publication/effective dates;
+- review-until date;
+- disclosure/partner context;
+- canonical URL;
+- allowed display fields;
+- withdrawal/supersession state.
+
+A corrected/withdrawn asset must propagate an update/withdraw event.
+
+### Partner-specific Knowledge Pack — ADOPT
+
+Allow a partner to subscribe to an approved subset:
+
+- topic;
+- specialty;
+- programme;
+- product-adjacent evidence context;
+- conference track.
+
+Selection does not permit the partner to edit medical/scientific claims.
+
+### Verification API — ADOPT
+
+For issued credentials/programme completion expose a privacy-minimised verification endpoint:
+
+- credential ID;
+- issuer;
+- programme/achievement;
+- issue/expiry/revocation status.
+
+Do not expose learner history beyond the credential being verified.
+
+### Contract / SDK / Webhook Layer — ADOPT
+
+Use versioned OpenAPI plus signed webhooks for:
+
+- content updated;
+- claim superseded;
+- evidence review changed;
+- credential revoked/expired;
+- programme version changed.
+
+### Commercial Packaging — ADOPT
+
+Potential products:
+
+- Evidence API;
+- Expert/Content Syndication;
+- Education/Academy API;
+- Embedded Evidence Widgets;
+- Enterprise Knowledge Pack.
+
+### Additional acceptance
+
+- only reviewed/public state is syndicated;
+- withdrawals/corrections propagate to partner integrations;
+- widgets identify source/freshness/disclosure;
+- partners cannot rewrite claim authority;
+- credential verification is privacy-minimised;
+- external delivery never becomes diagnosis/treatment advice.
+
+**Sequencing:** Evidence/Claim/Content/Education authorities -> publishable projection -> API/widget contracts -> partner sandbox -> webhooks -> commercial packages.
+
+**Commercial framing:** Promomed gains a knowledge-licensing business, distributing reviewed scientific content/evidence beyond its own app while retaining editorial authority.
 
