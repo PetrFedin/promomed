@@ -59,6 +59,15 @@ class ExecutiveProjectionTests(unittest.TestCase):
         for forbidden in ("₽", "$", "valuation", "arr", "mrr"):
             self.assertNotIn(forbidden, text)
 
+    def test_programme_value_case_is_available_to_board_without_claiming_forecast(self):
+        room = self.executive.snapshot(self.c)
+        case = room["programme_value_case"]
+        amounts = {x["amount_rub"] for x in case["envelopes"]}
+        self.assertEqual(amounts, {50_000_000, 75_000_000, 100_000_000})
+        self.assertIn("not a microsite", case["headline"])
+        self.assertIn("not an asserted valuation", str(case["truth"]).lower())
+        self.assertGreater(case["public_company_context"]["revenue_rub"], 0)
+
     def test_pilot_contract_and_kpis_do_not_invent_targets(self):
         room = self.executive.snapshot(self.c)
         self.assertIn("Personalized medical advice", room["pilot_contract"]["out_of_scope"])
