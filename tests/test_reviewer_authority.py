@@ -64,6 +64,10 @@ class MedicalReviewerAuthorityTests(unittest.TestCase):
         row=self.c.execute("SELECT status,admitted_by FROM evidence_admission_candidates WHERE id=?",(cid,)).fetchone()
         self.assertEqual(row["status"],"admitted")
         self.assertEqual(row["admitted_by"],"governance@demo.ru")
+        monitor=self.monitor.snapshot(self.c)
+        self.assertGreaterEqual(monitor["summary"]["admitted_candidates"],1)
+        self.assertTrue(monitor["truth_boundary"]["reviewer_authority_present"])
+        self.assertFalse(monitor["truth_boundary"]["independent_scientific_reviewer"])
         self.assertTrue(self.authority.verify_event_chain(self.c))
 
     def test_material_conflict_blocks_scientific_decision(self):
@@ -97,6 +101,7 @@ class MedicalReviewerAuthorityTests(unittest.TestCase):
         assignment=self.authority.assign_candidate(self.c,cid,"reviewer@demo.ru","editor@demo.ru")
         self.authority.declare_conflict(self.c,assignment,"reviewer@demo.ru","none","No conflict.")
         decision=self.authority.submit_decision(self.c,assignment,"reviewer@demo.ru","accept","Accepted.")
+        self.c.commit()
         with self.assertRaises(Exception):
             self.c.execute("UPDATE review_decisions SET rationale='mutated' WHERE id=?",(decision["decision_id"],))
         self.c.rollback()
