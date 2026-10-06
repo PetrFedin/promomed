@@ -170,6 +170,18 @@ def _ensure_monitor_job(c,target_id,now=None,interval_seconds=POLL_INTERVAL_SECO
     )
 
 
+def ensure_all_monitor_jobs(c,now=None):
+    now=int(time.time()) if now is None else int(now)
+    missing=list(c.execute(
+        "SELECT w.id,w.demo_only FROM evidence_watch_targets w "
+        "LEFT JOIN evidence_monitor_jobs j ON j.target_id=w.id "
+        "WHERE w.status='active' AND j.target_id IS NULL ORDER BY w.id"
+    ))
+    for row in missing:
+        _ensure_monitor_job(c,row["id"],now=now,demo_only=row["demo_only"])
+    return len(missing)
+
+
 def _retry_delay(attempt):
     attempt=max(1,int(attempt))
     return min(POLL_INTERVAL_SECONDS,BASE_BACKOFF_SECONDS*(2**(attempt-1)))
@@ -177,6 +189,7 @@ def _retry_delay(attempt):
 
 def run_due_jobs(c,actor="evidence-monitor-worker",now=None,limit=20,tool="promomed-sostoyanie",email=""):
     now=int(time.time()) if now is None else int(now)
+    ensure_all_monitor_jobs(c,now=now)
     rows=list(c.execute(
         "SELECT j.target_id,j.attempt_count,j.max_attempts,j.interval_seconds,w.provider,w.external_id "
         "FROM evidence_monitor_jobs j JOIN evidence_watch_targets w ON w.id=j.target_id "
