@@ -419,5 +419,5 @@ Truth boundary:
 - the scientific review button is a demo review role, not proof of an independent medical reviewer;
 - continuous external surveillance is not running;
 - provider metadata is never automatically converted into medical truth or rewritten claims;
-- durable polling schedule state, exponential retry/backoff and dead-letter jobs are implemented in repository scope;
+- durable polling schedule state, exponential retry/backoff, dead-letter jobs and self-healing recovery of missing jobs for pre-existing active watch targets are implemented in repository scope;
 - an external production scheduler/worker deployment, provider credentials/rate-limit policy and independent reviewer authorization remain open hardening work.
