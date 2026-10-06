@@ -332,6 +332,14 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
 <div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
 </div>
+<div class="section"><div class="ey blue">PORTFOLIO CAPITAL CONTROL · CEO / CFO VIEW</div><h2>Committed → paid → eligible → blocked → at risk → forecast → programme decision</h2>
+<div id="portfolioCapitalSummary" class="card"><p class="small muted">Загрузка портфеля капитала…</p></div>
+<div id="portfolioWorkstreams"></div>
+<div class="execTwoCol"><div id="portfolioOverdue" class="card"></div><div id="portfolioForecast" class="card"></div></div>
+<div id="portfolioNextRelease" class="card"></div>
+<div id="portfolioControlRules" class="card"></div>
+<div class="notice"><b>TRUTH BOUNDARY:</b> портфель 75 млн ₽ — демонстрационная control-model, а не фактически утверждённый бюджет или платёжный календарь.</div>
+</div>
 <div class="section"><div class="ey blue">PILOT DEAL ROOM · OBLIGATION → EVIDENCE → REMEDIATION → PAYMENT</div><h2>Milestone readiness считается из принятых обязательств и открытых issues</h2>
 <div id="dealRoomSummary" class="card"><p class="small muted">Загрузка Pilot Deal Room…</p></div>
 <div class="execTwoCol"><div id="dealRoomObligations" class="card"></div><div id="dealRoomIssues" class="card"></div></div>
@@ -844,6 +852,28 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let portfolioCapitalData=null;
+async function loadPortfolioCapitalControl(){
+ const d=await api('/api/portfolio-capital-control');portfolioCapitalData=d;renderPortfolioCapitalControl(d);return d
+}
+function renderPortfolioCapitalControl(d){
+ const t=d.totals||{},p=d.programme||{},s=document.getElementById('portfolioCapitalSummary');
+ if(s)s.innerHTML='<div class="row"><div><div class="ey blue">'+esc(p.name||'Portfolio')+'</div><h3>'+esc(p.decision||'—')+'</h3><p class="small muted">'+esc(p.decision_reason||'')+'</p></div><span class="execStatus '+(p.decision==='GO'?'live':'gated')+'">'+esc(p.decision||'—')+'</span></div><div class="proofgrid">'+[
+ ['COMMITTED',formatMoney(t.committed||0)],['PAID',formatMoney(t.paid||0)],['ELIGIBLE',formatMoney(t.eligible||0)],['BLOCKED',formatMoney(t.blocked||0)],['AT RISK',formatMoney(t.at_risk||0)],['OVERDUE',String(t.overdue_obligations||0)],['EVIDENCE CONF.',Number(t.evidence_confidence||0).toFixed(1)+'%']
+ ].map(x=>'<div class="proofmetric"><span class="tiny muted">'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('')+'</div>';
+ const ws=document.getElementById('portfolioWorkstreams');
+ if(ws)ws.innerHTML=(d.workstreams||[]).map(x=>'<div class="card"><div class="row"><div><div class="ey blue">'+esc(x.title)+'</div><h3>'+formatMoney(x.committed_rub||0)+'</h3><div class="tiny muted">Owner: '+esc(x.owner)+'</div></div><span class="pill">'+Number(x.evidence_confidence||0).toFixed(1)+'% evidence</span></div><div class="proofgrid">'+[
+ ['PAID',x.paid_rub],['ELIGIBLE',x.eligible_rub],['BLOCKED',x.blocked_rub],['AT RISK',x.at_risk_rub]
+ ].map(v=>'<div class="proofmetric"><span class="tiny muted">'+v[0]+'</span><strong>'+formatMoney(v[1]||0)+'</strong></div>').join('')+'</div>'+(x.milestones||[]).map(m=>'<div class="execKpi"><div><b>'+esc(m.title)+'</b><div class="tiny muted">'+esc(m.owner)+' · '+esc(m.reason)+'</div></div><div><span class="execStatus '+(m.state==='paid'||m.state==='eligible'?'live':'gated')+'">'+esc(m.state).replaceAll('_',' ').toUpperCase()+'</span><div class="tiny muted" style="text-align:right;margin-top:4px">'+formatMoney(m.amount_rub||0)+' · '+Number(m.evidence_confidence||0).toFixed(1)+'%</div></div></div>').join('')+'</div>').join('');
+ const od=document.getElementById('portfolioOverdue');
+ if(od)od.innerHTML='<div class="ey blue">OVERDUE OBLIGATIONS</div><h3>'+Number(t.overdue_obligations||0)+' overdue</h3>'+(d.overdue_obligations||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.title)+'</b><div class="tiny muted">Owner: '+esc(x.owner)+' · '+x.days_overdue+' дн. overdue</div><div class="tiny muted">Blocks: '+esc(x.blocks_milestone)+'</div><div class="tiny muted">Required: '+esc(x.required_evidence)+'</div></div><span class="execStatus gated">OVERDUE</span></div>').join('');
+ const fc=document.getElementById('portfolioForecast');
+ if(fc)fc.innerHTML='<div class="ey blue">FORECAST CASH RELEASE</div><h3>Что может разблокироваться дальше</h3>'+(d.forecast_cash_release||[]).map(x=>'<div class="execKpi"><div><b>'+formatMoney(x.amount_rub||0)+'</b><div class="tiny muted">'+esc(x.timing)+' · '+esc(x.dependency)+'</div></div><span class="pill">'+Number(x.confidence||0).toFixed(0)+'%</span></div>').join('');
+ const nr=d.next_expected_release||{},root=document.getElementById('portfolioNextRelease');
+ if(root)root.innerHTML='<div class="ey blue">NEXT EXPECTED RELEASE</div><div class="row"><div><h3>'+formatMoney(nr.amount_rub||0)+'</h3><p class="small muted">'+esc(nr.dependency||'')+' · '+esc(nr.target||'')+'</p><div class="tiny muted"><b>Owner:</b> '+esc(nr.owner||'')+'<br><b>Evidence:</b> '+esc(nr.evidence_required||'')+'</div></div><span class="execStatus gated">PAYMENT AUTHORIZED: '+(nr.payment_authorized?'YES':'NO')+'</span></div>';
+ const rules=document.getElementById('portfolioControlRules'),cr=d.control_rules||{};
+ if(rules)rules.innerHTML='<div class="ey blue">PROGRAMME DECISION LOGIC</div><h3>GO / HOLD / ITERATE считается по portfolio-level evidence</h3><ul class="execList">'+(cr.decision_logic||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul><div class="tiny muted"><b>Confidence:</b> '+esc(cr.evidence_confidence_formula||'')+'<br><b>Deal Room link:</b> '+esc(cr.deal_room_link||'')+'</div>';
+}
 let dealRoomData=null;
 async function loadDealRoom(){
  const d=await api('/api/deal-room');dealRoomData=d;renderDealRoom(d);return d
@@ -987,7 +1017,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
