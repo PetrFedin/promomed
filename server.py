@@ -1,6 +1,6 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, evidence_checkpoint
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
@@ -209,6 +209,14 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
+  if p in ("/api/evidence-seal","/api/evidence-bundle"):
+   q=parse_qs(urlparse(self.path).query); kind=(q.get("artifact_kind") or [""])[0][:30]; ref=(q.get("artifact_ref") or [""])[0][:80]
+   if not kind or not ref:return self.out({"error":"artifact_required"},422)
+   c=conn()
+   try:
+    d=evidence_seal.build(c,artifact_kind=kind,artifact_ref=ref) if p=="/api/evidence-seal" else evidence_seal.portable_bundle(c,artifact_kind=kind,artifact_ref=ref)
+   finally:c.close()
+   return self.out({"data":d})
   if p=="/api/evidence-checkpoint/public-key":
    try:return self.out({"data":evidence_checkpoint.public_key_document()})
    except ValueError as e:return self.out({"error":str(e)},503)
