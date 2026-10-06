@@ -1846,3 +1846,110 @@ Potential products:
 
 **Commercial framing:** Promomed gains a knowledge-licensing business, distributing reviewed scientific content/evidence beyond its own app while retaining editorial authority.
 
+## Defensibility wave — Evidence Governance Seal and expert review trust graph
+
+This wave creates a proprietary evidence-governance standard that partners can adopt and verify without claiming that Promomed certifies medical truth.
+
+### Promomed Evidence Governance Standard — ADOPT
+
+Define a versioned process standard for publishable scientific content/claims.
+
+Possible requirements:
+
+- source identity;
+- source version/date;
+- claim-to-source linkage;
+- reviewer role;
+- disclosure/conflict record;
+- evidence freshness/review-until;
+- correction/retraction monitoring;
+- supersession history;
+- language/translation review where applicable;
+- product/partner context disclosure;
+- final editorial/scientific approval.
+
+The standard certifies **process/evidence provenance**, not efficacy, diagnosis or clinical correctness.
+
+### Evidence Governance Seal — ADOPT
+
+Eligible public assets may display a machine-verifiable seal containing:
+
+- content/claim ID;
+- standard version;
+- approval state;
+- reviewed_at;
+- review-until;
+- disclosure state;
+- evidence package hash/reference;
+- status: valid / expired / superseded / withdrawn.
+
+A seal must disappear or visibly change state when the underlying approved version expires or is withdrawn.
+
+### Verifiable Credential Representation — ADAPT
+
+Reference:
+
+https://github.com/w3c/vc-data-model
+
+For partner syndication, represent selected attestations as verifiable credentials, for example:
+
+- Evidence Governance Standard vX passed;
+- Continuing Education programme issued by Promomed;
+- Reviewer role/qualification confirmed for a scoped programme.
+
+Credential scope must be explicit and revocable.
+
+### Expert Review Trust Graph — ADOPT
+
+Build a professional graph from factual reviewed activity:
+
+expert -> topic -> reviewed claim/content/programme -> evidence -> disclosure -> institution
+
+Useful dimensions:
+
+- verified identity/affiliation;
+- declared expertise areas;
+- completed reviews;
+- review recency;
+- disclosure completeness;
+- education/faculty participation.
+
+Do not produce a hidden "best doctor/expert" score.
+
+### Partner Certification Programme — ADOPT
+
+Partners using Syndication API / Medical Information / Education may qualify for statuses such as:
+
+- Evidence API Integration Verified;
+- Disclosure Workflow Verified;
+- Credential Verification Integrated;
+- Content Withdrawal/Update Handling Verified.
+
+These statuses certify technical/process integration only.
+
+### Evidence Package Signature — ADAPT
+
+For important exported review packages, generate a checksum/signature record over:
+
+- content version;
+- claim map;
+- source references;
+- review decision;
+- disclosures;
+- standard version.
+
+This makes downstream verification possible even when content is syndicated.
+
+### Additional acceptance
+
+- seal always states standard version and review validity;
+- expired/withdrawn content cannot keep a current seal;
+- no seal wording implies medical efficacy/safety certification;
+- expert graph exposes factual roles/activity, not popularity;
+- partner certification is process/technical scope-specific;
+- signed packages can be independently checksum-verified.
+
+**Sequencing:** Evidence/Claim/Disclosure/Freshness -> governance standard -> seal/status registry -> expert trust graph -> partner certification -> portable credentials.
+
+**Moat:** Promomed owns a repeatable evidence-governance protocol plus the longitudinal graph of reviewed claims, sources, experts and corrections.
+
