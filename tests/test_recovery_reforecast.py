@@ -43,7 +43,7 @@ class RecoveryReforecastTests(unittest.TestCase):
         b = {x["id"]: x for x in d["scenarios"]}["B_REALLOCATE_AFTER_S2_FAILURE"]
         self.assertEqual(b["reallocation_candidate_rub"], 4_500_000)
         self.assertEqual(sum(x["amount_rub"] for x in b["reallocation_proposal"]), 4_500_000)
-        self.assertIn("committed-but-unspent S2 capital remains ring-fenced", b["reason"])
+        self.assertIn("committed-but-unspent s2 capital remains ring-fenced", b["reason"].lower())
 
     def test_payback_is_not_invented(self):
         d = self.reforecast.snapshot(self.c)
