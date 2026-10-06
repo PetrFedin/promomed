@@ -37,6 +37,14 @@ class MedicalReviewerAuthorityTests(unittest.TestCase):
             "UPDATE reviewer_scopes SET demo_only=0 WHERE reviewer_id='REV-DEMO-MEDICAL'"
         )
 
+    def test_assignment_requires_editorial_acceptance_first(self):
+        doi="10.1000/editorial-first"
+        payload={"message":{"DOI":doi,"title":["Editorial first"],"publisher":"Test Journal","issued":{"date-parts":[[2026,10,6]]},"update-to":[]}}
+        r=self.monitor.ingest_payload(self.c,"crossref",doi,payload,"editor@demo.ru",0)
+        self._promote_demo_reviewer_to_verified()
+        with self.assertRaisesRegex(ValueError,"editorial_review_required_before_assignment"):
+            self.authority.assign_candidate(self.c,r["candidate_id"],"reviewer@demo.ru","editor@demo.ru")
+
     def test_production_scientific_review_cannot_use_editor_shortcut(self):
         cid=self._production_candidate("no-shortcut")
         with self.assertRaisesRegex(ValueError,"scientific_review_authority_required"):
@@ -71,8 +79,12 @@ class MedicalReviewerAuthorityTests(unittest.TestCase):
         self._promote_demo_reviewer_to_verified()
         assignment=self.authority.assign_candidate(self.c,cid,"reviewer@demo.ru","editor@demo.ru")
         self.authority.declare_conflict(self.c,assignment,"reviewer@demo.ru","potential","Potential institutional overlap.")
-        with self.assertRaisesRegex(ValueError,"conflict_blocks_decision"):
+        row=self.c.execute("SELECT status FROM review_assignments WHERE id=?",(assignment,)).fetchone()
+        self.assertEqual(row["status"],"conflict_hold")
+        with self.assertRaisesRegex(ValueError,"assignment_not_active"):
             self.authority.submit_decision(self.c,assignment,"reviewer@demo.ru","accept","Should not pass.")
+        replacement=self.authority.assign_candidate(self.c,cid,"reviewer@demo.ru","editor@demo.ru")
+        self.assertNotEqual(replacement,assignment)
 
     def test_editor_cannot_be_assigned_as_scientific_reviewer(self):
         cid=self._production_candidate("editor-blocked")
