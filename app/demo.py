@@ -25,6 +25,7 @@ def reset_demo(c, actor):
         "followups","topic_subscriptions","expert_follows","learning_enrollments","community_posts",
         "investment_acceptances","deal_obligation_records","deal_issues",
         "deal_evidence_documents","deal_obligation_sla","deal_payment_requests",
+        "capital_plan_execution",
     ):
         c.execute("DELETE FROM " + t)
     for k, v in {
