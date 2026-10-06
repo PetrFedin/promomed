@@ -166,6 +166,10 @@ class UIContractTests(unittest.TestCase):
         self.assertIn('id="reforecastScenarios"', INDEX)
         self.assertIn('id="reforecastApproval"', INDEX)
         self.assertIn("async function loadRecoveryReforecast()", INDEX)
+        self.assertIn("REALLOCATION APPROVAL AUTHORITY · DEMO", INDEX)
+        self.assertIn('id="reallocationApproval"', INDEX)
+        self.assertIn("async function loadReallocationApproval()", INDEX)
+        self.assertIn("async function acceptReallocationRole(", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
