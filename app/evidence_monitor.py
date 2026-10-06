@@ -9,6 +9,9 @@ from app import change_impact
 
 
 REVIEW_ROLES=("editorial","scientific")
+POLL_INTERVAL_SECONDS=6*60*60
+BASE_BACKOFF_SECONDS=60
+MAX_PROVIDER_ATTEMPTS=5
 CHANGE_SEVERITY={
     "new_source":"medium",
     "source_updated":"medium",
@@ -155,6 +158,70 @@ def ensure_target(c,provider,external_id,actor,demo_only=1):
         (target_id,provider,ext,key,actor,now,int(bool(demo_only))),
     )
     return target_id
+
+
+def _ensure_monitor_job(c,target_id,now=None,interval_seconds=POLL_INTERVAL_SECONDS,demo_only=1):
+    now=int(time.time()) if now is None else int(now)
+    c.execute(
+        "INSERT INTO evidence_monitor_jobs(target_id,status,next_run_at,attempt_count,max_attempts,interval_seconds,last_error,updated_at,demo_only) "
+        "VALUES(?,'queued',?,0,?,?, '',?,?) ON CONFLICT(target_id) DO NOTHING",
+        (target_id,now,int(MAX_PROVIDER_ATTEMPTS),int(interval_seconds),now,int(bool(demo_only))),
+    )
+
+
+def _retry_delay(attempt):
+    attempt=max(1,int(attempt))
+    return min(POLL_INTERVAL_SECONDS,BASE_BACKOFF_SECONDS*(2**(attempt-1)))
+
+
+def run_due_jobs(c,actor="evidence-monitor-worker",now=None,limit=20,tool="promomed-sostoyanie",email=""):
+    now=int(time.time()) if now is None else int(now)
+    rows=list(c.execute(
+        "SELECT j.target_id,j.attempt_count,j.max_attempts,j.interval_seconds,w.provider,w.external_id "
+        "FROM evidence_monitor_jobs j JOIN evidence_watch_targets w ON w.id=j.target_id "
+        "WHERE w.status='active' AND j.status IN ('queued','retry') AND j.next_run_at<=? "
+        "ORDER BY j.next_run_at,j.target_id LIMIT ?",
+        (now,int(limit)),
+    ))
+    results=[]
+    for row in rows:
+        attempt=int(row["attempt_count"] or 0)+1
+        c.execute(
+            "UPDATE evidence_monitor_jobs SET status='running',attempt_count=?,last_started_at=?,updated_at=? WHERE target_id=?",
+            (attempt,now,now,row["target_id"]),
+        )
+        try:
+            result=fetch_and_ingest(c,row["provider"],row["external_id"],actor,tool=tool,email=email)
+        except ValueError as exc:
+            dead=attempt>=int(row["max_attempts"] or MAX_PROVIDER_ATTEMPTS)
+            status="dead" if dead else "retry"
+            next_run=now if dead else now+_retry_delay(attempt)
+            c.execute(
+                "UPDATE evidence_monitor_jobs SET status=?,next_run_at=?,last_error=?,last_finished_at=?,updated_at=? WHERE target_id=?",
+                (status,next_run,str(exc)[:500],now,now,row["target_id"]),
+            )
+            results.append({"target_id":row["target_id"],"status":status,"attempt":attempt,"next_run_at":next_run})
+            continue
+        next_run=now+int(row["interval_seconds"] or POLL_INTERVAL_SECONDS)
+        c.execute(
+            "UPDATE evidence_monitor_jobs SET status='queued',next_run_at=?,attempt_count=0,last_error='',last_finished_at=?,updated_at=? WHERE target_id=?",
+            (next_run,now,now,row["target_id"]),
+        )
+        results.append({"target_id":row["target_id"],"status":"ok","attempt":attempt,"next_run_at":next_run,"change_type":result.get("change_type"),"duplicate":bool(result.get("duplicate"))})
+    return {"processed":len(results),"results":results}
+
+
+def requeue_dead_job(c,target_id,now=None):
+    now=int(time.time()) if now is None else int(now)
+    row=c.execute("SELECT target_id,status FROM evidence_monitor_jobs WHERE target_id=?",(target_id,)).fetchone()
+    if not row:
+        raise ValueError("monitor_job_not_found")
+    if row["status"]!="dead":
+        raise ValueError("monitor_job_not_dead")
+    c.execute(
+        "UPDATE evidence_monitor_jobs SET status='queued',next_run_at=?,attempt_count=0,last_error='',updated_at=? WHERE target_id=?",
+        (now,now,target_id),
+    )
 
 
 def _current_snapshot(c,target_id):
@@ -317,6 +384,10 @@ def snapshot(c):
         errors=[dict(r) for r in c.execute("SELECT id,target_id,provider,external_id,error_type,error_message,occurred_at,resolved_at FROM evidence_provider_errors ORDER BY occurred_at DESC,id DESC LIMIT 30")]
     except Exception:
         errors=[]
+    try:
+        jobs=[dict(r) for r in c.execute("SELECT target_id,status,next_run_at,attempt_count,max_attempts,interval_seconds,last_error,last_started_at,last_finished_at,updated_at FROM evidence_monitor_jobs ORDER BY next_run_at,target_id")]
+    except Exception:
+        jobs=[]
     return {
         "version":"external-evidence-admission-v1",
         "targets":targets,
@@ -324,17 +395,23 @@ def snapshot(c):
         "candidates":candidates,
         "reviews":reviews,
         "provider_errors":errors,
+        "monitor_jobs":jobs,
         "summary":{
             "watch_targets":len(targets),
             "current_snapshots":sum(1 for x in snapshots if int(x["is_current"])),
             "pending_candidates":sum(1 for x in candidates if x["status"] in ("pending_review","review_ready")),
             "admitted_candidates":sum(1 for x in candidates if x["status"]=="admitted_demo"),
             "provider_errors":sum(1 for x in errors if not x.get("resolved_at")),
+            "monitor_jobs":len(jobs),
+            "dead_letter_jobs":sum(1 for x in jobs if x["status"]=="dead"),
         },
         "admission_rule":"External provider metadata is a signal. Evidence Graph and Change Impact update only after governed admission.",
         "truth_boundary":{
             "live_provider_adapter_present":True,
             "continuous_monitoring":False,
+            "scheduled_worker_present":True,
+            "durable_retry_backoff":True,
+            "dead_letter_queue":True,
             "independent_scientific_reviewer":False,
             "automatic_medical_truth":False,
             "automatic_claim_rewrite":False,
