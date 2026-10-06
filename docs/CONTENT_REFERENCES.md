@@ -24,3 +24,21 @@ SОСТОЯНИЕ adds a deeper digital operating model: personal Smart Route, m
 ## Content governance
 
 Every real launch requires medical/legal/regulatory review, source/date metadata, disclosure of sponsorship and clear separation between editorial, corporate and partner content.
+
+
+## External evidence monitoring references
+
+Verified 2026-10-06 for the Evidence Monitoring / Source Admission roadmap:
+
+- NCBI E-utilities / PubMed — official API family for PubMed record search, summary and fetch:
+  https://www.ncbi.nlm.nih.gov/books/NBK25499/
+- Crossref REST API — official DOI metadata retrieval:
+  https://www.crossref.org/documentation/retrieve-metadata/rest-api/
+- Crossmark — publisher/member post-publication update metadata including correction, expression of concern, partial retraction, retraction and withdrawal:
+  https://www.crossref.org/documentation/crossmark/participating-in-crossmark/
+- Crossref Retraction Watch — retraction metadata available through Crossref production services:
+  https://www.crossref.org/documentation/retrieve-metadata/retraction-watch/
+- Crossref versioning / corrections / retractions best practice:
+  https://www.crossref.org/documentation/principles-practices/best-practices/versioning/
+
+Architecture rule: these providers are external evidence signals, not Promomed medical truth. Provider metadata must enter a source-admission queue, retain provenance/hash/version information and receive governed review before it may update Evidence Graph state or trigger Change Impact.
