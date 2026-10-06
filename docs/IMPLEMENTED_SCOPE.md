@@ -232,3 +232,22 @@ Repository/runtime scope:
 - responsive-browser and unit contracts for recommendation determinism and explainability.
 
 This is the native deterministic fallback required by the integration master plan. Metarank is not yet integrated and is not required for the current MVP. Personalisation remains a derived ranking layer and does not become a health-data or medical authority.
+
+
+## Relationship 365 — participant lifecycle checkpoint
+
+Added a derived participant lifecycle over existing Promomed authority:
+
+`BEFORE -> EVENT DAY -> D1 -> D7 -> D30`.
+
+The projection uses explicit participant state only: profile/topic/follow signals, bookings, attendance, takeaways, replay continuation, learning progress, community activity and follow-up records.
+
+The Home surface shows:
+
+- current lifecycle stage;
+- completed/upcoming stages;
+- overall progress;
+- one concrete next action;
+- direct continuation into event, replay, content, expert, Studio, community or learning surfaces.
+
+Boundary: this is a behavioural relationship journey for year-round product retention. It is not a clinical patient journey and does not infer diagnosis, treatment or individual medical risk.
