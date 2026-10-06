@@ -41,7 +41,11 @@ def _completed_stage_ids(c, email):
     subscriptions = c.execute("SELECT COUNT(*) n FROM topic_subscriptions WHERE email=? AND status='active'", (email,)).fetchone()["n"]
     follows = c.execute("SELECT COUNT(*) n FROM expert_follows WHERE email=? AND status='active'", (email,)).fetchone()["n"]
     bookings = c.execute("SELECT COUNT(*) n FROM activity_bookings WHERE email=? AND status IN ('booked','confirmed')", (email,)).fetchone()["n"]
-    if profile and (subscriptions or follows or bookings):
+    try:
+        discovery_saves = c.execute("SELECT COUNT(*) n FROM discovery_saves WHERE email=?", (email,)).fetchone()["n"]
+    except Exception:
+        discovery_saves = 0
+    if profile and (subscriptions or follows or bookings or discovery_saves):
         done.add("before")
 
     attendance = c.execute("SELECT COUNT(*) n FROM session_attendance WHERE email=? AND status IN ('attended','checked_in','complete')", (email,)).fetchone()["n"]
