@@ -87,7 +87,8 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("STRATEGIC PARTNER VALUE EXCHANGE", INDEX)
         self.assertIn("DUE-DILIGENCE DATA ROOM · INDEX", INDEX)
         self.assertNotIn("Guaranteed commercial uplift", INDEX)
-        self.assertNotIn("100M", INDEX)
+        self.assertIn("PROGRAMME VALUE CASE · 50–100M ₽", INDEX)
+        self.assertIn("FORMULA · NOT FORECAST", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
