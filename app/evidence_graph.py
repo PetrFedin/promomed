@@ -103,7 +103,7 @@ def _trust_status(claim,citations,links):
     claim_status=str(claim.get("status") or "")
     superseded=claim_status.startswith("superseded")
     retracted=claim_status.startswith("retracted")
-    reviewed=claim_status in ("reviewed","reviewed_demo")
+    reviewed=claim_status in ("reviewed","reviewed_demo","review_required","review_required_demo")
     trusted=reviewed and has_reviewer and has_source and has_locator and has_trace and not superseded and not retracted
     if retracted:
         status="RETRACTED"
