@@ -17,7 +17,6 @@ from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
 from app.strategic_reads import read as read_strategic_projection
-
 ROOT=os.path.join(os.path.dirname(__file__),"public")
 LOCK=threading.RLock()
 def conn():
