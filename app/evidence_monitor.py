@@ -157,6 +157,7 @@ def ensure_target(c,provider,external_id,actor,demo_only=1):
         "VALUES(?,?,?,?,'active',?,?,?) ON CONFLICT(provider,external_id) DO NOTHING",
         (target_id,provider,ext,key,actor,now,int(bool(demo_only))),
     )
+    _ensure_monitor_job(c,target_id,now=now,demo_only=demo_only)
     return target_id
 
 
