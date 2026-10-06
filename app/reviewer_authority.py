@@ -293,6 +293,29 @@ def submit_decision(c,assignment_id,reviewer_email,decision,rationale=""):
     return {"decision_id":decision_id,"decision_digest":digest}
 
 
+
+def record_governance_admission(c,candidate_id,actor,source_id,change_event_id=None):
+    account=c.execute("SELECT role,status FROM accounts WHERE email=?",(str(actor or "").lower(),)).fetchone()
+    if not account or account["role"]!="governance" or account["status"]!="active":
+        raise ValueError("governance_admission_required")
+    reviews=list(c.execute(
+        "SELECT review_role,reviewer,status FROM evidence_admission_reviews WHERE candidate_id=?",
+        (candidate_id,),
+    ))
+    reviewers={str(x["reviewer"] or "").lower() for x in reviews if x["review_role"] in ("editorial","scientific")}
+    if str(actor or "").lower() in reviewers:
+        raise ValueError("separation_of_duties_violation")
+    _append_event(
+        c,
+        "governance_admission",
+        str(actor or "").lower(),
+        {"source_id":source_id,"change_event_id":change_event_id or ""},
+        candidate_id,
+        None,
+        0,
+    )
+
+
 def snapshot(c):
     profiles=[dict(r) for r in c.execute("SELECT id,account_email,display_name,reviewer_kind,credential_state,credential_issuer,credential_verified_by,credential_verified_at,valid_until,independent_attested,status,demo_only FROM reviewer_profiles ORDER BY display_name")]
     scopes=[dict(r) for r in c.execute("SELECT reviewer_id,scope_key,status,verified_by,verified_at,valid_until,demo_only FROM reviewer_scopes ORDER BY reviewer_id,scope_key")]
