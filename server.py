@@ -16,7 +16,7 @@ from app.editorial_commands import handle_command as handle_editorial_command
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
-from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection
+from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection; from app.discovery_reads import serve as serve_discovery
 ROOT=os.path.join(os.path.dirname(__file__),"public"); LOCK=threading.RLock()
 def conn(): return db.connect()
 def init():
@@ -212,6 +212,8 @@ class H(SimpleHTTPRequestHandler):
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
+  if p.startswith("/api/discovery"):
+   d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
   if p=="/api/product-quality-proof":
    c=conn()
    proof={
