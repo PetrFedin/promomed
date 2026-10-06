@@ -172,6 +172,23 @@ class CommandBoundaryTests(unittest.TestCase):
         )
         self.assertTrue(allowed.use_state)
         self.assertEqual(self.server.sval(self.c, "demo_step", "missing"), "0")
+    
+    def test_failed_command_transaction_rolls_back(self):
+        from app.commanding import error, finalize_command
+        self.c.execute("INSERT INTO questions(text,status,ts) VALUES('atomicity probe','review',1)")
+        outcome=error("forced_failure",409)
+        committed=finalize_command(self.c,outcome)
+        self.assertFalse(committed)
+        row=self.c.execute("SELECT COUNT(*) n FROM questions WHERE text='atomicity probe'").fetchone()
+        self.assertEqual(row["n"],0)
+
+    def test_successful_command_transaction_commits(self):
+        from app.commanding import ok, finalize_command
+        self.c.execute("INSERT INTO questions(text,status,ts) VALUES('atomicity success','review',2)")
+        committed=finalize_command(self.c,ok())
+        self.assertTrue(committed)
+        row=self.c.execute("SELECT COUNT(*) n FROM questions WHERE text='atomicity success'").fetchone()
+        self.assertEqual(row["n"],1)
 
 
 if __name__ == "__main__":
