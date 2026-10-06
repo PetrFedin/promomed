@@ -358,6 +358,12 @@ UI requirements:
 
 **Status:** ADOPT after native Evidence Graph / Change Impact foundation.
 
+#### Phase 2.5 repository implementation checkpoint — 2026-10-06
+
+Repository implementation now includes native watch targets, provider snapshots, SHA-256 idempotency, DOI/PMID normalization, admission candidates, separate editorial/scientific review gates, provider-error ledger, deterministic Crossref/PubMed normalizers, explicit live-fetch adapters, governed admission into Evidence Graph, and propagation to Change Impact only after admission.
+
+This checkpoint is **not continuous evidence surveillance**. Production scheduling, retry/backoff, independent scientific/medical reviewer authority and provider operational hardening remain required.
+
 Verified provider/reference stack:
 
 - **PubMed / NCBI E-utilities** — source identity, PMID metadata, publication types and linked errata/retraction records. Use provider-specific requests only; do not crawl arbitrary URLs.
