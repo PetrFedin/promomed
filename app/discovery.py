@@ -146,6 +146,14 @@ def search(c, query="", kind="", topic="", content_type="", expert="", event="",
         score=_score(row,query)
         if query and score<=0: continue
         out={k:v for k,v in row.items() if k!="search_text"}
+        try:
+            hold=c.execute("SELECT reason FROM publication_holds WHERE artifact_kind=? AND artifact_ref=? AND status='active' ORDER BY placed_at DESC LIMIT 1",(row["kind"],row["ref"])).fetchone()
+        except Exception:
+            hold=None
+        out["publication_hold"]=bool(hold)
+        out["publication_hold_reason"]=hold["reason"] if hold else ""
+        if hold and row["kind"] in ("content","learning","product","takeaway"):
+            out["review_status"]="under_review"
         out["score"]=round(score,1)
         out["saved"]=(row["kind"],row["ref"]) in saved
         out["why"]="exact_title" if query and _norm(query)==_norm(row["title"]) else ("title_topic_match" if query else "browse")
