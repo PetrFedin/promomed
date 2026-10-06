@@ -59,6 +59,14 @@ class ExecutiveProjectionTests(unittest.TestCase):
         for forbidden in ("₽", "$", "valuation", "arr", "mrr"):
             self.assertNotIn(forbidden, text)
 
+    def test_board_value_bridge_connects_capital_to_finance_evidence(self):
+        room = self.executive.snapshot(self.c)
+        case = room["programme_value_case"]
+        self.assertGreaterEqual(len(case["value_capture_map"]), 6)
+        self.assertGreaterEqual(len(case["board_sequence"]), 6)
+        self.assertIn("Finance accepts each counted value line once", " ".join(case["board_sequence"]))
+        self.assertIn("No value line enters payback twice", case["evidence_protocol"]["guardrail"])
+
     def test_programme_value_case_is_available_to_board_without_claiming_forecast(self):
         room = self.executive.snapshot(self.c)
         case = room["programme_value_case"]
