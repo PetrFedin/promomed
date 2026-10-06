@@ -1,4 +1,4 @@
-from app.commanding import error, ok
+from app.commanding import custom, error
 from app.core import audit
 from app.evidence_governance import record_review
 
@@ -30,4 +30,4 @@ def handle_command(c, route, role, email, data):
         "seal_status": manifest["seal"]["status"],
         "evidence_package_sha256": manifest["evidencePackageSha256"],
     })
-    return ok({"data": manifest})
+    return custom({"data": manifest})
