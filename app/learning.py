@@ -1,6 +1,14 @@
+def _held(c,track_id):
+    try:
+        row=c.execute("SELECT reason FROM publication_holds WHERE artifact_kind='learning' AND artifact_ref=? AND status='active' ORDER BY placed_at DESC LIMIT 1",(track_id,)).fetchone()
+        return (True,row["reason"]) if row else (False,"")
+    except Exception:
+        return False,""
+
+
 def snapshot(c, email=None):
     d = {
-        "learning_tracks": [dict(r) for r in c.execute("SELECT * FROM learning_tracks ORDER BY id")],
+        "learning_tracks": [dict(r)|{"publication_hold":_held(c,r["id"])[0],"publication_hold_reason":_held(c,r["id"])[1]} for r in c.execute("SELECT * FROM learning_tracks ORDER BY id")],
         "learning_steps": [dict(r) for r in c.execute("SELECT * FROM learning_steps ORDER BY track_id,step_no")],
     }
     if email:
