@@ -172,7 +172,7 @@ def correct_demo_claim(c,claim_id,new_claim_text,reviewer):
     ).fetchone()
     if not old:
         raise ValueError("claim_not_found")
-    if old["status"] not in ("reviewed_demo","reviewed"):
+    if old["status"] not in ("reviewed_demo","reviewed","review_required_demo"):
         raise ValueError("claim_not_current")
     now=int(time.time())
     new_id=f"{claim_id}-V{int(old['version'])+1}"
@@ -203,7 +203,7 @@ def retract_demo_claim(c,claim_id,note,reviewer):
     row=c.execute("SELECT id,status FROM evidence_claims WHERE id=?",(claim_id,)).fetchone()
     if not row:
         raise ValueError("claim_not_found")
-    if row["status"] not in ("reviewed_demo","reviewed"):
+    if row["status"] not in ("reviewed_demo","reviewed","review_required_demo"):
         raise ValueError("claim_not_current")
     c.execute(
         "UPDATE evidence_claims SET status='retracted_demo',reviewer=?,reviewed_at=?,correction_note=? WHERE id=?",
