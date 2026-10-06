@@ -2,9 +2,9 @@ import time
 
 from app.commanding import error, ok
 from app.core import audit
-from app import transcript_intelligence, evidence_graph, change_impact, evidence_monitor
+from app import transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority
 
-ROUTES = {"/api/question", "/api/cms", "/api/transcript-takeaway-review", "/api/evidence-claim-correct", "/api/evidence-claim-retract", "/api/change-impact/create-demo", "/api/change-impact/resolve-demo", "/api/evidence-monitor/register", "/api/evidence-monitor/demo-change", "/api/evidence-monitor/fetch-live", "/api/evidence-monitor/review", "/api/evidence-monitor/admit"}
+ROUTES = {"/api/question", "/api/cms", "/api/transcript-takeaway-review", "/api/evidence-claim-correct", "/api/evidence-claim-retract", "/api/change-impact/create-demo", "/api/change-impact/resolve-demo", "/api/evidence-monitor/register", "/api/evidence-monitor/demo-change", "/api/evidence-monitor/fetch-live", "/api/evidence-monitor/review", "/api/evidence-monitor/assign-reviewer", "/api/evidence-monitor/conflict", "/api/evidence-monitor/decision", "/api/evidence-monitor/admit"}
 
 
 def handle_command(c, route, role, email, data):
@@ -20,8 +20,14 @@ def handle_command(c, route, role, email, data):
         return ok()
 
     if route.startswith("/api/evidence-monitor/"):
-        if role != "editor":
-            return error("forbidden", 403)
+        editor_routes={"/api/evidence-monitor/register","/api/evidence-monitor/demo-change","/api/evidence-monitor/fetch-live","/api/evidence-monitor/review","/api/evidence-monitor/assign-reviewer"}
+        reviewer_routes={"/api/evidence-monitor/conflict","/api/evidence-monitor/decision"}
+        if route in editor_routes and role!="editor":
+            return error("forbidden",403)
+        if route in reviewer_routes and role!="reviewer":
+            return error("forbidden",403)
+        if route=="/api/evidence-monitor/admit" and role not in ("editor","governance"):
+            return error("forbidden",403)
         if route == "/api/evidence-monitor/register":
             provider=str(data.get("provider","crossref"))[:20].lower()
             external_id=str(data.get("external_id",""))[:180]
@@ -58,6 +64,32 @@ def handle_command(c, route, role, email, data):
                 return error(str(e),409)
             audit(c,"evidence_admission_review",email,{"candidate_id":candidate_id,"review_role":review_role})
             return ok()
+        if route == "/api/evidence-monitor/assign-reviewer":
+            try:
+                assignment_id=reviewer_authority.assign_candidate(
+                    c,candidate_id,str(data.get("reviewer_email",""))[:200].lower(),email,
+                    str(data.get("scope_key",reviewer_authority.DEFAULT_SCOPE))[:160],
+                )
+            except ValueError as e:
+                return error(str(e),409)
+            audit(c,"scientific_review_assigned",email,{"candidate_id":candidate_id,"assignment_id":assignment_id})
+            return ok({"assignment_id":assignment_id},201)
+        if route == "/api/evidence-monitor/conflict":
+            assignment_id=str(data.get("assignment_id",""))[:260]
+            try:
+                disclosure_id=reviewer_authority.declare_conflict(c,assignment_id,email,str(data.get("conflict_state",""))[:30],str(data.get("details","")))
+            except ValueError as e:
+                return error(str(e),409)
+            audit(c,"reviewer_conflict_disclosed",email,{"candidate_id":candidate_id,"assignment_id":assignment_id,"disclosure_id":disclosure_id})
+            return ok({"disclosure_id":disclosure_id},201)
+        if route == "/api/evidence-monitor/decision":
+            assignment_id=str(data.get("assignment_id",""))[:260]
+            try:
+                decision=reviewer_authority.submit_decision(c,assignment_id,email,str(data.get("decision",""))[:30],str(data.get("rationale","")))
+            except ValueError as e:
+                return error(str(e),409)
+            audit(c,"scientific_review_decision",email,{"candidate_id":candidate_id,"assignment_id":assignment_id,"decision_digest":decision["decision_digest"]})
+            return ok(decision,201)
         try:
             admitted=evidence_monitor.admit_candidate(c,candidate_id,email)
         except ValueError as e:
