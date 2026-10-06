@@ -222,6 +222,9 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     page.goto(BASE_URL + "?presentation=executive", wait_until="domcontentloaded")
     page.wait_for_selector("#executiveRoom.on")
     expect(page.locator("#execBoardSummary")).to_contain_text("CONTROLLED PILOT ONLY")
+    expect(page.locator("#execProgrammeValue")).to_contain_text("50 000 000")
+    expect(page.locator("#execValueBridge")).to_contain_text("Finance")
+    expect(page.locator("#execValueBridge")).to_contain_text("Replace fragmented external spend")
     assert_no_page_overflow(page, width, f"{name}/presentation-executive")
 
     page.goto(BASE_URL + "?presentation=security", wait_until="domcontentloaded")
