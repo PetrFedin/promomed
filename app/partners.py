@@ -1,7 +1,15 @@
+def _held(c,partner_id):
+    try:
+        row=c.execute("SELECT reason FROM publication_holds WHERE artifact_kind='partner' AND artifact_ref=? AND status='active' ORDER BY placed_at DESC LIMIT 1",(partner_id,)).fetchone()
+        return (True,row["reason"]) if row else (False,"")
+    except Exception:
+        return False,""
+
+
 def snapshot(c, email=None):
     placement = c.execute("SELECT status,name FROM placements WHERE id=1").fetchone()
     d = {
-        "partners": [dict(r) for r in c.execute("SELECT * FROM partners ORDER BY name")],
+        "partners": [dict(r)|{"publication_hold":_held(c,r["id"])[0],"publication_hold_reason":_held(c,r["id"])[1]} for r in c.execute("SELECT * FROM partners ORDER BY name")],
         "partner_packages": [dict(r) for r in c.execute("SELECT * FROM partner_packages ORDER BY id")],
         "appointment_slots": [dict(r) for r in c.execute(
             'SELECT a.*,p.name partner_name FROM appointment_slots a LEFT JOIN partners p ON p.id=a.partner_id ORDER BY a.start'
