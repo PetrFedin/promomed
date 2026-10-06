@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from app import corporate, db, executive, investor, investment_proof, contract_builder
+from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval
@@ -15,6 +15,7 @@ from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
+from app.deal_commands import handle_command as handle_deal_command
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
 LOCK=threading.RLock()
@@ -312,6 +313,12 @@ class H(SimpleHTTPRequestHandler):
    try:d=executive.snapshot(c)
    finally:c.close()
    return self.out(d)
+  if p=="/api/deal-room":
+   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
+   c=conn()
+   try:d=deal_room.snapshot(c)
+   finally:c.close()
+   return self.out(d)
   if p=="/api/contract-builder":
    if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
    c=conn()
@@ -393,6 +400,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
     if outcome is None: outcome=handle_investment_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_deal_command(c,p,role,email,data)
     if outcome is None: return self.out({"error":"not_found"},404)
     c.commit()
     payload=state(c,email) if outcome.use_state else outcome.payload
