@@ -214,3 +214,21 @@ Added a separate corporate diligence layer without claiming certification or pro
 Diligence pack: `docs/CORPORATE_SECURITY_PRIVACY_VENDOR_PACK_2026-10-05.md`.
 
 Security/privacy approval itself remains open. Phase 1 remains gated behind Phase 0 COMPLETE.
+
+
+## Personalised Home / Continue Journey — Phase 4 repository checkpoint
+
+Added an explainable participant-facing continuation layer using existing Promomed authority only.
+
+Repository/runtime scope:
+
+- bounded `app/personalization.py` projection;
+- deterministic ranking from explicit profile interests, topic subscriptions, expert follows, bookings, attendance and active learning progress;
+- participant Home surface with up to six next-best actions;
+- reason codes including `continue_learning_track`, `subscribed_topic`, `follows_expert`, `attended_related_session`, `booked_related_session` and `profile_interest`;
+- direct continuation into content, expert, event, replay, Studio or community surfaces;
+- deterministic fallback when richer behavioural signals do not exist;
+- explicit `medical_inference=false` boundary and forbidden outputs for diagnosis, treatment recommendation, drug recommendation and individual health-risk scoring;
+- responsive-browser and unit contracts for recommendation determinism and explainability.
+
+This is the native deterministic fallback required by the integration master plan. Metarank is not yet integrated and is not required for the current MVP. Personalisation remains a derived ranking layer and does not become a health-data or medical authority.
