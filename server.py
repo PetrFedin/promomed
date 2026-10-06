@@ -18,10 +18,8 @@ from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
 from app.capital_execution_commands import handle_command as handle_capital_execution_command
 from app.strategic_reads import read as read_strategic_projection
-ROOT=os.path.join(os.path.dirname(__file__),"public")
-LOCK=threading.RLock()
-def conn():
- return db.connect()
+ROOT=os.path.join(os.path.dirname(__file__),"public"); LOCK=threading.RLock()
+def conn(): return db.connect()
 
 def init():
  with LOCK:
