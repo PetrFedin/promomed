@@ -338,6 +338,11 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="reforecastApproval" class="card"></div>
 <div class="notice"><b>PAYBACK BOUNDARY:</b> payback не рассчитывается, пока Finance не принял экономический value. Сроки и spend ниже — явные demo assumptions.</div>
 </div>
+<div class="section"><div class="ey blue">REALLOCATION APPROVAL AUTHORITY · DEMO</div><h2>Proposal → Finance → Business Owner → Investment Committee</h2>
+<div id="reallocationApproval" class="card"><p class="small muted">Reallocation proposal ещё не создан.</p></div>
+<div class="actions"><button class="btn" onclick="createReallocationProposal()">Создать proposal</button><button class="btn ghost" onclick="acceptReallocationRole('Finance')">Finance accept</button><button class="btn ghost" onclick="acceptReallocationRole('Business Owner')">Business Owner accept</button><button class="btn ghost" onclick="acceptReallocationRole('Investment Committee')">IC accept</button></div>
+<div class="notice"><b>CAPITAL MOVEMENT:</b> даже APPROVED_DEMO_PREVIEW не перемещает деньги и не меняет договор.</div>
+</div>
 <div class="section"><div class="ey blue">FORECAST VARIANCE · INTERVENTION ENGINE</div><h2>Отклонение → capital at risk → downstream impact → intervention</h2>
 <div id="interventionSummary" class="card"><p class="small muted">Загрузка intervention engine…</p></div>
 <div id="interventionDiagnostics"></div>
@@ -885,6 +890,16 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let reallocationApprovalData=null;
+async function loadReallocationApproval(){const d=await api('/api/reallocation-authority');reallocationApprovalData=d;renderReallocationApproval(d);return d}
+function renderReallocationApproval(d){
+ const root=document.getElementById('reallocationApproval'),p=d.proposal;
+ if(!root)return;
+ if(!p){root.innerHTML='<div class="ey blue">NO PROPOSAL</div><p class="small muted">Fallback reallocation не активирована.</p>';return}
+ root.innerHTML='<div class="row"><div><div class="ey blue">'+esc(p.status).replaceAll('_',' ').toUpperCase()+'</div><h3>'+formatMoney(p.source_capacity_rub||0)+' candidate</h3><div class="tiny muted">Finance '+formatMoney(p.finance_target_rub||0)+' · Governance '+formatMoney(p.governance_target_rub||0)+'</div></div><span class="execStatus '+(d.all_demo_approved?'live':'gated')+'">CAPITAL MOVED: '+(d.capital_moved?'YES':'NO')+'</span></div>'+(d.approvals||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.approval_role)+'</b><div class="tiny muted">'+esc(x.actor||'awaiting actor')+'</div></div><span class="execStatus '+(x.status==='accepted_demo'?'live':'gated')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+}
+async function createReallocationProposal(){try{const d=await api('/api/reallocation/create-demo',{method:'POST',body:'{}'});reallocationApprovalData=d;renderReallocationApproval(d)}catch(e){alert('Reallocation: '+e.message)}}
+async function acceptReallocationRole(role){try{const d=await api('/api/reallocation/accept-demo',{method:'POST',body:JSON.stringify({approval_role:role})});reallocationApprovalData=d;renderReallocationApproval(d)}catch(e){alert('Approval: '+e.message)}}
 let recoveryReforecastData=null;
 async function loadRecoveryReforecast(){
  const d=await api('/api/recovery-reforecast');recoveryReforecastData=d;renderRecoveryReforecast(d);return d
@@ -1150,7 +1165,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan(),loadCapitalExecution(),loadInterventionEngine(),loadRecoveryReforecast()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan(),loadCapitalExecution(),loadInterventionEngine(),loadRecoveryReforecast(),loadReallocationApproval()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
