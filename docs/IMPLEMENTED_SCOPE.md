@@ -334,3 +334,52 @@ Repository/runtime scope:
 - Golden Demo reset/reseed keeps evidence history reproducible.
 
 Current MVP sources are explicitly DEMO records. The graph proves workflow and machine-checkability; it does not claim that demo sources are externally verified scientific publications. Production admission requires replacing demo evidence sources with verified source metadata and accepted editorial/medical review.
+
+
+## Knowledge Change Impact Engine — living knowledge checkpoint
+
+Added a fail-closed change-propagation layer over the Claim Evidence Graph.
+
+Core flow:
+
+`source change event -> impacted claims -> downstream knowledge traversal -> severity/SLA -> review case -> publication hold -> remediation -> authorized hold release`.
+
+Supported demo source-change types:
+
+- source updated;
+- source corrected;
+- source retracted;
+- new systematic review;
+- medical status changed;
+- editorial status changed.
+
+Downstream traversal currently reaches:
+
+- article/content claims;
+- transcript segments;
+- experts;
+- events;
+- replay;
+- Studio episodes;
+- reviewed takeaways;
+- learning tracks;
+- product context;
+- partner context;
+- participant recommendation topics.
+
+Fail-closed controls:
+
+- changed/retracted source loses active trust status until re-reviewed;
+- high/critical changes automatically place publication holds on affected public-facing assets;
+- held assets are suppressed from personalised recommendations;
+- held learning tracks reject enroll/progress actions;
+- Discovery and content/product/partner UI expose UNDER REVIEW state;
+- review alone cannot release a hold;
+- release is permitted only after every impacted claim is either trusted again or explicitly superseded/retracted;
+- hold release remains an authorized editor/governance action.
+
+The demo intentionally supports a complete recovery path:
+
+`source retracted -> impact queue -> hold -> affected claim retracted/remediated -> review -> release`.
+
+External literature surveillance is not yet connected. Change events are explicit demo inputs until a production monitoring/provider layer is admitted.
