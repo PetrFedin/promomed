@@ -155,6 +155,12 @@ class UIContractTests(unittest.TestCase):
         self.assertIn('id="capitalExecutionVariance"', INDEX)
         self.assertIn("async function loadCapitalExecution()", INDEX)
         self.assertIn("async function advanceCapitalExecutionDemo()", INDEX)
+        self.assertIn("FORECAST VARIANCE · INTERVENTION ENGINE", INDEX)
+        self.assertIn('id="interventionSummary"', INDEX)
+        self.assertIn('id="interventionDiagnostics"', INDEX)
+        self.assertIn('id="interventionLogic"', INDEX)
+        self.assertIn("async function loadInterventionEngine()", INDEX)
+        self.assertIn("async function createPrimaryIntervention()", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
