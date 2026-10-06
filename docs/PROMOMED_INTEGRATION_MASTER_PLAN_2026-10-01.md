@@ -456,6 +456,7 @@ Production separation-of-duties rules:
 8. Final production admission requires a separate authenticated `governance` actor who is neither the editorial reviewer nor the scientific reviewer.
 9. Reviewer decisions and authority events are DB-protected against update/delete and chained with previous-event hashes for tamper evidence.
 10. Demo reviewer credentials remain explicitly marked `demo_attested`; they do not prove independent medical review.
+11. Failed command outcomes are transactionally rolled back; no 4xx governance response may commit partial authority mutations.
 
 Repository acceptance:
 
