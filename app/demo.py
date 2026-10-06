@@ -1,7 +1,7 @@
 import time
 
 from app.core import audit, notify, promote_waitlist, setv, sval
-from app import transcript_intelligence, evidence_graph
+from app import transcript_intelligence, evidence_graph, evidence_monitor
 
 DEMO_STEPS = [
     ("ready", "Исходное состояние подготовлено"),
@@ -31,6 +31,7 @@ def reset_demo(c, actor):
         "capital_reallocation_approvals","capital_reallocation_proposals","discovery_saves",
         "transcript_segments","generated_takeaways",
         "knowledge_impacts","publication_holds","knowledge_review_cases","knowledge_change_events",
+        "evidence_admission_reviews","evidence_admission_candidates","evidence_provider_snapshots","evidence_watch_targets",
         "evidence_links","evidence_citations","evidence_claims","evidence_sources",
     ):
         c.execute("DELETE FROM " + t)
@@ -48,7 +49,7 @@ def reset_demo(c, actor):
         "INSERT OR REPLACE INTO registrations(email,status,ts) VALUES('participant@demo.ru','confirmed',?)",
         (int(time.time()),),
     )
-    transcript_intelligence.seed_demo(c); evidence_graph.seed_demo(c)
+    transcript_intelligence.seed_demo(c); evidence_graph.seed_demo(c); evidence_monitor.seed_demo(c)
     audit(c, "demo_reset", actor, {"run": sval(c, "demo_run")})
 
 
