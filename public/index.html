@@ -332,6 +332,13 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
 <div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
 </div>
+<div class="section"><div class="ey blue">PILOT DEAL ROOM · OBLIGATION → EVIDENCE → REMEDIATION → PAYMENT</div><h2>Milestone readiness считается из принятых обязательств и открытых issues</h2>
+<div id="dealRoomSummary" class="card"><p class="small muted">Загрузка Pilot Deal Room…</p></div>
+<div class="execTwoCol"><div id="dealRoomObligations" class="card"></div><div id="dealRoomIssues" class="card"></div></div>
+<div id="dealRoomBoardPacket" class="card"></div>
+<div class="actions"><button class="btn ghost" onclick="resetDealRoomDemo()">Сбросить demo deal room</button></div>
+<div class="notice"><b>PAYMENT BOUNDARY:</b> даже состояние ELIGIBLE_DEMO_PREVIEW не авторизует реальный платёж. Production требует юридически принятого evidence, authorized identities и payment authority.</div>
+</div>
 <div class="section"><div class="ey blue">CONTRACT BUILDER · SCOPE → PAYMENT → EVIDENCE → BOARD</div><h2>Выберите инвестиционный контур и получите управляемый договорный каркас</h2>
 <div class="chiprow" id="contractBuilderTabs">
 <button class="chip on" data-contract="t50" onclick="selectContractPackage('t50',this)">50 млн ₽</button>
@@ -835,6 +842,32 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let dealRoomData=null;
+async function loadDealRoom(){
+ const d=await api('/api/deal-room');dealRoomData=d;renderDealRoom(d);return d
+}
+function renderDealRoom(d){
+ const deal=d.deal||{},r=d.readiness||{},s=document.getElementById('dealRoomSummary');
+ if(s)s.innerHTML='<div class="row"><div><div class="ey blue">'+esc(deal.title||'Pilot milestone')+'</div><h3>'+formatMoney(deal.amount_rub||0)+' · '+Number(deal.share_pct||0)+'%</h3></div><span class="execStatus '+(r.state==='ELIGIBLE_DEMO_PREVIEW'?'live':'gated')+'">'+esc(r.state||'BLOCKED')+'</span></div><div class="proofgrid">'+[
+ ['ACCEPTED',(r.accepted_count||0)+' / '+(r.required_count||0)],['OPEN ISSUES',String(r.open_issue_count||0)],['DEMO ELIGIBLE',r.demo_payment_eligible?'YES':'NO'],['ACTUAL PAYMENT',r.actual_payment_authorized?'AUTHORIZED':'NOT AUTHORIZED']
+ ].map(x=>'<div class="proofmetric"><span class="tiny muted">'+x[0]+'</span><strong>'+esc(x[1])+'</strong></div>').join('')+'</div><p class="small muted">'+esc(r.reason||'')+'</p><div class="tiny muted"><b>Responsible:</b> '+esc(deal.responsible||'')+'<br><b>Payment rule:</b> '+esc(deal.payment_rule||'')+'<br><b>STOP/GO:</b> '+esc(deal.stop_go||'')+'</div>';
+ const ob=document.getElementById('dealRoomObligations');
+ if(ob)ob.innerHTML='<div class="ey blue">NAMED OBLIGATIONS</div><h3>Что должно быть принято</h3>'+(d.obligations||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.title)+'</b><div class="tiny muted">Owner: '+esc(x.owner)+'</div><div class="tiny muted">Required evidence: '+esc(x.required_evidence)+'</div><div class="tiny muted">Evidence ref: '+esc(x.evidence_ref||'not attached')+'</div></div><div><span class="execStatus '+(x.status==='accepted_demo'?'live':'gated')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span>'+(x.status==='accepted_demo'?'':'<button class="btn ghost" style="margin-top:6px;padding:7px 9px;font-size:9px" onclick="acceptDealObligation(\''+esc(x.id)+'\')">Attach + accept demo</button>')+'</div></div>').join('');
+ const issues=document.getElementById('dealRoomIssues');
+ if(issues)issues.innerHTML='<div class="ey blue">ISSUES & REMEDIATION</div><h3>Почему milestone заблокирован</h3>'+(d.issues||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.title)+'</b><div class="tiny muted">Severity: '+esc(x.severity)+' · Owner: '+esc(x.owner)+'</div><div class="tiny muted"><b>Remediation:</b> '+esc(x.remediation)+'</div></div><span class="execStatus '+(x.status==='open'?'gated':'live')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+ const bp=document.getElementById('dealRoomBoardPacket'),p=d.board_packet||{};
+ if(bp)bp.innerHTML='<div class="ey blue">BOARD PACKET</div><div class="row"><div><h3>'+esc(p.decision_preview||'HOLD')+'</h3><div class="tiny muted">Packet: '+esc(p.packet_id||'—')+'</div><div class="tiny muted">SHA-256: '+esc((p.packet_hash||'—').slice(0,28))+'…</div></div><span class="pill">'+formatMoney(p.payment_amount_rub||0)+'</span></div><div class="small muted"><b>Included:</b> '+(p.included_sections||[]).map(esc).join(' · ')+'</div><div class="notice"><b>LEGAL EFFECT:</b> '+esc(p.legal_effect||'NONE')+' · <b>PAYMENT AUTHORITY:</b> '+esc(p.payment_authority||'NONE')+'</div>';
+}
+async function acceptDealObligation(id){
+ try{
+  const d=await api('/api/deal-room/accept-demo',{method:'POST',body:JSON.stringify({tranche_id:'t50',milestone_id:'m3',obligation_id:id,evidence_ref:'demo://signed-delivery-acceptance',note:'Presentation remediation simulation'})});
+  dealRoomData=d;renderDealRoom(d)
+ }catch(e){alert('Deal Room: '+e.message)}
+}
+async function resetDealRoomDemo(){
+ try{const d=await api('/api/deal-room/reset-demo',{method:'POST',body:'{}'});dealRoomData=d;renderDealRoom(d)}
+ catch(e){alert('Deal Room reset: '+e.message)}
+}
 let contractBuilderData=null,selectedContractPackage='t50';
 async function loadContractBuilder(){
  const d=await api('/api/contract-builder');contractBuilderData=d;renderContractPackage(selectedContractPackage);return d
@@ -931,7 +964,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
