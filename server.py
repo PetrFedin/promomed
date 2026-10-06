@@ -4,8 +4,7 @@ from urllib.parse import urlparse
 from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
-from app.core import audit, notify, promote_waitlist, setv, sval
-from app.commanding import finalize_command
+from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
 from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 from app.community_commands import handle_command as handle_community_command
 from app.learning_commands import handle_command as handle_learning_command
