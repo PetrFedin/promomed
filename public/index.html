@@ -325,6 +325,8 @@ body.presentationMode .presentationLauncher{display:block}
 <div class="section"><div class="ey blue">AUDIENCE LENS</div><h2>Один продукт — четыре корпоративных вопроса</h2><div id="execModeTabs" class="execModeTabs"></div><div id="execModeHero" class="card"></div></div>
 <div class="section"><div class="ey blue">BOARD DECISION · CURRENT STATE</div><h2>Что можно одобрить сегодня</h2><div id="execBoardSummary" class="execDecisionGrid"></div></div>
 <div class="section"><div class="ey blue">MILESTONE FUNDING · RELEASE CAPITAL AGAINST EVIDENCE</div><h2>Следующий транш открывается только доказательством предыдущего</h2><div id="execTranches"></div></div><div class="section"><div class="ey blue">PROGRAMME VALUE CASE · 50–100M ₽</div><h2>Сколько покупаем capability и сколько подтверждённой ценности нужно для окупаемости</h2><div id="execProgrammeValue" class="card"><p class="small muted">Загрузка value case…</p></div></div><div class="section"><div class="ey blue">BOARD VALUE BRIDGE · FROM CAPITAL TO ACCEPTED VALUE</div><h2>Как инвестиция превращается в подтверждённый экономический эффект</h2><div id="execValueBridge" class="card"><p class="small muted">Загрузка value bridge…</p></div></div>
+<div class="section"><div class="ey blue">INVESTMENT PROOF SYSTEM · TRANCHE CONTROL</div><h2>Что именно должно быть принято до открытия следующего капитала</h2><div id="investmentProofDecision" class="card"><p class="small muted">Загрузка decision state…</p></div><div id="investmentProofTranches"></div></div>
+<div class="section"><div class="ey blue">CONTRACTUAL KPI → EVIDENCE → ACCEPTANCE</div><h2>Каждый KPI имеет формулу, источник и владельца приёмки</h2><div id="investmentProofKpis" class="card"></div><div id="investmentProofLedger" class="card"></div></div>
 <div class="section"><div class="ey blue">PILOT CONTRACT · WHAT EXACTLY IS BEING FUNDED</div><h2>Пилот как управляемый договор на доказательство</h2><div class="execTwoCol"><div class="card"><h3>In scope</h3><ul id="execPilotIn" class="execList"></ul></div><div class="card"><h3>Out of scope</h3><ul id="execPilotOut" class="execList"></ul></div></div><div class="execTwoCol"><div class="card"><h3>Что должен дать заказчик</h3><ul id="execClientInputs" class="execList"></ul></div><div id="execPilotDecision" class="card"></div></div></div>
 <div class="section"><div class="ey blue">PILOT KPI DICTIONARY · FORMULA BEFORE TARGET</div><h2>Сначала определяем, что именно измеряем</h2><div id="execKpis" class="card"></div><div class="notice">Коммерческие и аудиторные target values фиксируются сторонами до оплачиваемого пилота. Продукт не подставляет их сам.</div></div>
 <div class="section"><div class="ey blue">CORPORATE READINESS · PROCUREMENT / SECURITY VIEW</div><h2>Что уже доказано технически, а что ещё требует корпоративного approval</h2><div id="execReadiness" class="execTwoCol"></div></div>
@@ -814,6 +816,20 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+async function loadInvestmentProofSystem(){
+ const d=await api('/api/investment-proof-system');
+ const dec=d.decision_state||{},root=document.getElementById('investmentProofDecision');
+ if(root)root.innerHTML='<div class="ey blue">CURRENT CAPITAL DECISION</div><h3>'+esc(dec.current||'—')+'</h3><p class="small muted">'+esc(dec.reason||'')+'</p><div class="proofgrid">'+[
+  ['50M',dec.can_release_50m],['75M',dec.can_release_75m],['100M',dec.can_release_100m]
+ ].map(x=>'<div class="proofmetric"><span class="tiny muted">RELEASE '+x[0]+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div><div class="notice">'+(dec.truth_boundary||[]).map(esc).join('<br>')+'</div>';
+ const tr=document.getElementById('investmentProofTranches');
+ if(tr)tr.innerHTML=(d.tranches||[]).map(x=>'<div class="execTranche"><div><div class="ey blue">'+esc(x.title)+'</div><h3>'+esc(x.release_decision||x.state||'')+'</h3><div class="tiny muted"><b>Acceptance:</b> '+esc(x.acceptance_owner||'')+'</div><div class="tiny muted"><b>Release rule:</b> '+esc(x.release_rule||'')+'</div><div class="small muted" style="margin-top:7px"><b>Build:</b> '+(x.what_is_built||x.builds||[]).map(esc).join(' · ')+'</div><div class="small muted"><b>Evidence:</b> '+(x.evidence_documents||x.required_evidence||[]).map(esc).join(' · ')+'</div></div><span class="execStatus '+((x.state||'').includes('ready')?'live':'gated')+'">'+esc(x.state||'') .replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+ const kp=document.getElementById('investmentProofKpis');
+ if(kp)kp.innerHTML=(d.contractual_kpis||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.name)+'</b><div class="tiny muted">'+esc(x.formula)+'</div><div class="tiny muted">Source: '+esc(x.source)+' · Owner: '+esc(x.owner)+'</div></div><span class="execStatus demo">'+esc(x.target).toUpperCase()+'</span></div>').join('');
+ const le=document.getElementById('investmentProofLedger');
+ if(le)le.innerHTML='<div class="ey blue">EVIDENCE LEDGER</div>'+(d.evidence_ledger||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.stage||x.category||x.id)+'</b><div class="tiny muted">Owner: '+esc(x.owner)+'</div><div class="tiny muted">'+esc(x.required_record||x.evidence||'')+'</div><div class="tiny muted"><b>Acceptance:</b> '+esc(x.acceptance||x.acceptance_required||'')+'</div></div></div>').join('');
+ return d
+}
 let corporateData=null;
 function corpStatus(status){
  const labels={live:'LIVE',ci_proven:'CI-PROVEN',demo:'DEMO',to_prepare:'TO PREPARE',to_define:'TO DEFINE',gated:'GATED',not_claimed:'NOT CLAIMED',complete:'COMPLETE',available:'AVAILABLE',blocking:'BLOCKING'};
@@ -857,7 +873,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await loadExecutiveRoom();window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
