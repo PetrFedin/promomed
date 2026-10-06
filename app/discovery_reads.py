@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import discovery
+from app import discovery, db
 
 
 def read(c, raw_path, role, email):
@@ -33,3 +33,11 @@ def read(c, raw_path, role, email):
         limit=limit,
         email=email if role == "participant" else None,
     ), 200
+
+
+def serve(raw_path, role, email):
+    c = db.connect()
+    try:
+        return read(c, raw_path, role, email)
+    finally:
+        c.close()
