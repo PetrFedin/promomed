@@ -20,7 +20,6 @@ from app.capital_execution_commands import handle_command as handle_capital_exec
 from app.strategic_reads import read as read_strategic_projection
 ROOT=os.path.join(os.path.dirname(__file__),"public"); LOCK=threading.RLock()
 def conn(): return db.connect()
-
 def init():
  with LOCK:
   c=conn()
