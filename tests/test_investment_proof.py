@@ -59,6 +59,35 @@ class InvestmentProofSystemTests(unittest.TestCase):
         self.assertIn("No tranche is auto-released", boundary)
         self.assertIn("Finance acceptance", boundary)
 
+    def test_demo_acceptance_creates_hash_but_never_releases_capital(self):
+        before = self.investment_proof.snapshot(self.c)
+        self.assertFalse(before["acceptance_state"]["t50"]["demo_complete"])
+        h = self.investment_proof.record_demo_acceptance(
+            self.c,
+            "t50",
+            "product_scope",
+            "sales@demo.ru",
+            note="demo",
+            evidence_ref="demo://evidence",
+        )
+        self.c.commit()
+        after = self.investment_proof.snapshot(self.c)
+        item = {x["key"]: x for x in after["acceptance_state"]["t50"]["items"]}["product_scope"]
+        self.assertEqual(item["status"], "accepted_demo")
+        self.assertEqual(item["record_hash"], h)
+        self.assertTrue(item["demo_only"])
+        self.assertEqual(after["certificate_preview"]["t50"]["legal_effect"], "NONE")
+        self.assertEqual(after["certificate_preview"]["t50"]["capital_release_effect"], "NONE")
+        self.assertFalse(after["decision_state"]["can_release_50m"])
+
+    def test_demo_acceptance_reset_is_deterministic(self):
+        self.investment_proof.record_demo_acceptance(self.c, "t50", "product_scope", "sales@demo.ru")
+        self.c.commit()
+        self.investment_proof.reset_demo_acceptances(self.c, "t50")
+        self.c.commit()
+        proof = self.investment_proof.snapshot(self.c)
+        self.assertEqual(proof["acceptance_state"]["t50"]["accepted_demo_count"], 0)
+
     def test_evidence_ledger_has_acceptance_chain(self):
         proof = self.investment_proof.snapshot(self.c)
         stages = [x["stage"] for x in proof["evidence_ledger"]]
