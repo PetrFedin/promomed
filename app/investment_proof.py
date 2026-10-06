@@ -1,3 +1,7 @@
+import hashlib
+import json
+import time
+
 from app import db
 
 
@@ -8,6 +12,133 @@ def _count(c, table, where=""):
 
 def _event_kinds(c):
     return {str(r["kind"]) for r in c.execute("SELECT DISTINCT kind FROM events")}
+
+
+ACCEPTANCE_REQUIREMENTS = {
+    "t50": [
+        ("product_scope", "Product Owner"),
+        ("operations_run", "Event / Operations Owner"),
+        ("finance_baseline", "Finance"),
+        ("security_phase0", "IT / Security / Procurement"),
+        ("sponsor_decision", "Executive Sponsor / IC"),
+    ],
+    "t75": [
+        ("prior_tranche", "Executive Sponsor / IC"),
+        ("finance_actuals", "Finance"),
+        ("medical_governance", "Medical / Legal / Editorial"),
+        ("repeatability", "Business Owner"),
+        ("sponsor_decision", "Executive Sponsor / IC"),
+    ],
+    "t100": [
+        ("prior_tranche", "Executive Sponsor / IC"),
+        ("finance_repeatability", "Finance"),
+        ("security_scale", "IT / Security / Procurement"),
+        ("multi_event", "Business Owner"),
+        ("sponsor_decision", "Executive Sponsor / IC"),
+    ],
+}
+
+
+def _acceptance_rows(c):
+    try:
+        return [dict(r) for r in c.execute(
+            "SELECT id,tranche_id,acceptance_key,expected_owner,status,evidence_ref,note,accepted_by,accepted_at,record_hash,demo_only "
+            "FROM investment_acceptances ORDER BY tranche_id,acceptance_key"
+        )]
+    except Exception:
+        return []
+
+
+def _acceptance_projection(c):
+    rows = _acceptance_rows(c)
+    by_key = {(r["tranche_id"], r["acceptance_key"]): r for r in rows}
+    tranches = {}
+    for tranche_id, requirements in ACCEPTANCE_REQUIREMENTS.items():
+        items = []
+        for key, owner in requirements:
+            row = by_key.get((tranche_id, key))
+            items.append({
+                "key": key,
+                "expected_owner": owner,
+                "status": row["status"] if row else "awaiting",
+                "evidence_ref": row["evidence_ref"] if row else "",
+                "note": row["note"] if row else "",
+                "accepted_by": row["accepted_by"] if row else None,
+                "accepted_at": row["accepted_at"] if row else None,
+                "record_hash": row["record_hash"] if row else None,
+                "demo_only": bool(row["demo_only"]) if row else True,
+            })
+        demo_complete = all(x["status"] == "accepted_demo" for x in items)
+        tranches[tranche_id] = {
+            "items": items,
+            "accepted_demo_count": sum(1 for x in items if x["status"] == "accepted_demo"),
+            "required_count": len(items),
+            "demo_complete": demo_complete,
+        }
+    return tranches
+
+
+def _certificate_preview(tranche_id, acceptance_state):
+    state = acceptance_state.get(tranche_id) or {}
+    items = state.get("items") or []
+    payload = {
+        "tranche_id": tranche_id,
+        "mode": "DEMO_ACCEPTANCE_PREVIEW",
+        "accepted_demo_count": state.get("accepted_demo_count", 0),
+        "required_count": state.get("required_count", 0),
+        "records": [
+            {
+                "key": x["key"],
+                "owner": x["expected_owner"],
+                "status": x["status"],
+                "record_hash": x["record_hash"],
+            }
+            for x in items
+        ],
+    }
+    digest = hashlib.sha256(json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    return {
+        "certificate_id": f"demo-{tranche_id}-{digest[:12]}",
+        "certificate_hash": digest,
+        "state": "COMPLETE_DEMO_PREVIEW" if state.get("demo_complete") else "INCOMPLETE",
+        "legal_effect": "NONE",
+        "capital_release_effect": "NONE",
+        "note": "Demo acceptance certificate preview only; not an electronic signature, legal acceptance or capital authorization.",
+    }
+
+
+def record_demo_acceptance(c, tranche_id, acceptance_key, actor, note="", evidence_ref=""):
+    requirements = dict(ACCEPTANCE_REQUIREMENTS.get(tranche_id, []))
+    if acceptance_key not in requirements:
+        raise ValueError("unknown_acceptance_requirement")
+    now = int(time.time())
+    record_payload = {
+        "tranche_id": tranche_id,
+        "acceptance_key": acceptance_key,
+        "expected_owner": requirements[acceptance_key],
+        "actor": actor,
+        "note": note,
+        "evidence_ref": evidence_ref,
+        "accepted_at": now,
+        "demo_only": True,
+    }
+    record_hash = hashlib.sha256(json.dumps(record_payload, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+    rec_id = f"{tranche_id}:{acceptance_key}"
+    c.execute(
+        "INSERT INTO investment_acceptances(id,tranche_id,acceptance_key,expected_owner,status,evidence_ref,note,accepted_by,accepted_at,record_hash,demo_only) "
+        "VALUES(?,?,?,?,?,?,?,?,?,?,1) "
+        "ON CONFLICT(tranche_id,acceptance_key) DO UPDATE SET status=excluded.status,evidence_ref=excluded.evidence_ref,note=excluded.note,"
+        "accepted_by=excluded.accepted_by,accepted_at=excluded.accepted_at,record_hash=excluded.record_hash,demo_only=1",
+        (rec_id, tranche_id, acceptance_key, requirements[acceptance_key], "accepted_demo", evidence_ref, note, actor, now, record_hash),
+    )
+    return record_hash
+
+
+def reset_demo_acceptances(c, tranche_id=None):
+    if tranche_id:
+        c.execute("DELETE FROM investment_acceptances WHERE tranche_id=? AND demo_only=1", (tranche_id,))
+    else:
+        c.execute("DELETE FROM investment_acceptances WHERE demo_only=1")
 
 
 def snapshot(c):
@@ -285,6 +416,9 @@ def snapshot(c):
         ],
     }
 
+    acceptance_state = _acceptance_projection(c)
+    certificates = {tid: _certificate_preview(tid, acceptance_state) for tid in ACCEPTANCE_REQUIREMENTS}
+
     return {
         "version": "investment-proof-v1",
         "decision_state": decision_state,
@@ -292,6 +426,15 @@ def snapshot(c):
         "contractual_kpis": contractual_kpis,
         "tranches": tranches,
         "evidence_ledger": evidence_ledger,
+        "acceptance_state": acceptance_state,
+        "certificate_preview": certificates,
+        "digital_contract_boundary": {
+            "mode": "demo_simulation",
+            "legal_signature": False,
+            "legal_acceptance": False,
+            "capital_release_authority": False,
+            "future_production_requirement": "Integrate approved electronic-signature / document-workflow authority and legal policy before any binding use.",
+        },
         "demo_evidence": {
             "golden_demo_complete": golden_demo_complete,
             "partner_demo_complete": partner_demo_complete,
