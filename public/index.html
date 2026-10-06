@@ -326,6 +326,12 @@ body.presentationMode .presentationLauncher{display:block}
 <div class="section"><div class="ey blue">BOARD DECISION · CURRENT STATE</div><h2>Что можно одобрить сегодня</h2><div id="execBoardSummary" class="execDecisionGrid"></div></div>
 <div class="section"><div class="ey blue">MILESTONE FUNDING · RELEASE CAPITAL AGAINST EVIDENCE</div><h2>Следующий транш открывается только доказательством предыдущего</h2><div id="execTranches"></div></div><div class="section"><div class="ey blue">PROGRAMME VALUE CASE · 50–100M ₽</div><h2>Сколько покупаем capability и сколько подтверждённой ценности нужно для окупаемости</h2><div id="execProgrammeValue" class="card"><p class="small muted">Загрузка value case…</p></div></div><div class="section"><div class="ey blue">BOARD VALUE BRIDGE · FROM CAPITAL TO ACCEPTED VALUE</div><h2>Как инвестиция превращается в подтверждённый экономический эффект</h2><div id="execValueBridge" class="card"><p class="small muted">Загрузка value bridge…</p></div></div>
 <div class="section"><div class="ey blue">INVESTMENT PROOF SYSTEM · TRANCHE CONTROL</div><h2>Что именно должно быть принято до открытия следующего капитала</h2><div id="investmentProofDecision" class="card"><p class="small muted">Загрузка decision state…</p></div><div id="investmentProofTranches"></div></div>
+<div class="section"><div class="ey blue">DIGITAL INVESTMENT CONTRACT · DEMO ACCEPTANCE</div><h2>Evidence → acceptance owner → acceptance record → certificate preview</h2>
+<div class="notice"><b>LEGAL BOUNDARY:</b> demo acceptance is not an electronic signature, legal acceptance or capital authorization. It only demonstrates the future controlled workflow.</div>
+<div id="digitalContractAcceptances" class="card"><p class="small muted">Загрузка acceptance matrix…</p></div>
+<div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
+<div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
+</div>
 <div class="section"><div class="ey blue">CONTRACTUAL KPI → EVIDENCE → ACCEPTANCE</div><h2>Каждый KPI имеет формулу, источник и владельца приёмки</h2><div id="investmentProofKpis" class="card"></div><div id="investmentProofLedger" class="card"></div></div>
 <div class="section"><div class="ey blue">PILOT CONTRACT · WHAT EXACTLY IS BEING FUNDED</div><h2>Пилот как управляемый договор на доказательство</h2><div class="execTwoCol"><div class="card"><h3>In scope</h3><ul id="execPilotIn" class="execList"></ul></div><div class="card"><h3>Out of scope</h3><ul id="execPilotOut" class="execList"></ul></div></div><div class="execTwoCol"><div class="card"><h3>Что должен дать заказчик</h3><ul id="execClientInputs" class="execList"></ul></div><div id="execPilotDecision" class="card"></div></div></div>
 <div class="section"><div class="ey blue">PILOT KPI DICTIONARY · FORMULA BEFORE TARGET</div><h2>Сначала определяем, что именно измеряем</h2><div id="execKpis" class="card"></div><div class="notice">Коммерческие и аудиторные target values фиксируются сторонами до оплачиваемого пилота. Продукт не подставляет их сам.</div></div>
@@ -828,7 +834,21 @@ async function loadInvestmentProofSystem(){
  if(kp)kp.innerHTML=(d.contractual_kpis||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.name)+'</b><div class="tiny muted">'+esc(x.formula)+'</div><div class="tiny muted">Source: '+esc(x.source)+' · Owner: '+esc(x.owner)+'</div></div><span class="execStatus demo">'+esc(x.target).toUpperCase()+'</span></div>').join('');
  const le=document.getElementById('investmentProofLedger');
  if(le)le.innerHTML='<div class="ey blue">EVIDENCE LEDGER</div>'+(d.evidence_ledger||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.stage||x.category||x.id)+'</b><div class="tiny muted">Owner: '+esc(x.owner)+'</div><div class="tiny muted">'+esc(x.required_record||x.evidence||'')+'</div><div class="tiny muted"><b>Acceptance:</b> '+esc(x.acceptance||x.acceptance_required||'')+'</div></div></div>').join('');
+ const acc=document.getElementById('digitalContractAcceptances'),ast=d.acceptance_state||{};
+ if(acc)acc.innerHTML=['t50','t75','t100'].map(tid=>{const s=ast[tid]||{},items=s.items||[];return '<div class="section" style="padding:8px 0"><div class="row"><div><b>'+tid.toUpperCase()+' acceptance</b><div class="tiny muted">'+(s.accepted_demo_count||0)+' / '+(s.required_count||0)+' demo accepted</div></div><span class="pill '+(s.demo_complete?'green':'')+'">'+(s.demo_complete?'DEMO COMPLETE':'AWAITING')+'</span></div>'+items.map(x=>'<div class="execKpi"><div><b>'+esc(x.key.replaceAll('_',' '))+'</b><div class="tiny muted">Expected owner: '+esc(x.expected_owner)+'</div><div class="tiny muted">Evidence: '+esc(x.evidence_ref||'not attached')+'</div><div class="tiny muted">Record hash: '+esc((x.record_hash||'—').slice(0,16))+'</div></div><div><span class="execStatus '+(x.status==='accepted_demo'?'live':'gated')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span>'+(x.status==='accepted_demo'?'':'<button class="btn ghost" style="margin-top:6px;padding:7px 9px;font-size:9px" onclick="acceptDemoRequirement(\''+tid+'\',\''+esc(x.key)+'\')">Demo accept</button>')+'</div></div>').join('')+'</div>'}).join('');
+ const cert=document.getElementById('digitalContractCertificates'),cp=d.certificate_preview||{};
+ if(cert)cert.innerHTML='<div class="ey blue">ACCEPTANCE CERTIFICATE PREVIEW</div>'+['t50','t75','t100'].map(tid=>{const x=cp[tid]||{};return '<div class="execKpi"><div><b>'+tid.toUpperCase()+' · '+esc(x.state||'INCOMPLETE')+'</b><div class="tiny muted">Certificate: '+esc(x.certificate_id||'—')+'</div><div class="tiny muted">SHA-256: '+esc((x.certificate_hash||'—').slice(0,24))+'…</div><div class="tiny muted">'+esc(x.note||'')+'</div></div><span class="execStatus '+(x.state==='COMPLETE_DEMO_PREVIEW'?'live':'gated')+'">LEGAL EFFECT: '+esc(x.legal_effect||'NONE')+'</span></div>'}).join('');
  return d
+}
+async function acceptDemoRequirement(trancheId,key){
+ try{
+  await api('/api/investment-proof/accept-demo',{method:'POST',body:JSON.stringify({tranche_id:trancheId,acceptance_key:key,evidence_ref:'demo://presentation-evidence',note:'Presentation-only acceptance simulation'})});
+  await loadInvestmentProofSystem()
+ }catch(e){alert('Digital Contract: '+e.message)}
+}
+async function resetDemoContract(){
+ try{await api('/api/investment-proof/reset-demo',{method:'POST',body:'{}'});await loadInvestmentProofSystem()}
+ catch(e){alert('Digital Contract reset: '+e.message)}
 }
 let corporateData=null;
 function corpStatus(status){
