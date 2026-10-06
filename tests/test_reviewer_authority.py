@@ -66,6 +66,14 @@ class MedicalReviewerAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"assignment_not_active"):
             self.authority.submit_decision(self.c,assignment,"reviewer@demo.ru","accept","Should not pass.")
 
+    def test_potential_conflict_blocks_scientific_decision(self):
+        cid=self._production_candidate("potential-conflict")
+        self._promote_demo_reviewer_to_verified()
+        assignment=self.authority.assign_candidate(self.c,cid,"reviewer@demo.ru","editor@demo.ru")
+        self.authority.declare_conflict(self.c,assignment,"reviewer@demo.ru","potential","Potential institutional overlap.")
+        with self.assertRaisesRegex(ValueError,"conflict_blocks_decision"):
+            self.authority.submit_decision(self.c,assignment,"reviewer@demo.ru","accept","Should not pass.")
+
     def test_editor_cannot_be_assigned_as_scientific_reviewer(self):
         cid=self._production_candidate("editor-blocked")
         with self.assertRaisesRegex(ValueError,"reviewer_identity_not_authorized"):
