@@ -143,6 +143,12 @@ class UIContractTests(unittest.TestCase):
         self.assertIn('id="capitalOptimizerScenarios"', INDEX)
         self.assertIn('id="capitalOptimizerMethod"', INDEX)
         self.assertIn("async function loadCapitalOptimizer()", INDEX)
+        self.assertIn("EXECUTABLE CAPITAL ALLOCATION PLAN · SECURITY 10M ₽", INDEX)
+        self.assertIn('id="capitalPlanSummary"', INDEX)
+        self.assertIn('id="capitalPlanPackages"', INDEX)
+        self.assertIn('id="capitalPlanTrajectory"', INDEX)
+        self.assertIn('id="capitalPlanRules"', INDEX)
+        self.assertIn("async function loadCapitalAllocationPlan()", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
