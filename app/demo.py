@@ -30,6 +30,7 @@ def reset_demo(c, actor):
         "capital_interventions",
         "capital_reallocation_approvals","capital_reallocation_proposals","discovery_saves",
         "transcript_segments","generated_takeaways",
+        "knowledge_impacts","publication_holds","knowledge_review_cases","knowledge_change_events",
         "evidence_links","evidence_citations","evidence_claims","evidence_sources",
     ):
         c.execute("DELETE FROM " + t)
