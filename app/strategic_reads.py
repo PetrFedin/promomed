@@ -1,8 +1,9 @@
-from app import capital_optimizer, contract_builder, deal_room, investment_proof, portfolio_control
+from app import capital_optimizer, capital_plan, contract_builder, deal_room, investment_proof, portfolio_control
 
 
 ROUTES = {
     "/api/capital-allocation-optimizer",
+    "/api/capital-allocation-plan",
     "/api/portfolio-capital-control",
     "/api/deal-room",
     "/api/contract-builder",
@@ -18,6 +19,7 @@ def read(c, path, role):
 
     projections = {
         "/api/capital-allocation-optimizer": capital_optimizer.snapshot,
+        "/api/capital-allocation-plan": capital_plan.snapshot,
         "/api/portfolio-capital-control": portfolio_control.snapshot,
         "/api/deal-room": deal_room.snapshot,
         "/api/contract-builder": contract_builder.snapshot,
