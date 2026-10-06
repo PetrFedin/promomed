@@ -2,9 +2,9 @@ import time
 
 from app.commanding import error, ok
 from app.core import audit
-from app import transcript_intelligence, evidence_graph
+from app import transcript_intelligence, evidence_graph, change_impact
 
-ROUTES = {"/api/question", "/api/cms", "/api/transcript-takeaway-review", "/api/evidence-claim-correct", "/api/evidence-claim-retract"}
+ROUTES = {"/api/question", "/api/cms", "/api/transcript-takeaway-review", "/api/evidence-claim-correct", "/api/evidence-claim-retract", "/api/change-impact/create-demo", "/api/change-impact/resolve-demo"}
 
 
 def handle_command(c, route, role, email, data):
@@ -17,6 +17,29 @@ def handle_command(c, route, role, email, data):
         text = str(data.get("text", "Как отличать корреляцию от причинности?"))[:500]
         c.execute("INSERT INTO questions(text,status,ts) VALUES(?,'review',?)", (text, int(time.time())))
         audit(c, "question_submitted", email, {})
+        return ok()
+
+    if route in ("/api/change-impact/create-demo", "/api/change-impact/resolve-demo"):
+        if role != "editor":
+            return error("forbidden", 403)
+        if route == "/api/change-impact/create-demo":
+            source_id = str(data.get("source_id", "ES01"))[:80].strip()
+            event_type = str(data.get("event_type", "source_retracted"))[:60].strip()
+            summary = str(data.get("summary", "DEMO: source status changed and dependent knowledge must be re-reviewed."))[:600]
+            try:
+                event_id = change_impact.analyze_source_change(c, source_id, event_type, summary, email)
+            except ValueError as e:
+                return error(str(e), 404 if str(e) == "source_not_found" else 422)
+            audit(c, "knowledge_change_detected", email, {"event_id": event_id, "source_id": source_id, "event_type": event_type})
+            return ok()
+        event_id = str(data.get("event_id", ""))[:180].strip()
+        if not event_id:
+            return error("event_id_required", 422)
+        try:
+            change_impact.resolve_case(c, event_id, str(data.get("resolution", "Reviewed in demo.")), email, bool(data.get("release_holds")))
+        except ValueError as e:
+            return error(str(e), 409)
+        audit(c, "knowledge_change_resolved", email, {"event_id": event_id, "release_holds": bool(data.get("release_holds"))})
         return ok()
 
     if route in ("/api/evidence-claim-correct", "/api/evidence-claim-retract"):
