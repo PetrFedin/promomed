@@ -332,6 +332,13 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
 <div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
 </div>
+<div class="section"><div class="ey blue">FORECAST VARIANCE · INTERVENTION ENGINE</div><h2>Отклонение → capital at risk → downstream impact → intervention</h2>
+<div id="interventionSummary" class="card"><p class="small muted">Загрузка intervention engine…</p></div>
+<div id="interventionDiagnostics"></div>
+<div id="interventionLogic" class="card"></div>
+<div class="actions"><button class="btn" onclick="createPrimaryIntervention()">Создать demo intervention</button><button class="btn ghost" onclick="resetInterventionDemo()">Сбросить intervention demo</button></div>
+<div class="notice"><b>AUTOMATION BOUNDARY:</b> engine рекомендует freeze/recovery/reallocation candidate, но не двигает деньги и не меняет договор автоматически.</div>
+</div>
 <div class="section"><div class="ey blue">CAPITAL PLAN EXECUTION AUTHORITY · PLAN → COMMIT → ACTUAL → VALUE</div><h2>Контроль исполнения каждого Security package</h2>
 <div id="capitalExecutionSummary" class="card"><p class="small muted">Загрузка execution authority…</p></div>
 <div id="capitalExecutionPackages"></div>
@@ -872,6 +879,33 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let interventionData=null;
+async function loadInterventionEngine(){
+ const d=await api('/api/intervention-engine');interventionData=d;renderInterventionEngine(d);return d
+}
+function renderInterventionEngine(d){
+ const s=d.summary||{},root=document.getElementById('interventionSummary');
+ if(root)root.innerHTML='<div class="row"><div><div class="ey blue">PROGRAMME INTERVENTION</div><h3>'+esc(s.programme_action||'—')+'</h3><p class="small muted">'+esc(s.reason||'')+'</p></div><span class="execStatus gated">'+esc(s.primary_intervention||'—')+'</span></div><div class="proofgrid">'+[
+ ['CAPITAL AT RISK',s.capital_at_risk_rub],['DOWNSTREAM VALUE AT RISK',s.downstream_value_at_risk_rub],['REALLOCATION CANDIDATE',s.reallocation_candidate_rub],['FREEZE NEXT COMMITMENT',s.freeze_next_commitment?'YES':'NO']
+ ].map(x=>'<div class="proofmetric"><span class="tiny muted">'+x[0]+'</span><strong>'+(typeof x[1]==='number'?formatMoney(x[1]):x[1])+'</strong></div>').join('')+'</div>';
+ const dg=document.getElementById('interventionDiagnostics');
+ if(dg)dg.innerHTML=(d.diagnostics||[]).map(x=>'<div class="card"><div class="row"><div><div class="ey blue">'+esc(x.title)+'</div><h3>'+Number(x.risk_score||0).toFixed(1)+' risk</h3></div><span class="execStatus '+(x.severity==='low'?'live':'gated')+'">'+esc(x.severity).toUpperCase()+'</span></div><div class="proofgrid">'+[
+ ['CAPITAL AT RISK',x.capital_at_risk_rub],['DOWNSTREAM',x.downstream_value_at_risk_rub],['REALLOC CANDIDATE',x.reallocation_candidate_rub]
+ ].map(v=>'<div class="proofmetric"><span class="tiny muted">'+v[0]+'</span><strong>'+formatMoney(v[1]||0)+'</strong></div>').join('')+'</div><p class="small muted"><b>'+esc(x.intervention_type)+'</b> · '+esc(x.recommendation)+'</p><div class="tiny muted">Owner: '+esc(x.owner)+' · Freeze new commitments: '+(x.freeze_new_commitments?'YES':'NO')+'</div></div>').join('');
+ const l=document.getElementById('interventionLogic'),cl=d.control_logic||{};
+ if(l)l.innerHTML='<div class="ey blue">CONTROL LOGIC</div><h3>'+esc(cl.risk_score_formula||'')+'</h3><ul class="execList"><li>'+esc(cl.freeze_rule||'')+'</li><li>'+esc(cl.reallocation_rule||'')+'</li><li>'+esc(cl.automation_boundary||'')+'</li></ul>';
+}
+async function createPrimaryIntervention(){
+ try{
+  const id=(interventionData?.summary||{}).primary_package||'s2';
+  const d=await api('/api/intervention-engine/create-demo',{method:'POST',body:JSON.stringify({package_id:id})});
+  interventionData=d;renderInterventionEngine(d)
+ }catch(e){alert('Intervention Engine: '+e.message)}
+}
+async function resetInterventionDemo(){
+ try{const d=await api('/api/intervention-engine/reset-demo',{method:'POST',body:'{}'});interventionData=d;renderInterventionEngine(d)}
+ catch(e){alert('Intervention reset: '+e.message)}
+}
 let capitalExecutionData=null;
 async function loadCapitalExecution(){
  const d=await api('/api/capital-plan-execution');capitalExecutionData=d;renderCapitalExecution(d);return d
@@ -1096,7 +1130,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan(),loadCapitalExecution()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan(),loadCapitalExecution(),loadInterventionEngine()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
