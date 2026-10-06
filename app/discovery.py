@@ -109,7 +109,7 @@ def _score(row, query):
     return score
 
 
-def search(c, query="", kind="", topic="", expert="", event="", replay=None, review_status="", limit=30, email=None):
+def search(c, query="", kind="", topic="", content_type="", expert="", event="", replay=None, review_status="", limit=30, email=None):
     rows=_index(c)
     saved=set()
     if email:
@@ -122,6 +122,7 @@ def search(c, query="", kind="", topic="", expert="", event="", replay=None, rev
     for row in rows:
         if kind and row["kind"]!=kind: continue
         if topic and not _contains(row["topic"],topic): continue
+        if content_type and not _contains(row["content_type"],content_type): continue
         if expert and not _contains(row["expert"],expert): continue
         if event and row["event"]!=event: continue
         if replay is not None and bool(row["replay"])!=bool(replay): continue
@@ -140,6 +141,9 @@ def search(c, query="", kind="", topic="", expert="", event="", replay=None, rev
     facets={
         "kind":dict(Counter(x["kind"] for x in rows)),
         "topic":dict(Counter(x["topic"] for x in rows if x["topic"])),
+        "content_type":dict(Counter(x["content_type"] for x in rows if x["content_type"])),
+        "expert":dict(Counter(x["expert"] for x in rows if x["expert"])),
+        "event":dict(Counter(x["event"] for x in rows if x["event"])),
         "review_status":dict(Counter(x["review_status"] for x in rows if x["review_status"])),
         "replay":{"true":sum(1 for x in rows if x["replay"]),"false":sum(1 for x in rows if not x["replay"])},
     }
@@ -147,7 +151,7 @@ def search(c, query="", kind="", topic="", expert="", event="", replay=None, rev
     return {
         "version":"discovery-native-v1",
         "query":query,
-        "filters":{"kind":kind,"topic":topic,"expert":expert,"event":event,"replay":replay,"review_status":review_status},
+        "filters":{"kind":kind,"topic":topic,"content_type":content_type,"expert":expert,"event":event,"replay":replay,"review_status":review_status},
         "total":len(filtered),
         "results":filtered,
         "facets":facets,
