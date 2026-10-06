@@ -383,3 +383,40 @@ The demo intentionally supports a complete recovery path:
 `source retracted -> impact queue -> hold -> affected claim retracted/remediated -> review -> release`.
 
 External literature surveillance is not yet connected. Change events are explicit demo inputs until a production monitoring/provider layer is admitted.
+
+
+## External Evidence Monitoring & Source Admission — Phase 2.5 checkpoint
+
+Implemented the native admission layer specified in the Integration Master Plan.
+
+Flow:
+
+`PubMed/Crossref metadata -> canonical DOI/PMID identity -> normalized snapshot -> SHA-256 -> diff classification -> admission candidate -> editorial review -> scientific review -> governed admission -> Evidence Graph / Change Impact`.
+
+Repository/runtime scope:
+
+- `evidence_watch_targets`;
+- `evidence_provider_snapshots`;
+- `evidence_admission_candidates`;
+- `evidence_admission_reviews`;
+- `evidence_provider_errors`;
+- canonical DOI and PMID normalization;
+- provider-specific normalization for Crossref and PubMed JSON;
+- deterministic snapshot hashing and duplicate suppression;
+- change classification: `new_source`, `source_updated`, `source_corrected`, `source_retracted`;
+- separate editorial/scientific review states;
+- admission blocked until both review gates accept;
+- admitted source metadata stored in native `evidence_sources`;
+- admitted correction/retraction may invoke the existing Change Impact Engine;
+- changed evidence invalidates connected current claims into review-required state;
+- provider failure is persisted as an error record rather than treated as “no change”;
+- Golden Demo contains a deterministic Crossref-style baseline source linked to CL01 and a demo retraction snapshot;
+- optional explicit live provider adapter exists for Crossref REST / PubMed ESummary, but continuous polling is not claimed.
+
+Truth boundary:
+
+- the current external source workflow is an executable MVP admission mechanic;
+- the scientific review button is a demo review role, not proof of an independent medical reviewer;
+- continuous external surveillance is not running;
+- provider metadata is never automatically converted into medical truth or rewritten claims;
+- production scheduling, retry/backoff, provider credentials and independent reviewer authorization remain open hardening work.
