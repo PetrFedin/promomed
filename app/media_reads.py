@@ -1,16 +1,23 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, transcript_intelligence
+from app import db, transcript_intelligence, evidence_graph
 
 
 def serve(raw_path, role):
     parsed=urlparse(raw_path)
-    if parsed.path!="/api/transcript-intelligence":
+    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph"):
         return None
     q=parse_qs(parsed.query)
-    item=(q.get("item_id") or [""])[0][:40] or None
     c=db.connect()
     try:
-        return transcript_intelligence.snapshot(c,item_id=item,editor=role=="editor"),200
+        if parsed.path=="/api/transcript-intelligence":
+            item=(q.get("item_id") or [""])[0][:40] or None
+            return transcript_intelligence.snapshot(c,item_id=item,editor=role=="editor"),200
+        return evidence_graph.snapshot(
+            c,
+            artifact_kind=(q.get("artifact_kind") or [""])[0][:30] or None,
+            artifact_ref=(q.get("artifact_ref") or [""])[0][:80] or None,
+            claim_id=(q.get("claim_id") or [""])[0][:80] or None,
+        ),200
     finally:
         c.close()
