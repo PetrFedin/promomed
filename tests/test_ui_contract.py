@@ -118,6 +118,14 @@ class UIContractTests(unittest.TestCase):
         self.assertIn('id="valueTruthBoundary"', INDEX)
         self.assertIn("FORMULA · NOT FORECAST", INDEX)
         self.assertIn("Быстрая окупаемость должна быть доказана, а не нарисована.", INDEX)
+        self.assertIn('id="valueInvestment"', INDEX)
+        self.assertIn('id="valueAvoided"', INDEX)
+        self.assertIn('id="valuePartner"', INDEX)
+        self.assertIn('id="valueOps"', INDEX)
+        self.assertIn('id="valueRunCost"', INDEX)
+        self.assertIn('id="verifiedValueOutput"', INDEX)
+        self.assertIn("function calcVerifiedValue()", INDEX)
+        self.assertIn("No double counting.", INDEX)
 
     def test_investor_presentation_mode_is_shareable_and_reset_safe(self):
         self.assertIn('id="presentationLauncher"', INDEX)
