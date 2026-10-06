@@ -55,8 +55,24 @@ def _related_targets(c,claim):
     topic=str(claim.get("topic") or "")
     targets={(claim["artifact_kind"],claim["artifact_ref"],"claim_artifact")}
 
-    for link in evidence_graph._links(c,claim["id"]):
+    links=evidence_graph._links(c,claim["id"])
+    related_items=set()
+    for link in links:
         targets.add((link["target_kind"],link["target_ref"],link["relation"]))
+        if link["target_kind"] in ("event","replay"):
+            related_items.add(link["target_ref"])
+        if link["target_kind"]=="transcript":
+            seg=c.execute("SELECT item_id,start_sec,end_sec FROM transcript_segments WHERE id=?",(link["target_ref"],)).fetchone()
+            if seg:
+                related_items.add(seg["item_id"])
+                for take in c.execute(
+                    "SELECT id FROM generated_takeaways WHERE item_id=? AND status IN ('approved','approved_demo') AND segment_start_sec < ? AND segment_end_sec > ?",
+                    (seg["item_id"],seg["end_sec"],seg["start_sec"]),
+                ):
+                    targets.add(("takeaway",take["id"],"derived_from_impacted_segment"))
+    for item_id in related_items:
+        for ep in c.execute("SELECT id FROM studio_episodes WHERE item_id=?",(item_id,)):
+            targets.add(("studio",ep["id"],"programme_dependency"))
 
     # Learning tracks with matching topic become review targets.
     if topic:
@@ -89,7 +105,7 @@ def analyze_source_change(c,source_id,event_type,summary,actor):
         raise ValueError("unsupported_event_type")
 
     now=int(time.time())
-    event_id=f"chg:{source_id}:{now}"
+    event_id=f"chg:{source_id}:{event_type}:{time.time_ns()}"
     base=EVENT_SEVERITY[event_type]
     if event_type in ("source_updated","source_corrected","source_retracted"):
         c.execute("UPDATE evidence_sources SET status=? WHERE id=?", (event_type+"_demo",source_id))
