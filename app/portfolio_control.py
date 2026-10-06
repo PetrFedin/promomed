@@ -172,12 +172,12 @@ def snapshot(c):
     if len(overdue) >= 3 or blocked_share >= 0.40 or confidence < 70:
         programme_decision = "ITERATE"
         decision_reason = "Blocked capital / overdue obligations / evidence confidence require remediation before scale."
-    elif totals["at_risk"] > 0:
+    elif totals["blocked"] > 0 or totals["at_risk"] > 0 or len(overdue) > 0:
         programme_decision = "HOLD"
-        decision_reason = "At-risk milestones remain unresolved."
+        decision_reason = "Material blocked/at-risk capital or overdue obligations remain; continue controlled remediation."
     else:
         programme_decision = "GO"
-        decision_reason = "No portfolio-level stop condition is active in the demo control model."
+        decision_reason = "All portfolio capital is paid/eligible, no overdue obligations remain, and evidence confidence is above the control threshold."
 
     forecast = [
         {
@@ -265,8 +265,8 @@ def snapshot(c):
         "control_rules": {
             "decision_logic": [
                 "ITERATE when overdue obligations >= 3, blocked capital >= 40% of committed, or evidence confidence < 70.",
-                "HOLD when no ITERATE rule is active but at-risk capital remains.",
-                "GO only when no portfolio-level stop condition is active.",
+                "HOLD when no ITERATE rule is active but blocked/at-risk capital or overdue obligations remain.",
+                "GO only when all capital is paid/eligible, overdue obligations are zero, and evidence confidence is above the control threshold.",
             ],
             "evidence_confidence_formula": "amount-weighted average of milestone evidence-confidence scores",
             "deal_room_link": "Pilot delivery milestone state/confidence is derived from live Pilot Deal Room readiness.",
