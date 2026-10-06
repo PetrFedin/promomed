@@ -222,6 +222,172 @@ def snapshot(c):
         ],
     }
 
+    public_company_context = {
+        "basis": "Public PROMOMED FY2025 IFRS scale reference",
+        "period": "FY2025",
+        "revenue_rub": 37_600_000_000,
+        "adjusted_ebitda_rub": 15_269_777_000,
+        "net_profit_rub": 7_167_850_000,
+        "sources": [
+            {
+                "label": "PROMOMED FY2025 IFRS financial statements",
+                "published": "2026-04-20",
+                "url": "https://promomed.ru/upload/iblock/814/uszvgetwqkl33qk501ngas66yy0jubu6/%D0%A4%D0%B8%D0%BD%D0%B0%D0%BD%D1%81%D0%BE%D0%B2%D0%B0%D1%8F%20%D0%BE%D1%82%D1%87%D0%B5%D1%82%D0%BD%D0%BE%D1%81%D1%82%D1%8C%20%D0%BF%D0%BE%20%D0%9C%D0%A1%D0%A4%D0%9E%20%D0%B7%D0%B0%202025.pdf",
+            }
+        ],
+        "boundary": (
+            "Public company scale is used only to contextualize the size of a 50-100m RUB programme. "
+            "It is not evidence that the programme will produce a specific return."
+        ),
+    }
+
+    investment_envelopes = [
+        {
+            "id": "controlled_50",
+            "amount_rub": 50_000_000,
+            "label": "50m · Controlled Platform Pilot",
+            "purpose": "Buy the smallest credible enterprise proof cycle rather than a one-off event build.",
+            "includes": [
+                "Production core admission and release evidence",
+                "One flagship conference operating contour",
+                "Participant / agenda / QR / booking / waitlist / live-replay journey",
+                "Partner delivery + consented continuation + evidence report",
+                "365 media / Studio MVP using the existing product surfaces",
+                "Finance-ready pilot close pack with actual delivery cost and KPI evidence",
+            ],
+            "excludes": [
+                "Full multi-brand rollout",
+                "White-label commercialization",
+                "Unbounded medical/claim automation",
+            ],
+            "commercial_state": "illustrative_envelope_not_quote",
+        },
+        {
+            "id": "operating_75",
+            "amount_rub": 75_000_000,
+            "label": "75m · Operating Health Relationship Platform",
+            "purpose": "Fund the controlled pilot plus the governance and operating capabilities needed for repeatability.",
+            "includes": [
+                "Everything in the 50m envelope",
+                "Editorial & Medical Review Authority implementation",
+                "Evidence / claim / expert foundation",
+                "Partner CRM / delivery workflow hardening",
+                "Studio / replay / learning continuation workflow",
+                "Production observability, operating runbooks and multi-event readiness",
+            ],
+            "excludes": [
+                "Nationwide white-label scale before paid-pilot evidence",
+                "Guaranteed revenue or product-sales uplift",
+            ],
+            "commercial_state": "illustrative_envelope_not_quote",
+        },
+        {
+            "id": "strategic_100",
+            "amount_rub": 100_000_000,
+            "label": "100m · Strategic Platform Programme",
+            "purpose": "Fund a reusable enterprise platform and the first scale-ready year, not just a pilot delivery.",
+            "includes": [
+                "Everything in the 75m envelope",
+                "Search / explainable personalization / knowledge discovery",
+                "Evidence-governance and syndication foundations",
+                "Multi-event / multi-partner configuration",
+                "White-label readiness without claiming market demand",
+                "Twelve-month operating, measurement and scale-hardening programme",
+            ],
+            "excludes": [
+                "Paid traction claims before actual contracts",
+                "Clinical decision support or personalized treatment",
+            ],
+            "commercial_state": "illustrative_envelope_not_quote",
+        },
+    ]
+
+    payback_reference = []
+    for envelope in investment_envelopes:
+        amount = float(envelope["amount_rub"])
+        thresholds = []
+        for months in (6, 12, 18, 24):
+            annual_value = amount * 12.0 / months
+            thresholds.append({
+                "months": months,
+                "annual_verified_value_rub": round(annual_value),
+                "pct_fy2025_revenue": round(annual_value / public_company_context["revenue_rub"] * 100.0, 3),
+                "pct_fy2025_adjusted_ebitda": round(annual_value / public_company_context["adjusted_ebitda_rub"] * 100.0, 3),
+            })
+        payback_reference.append({
+            "id": envelope["id"],
+            "amount_rub": envelope["amount_rub"],
+            "amount_pct_fy2025_revenue": round(amount / public_company_context["revenue_rub"] * 100.0, 3),
+            "amount_pct_fy2025_adjusted_ebitda": round(amount / public_company_context["adjusted_ebitda_rub"] * 100.0, 3),
+            "thresholds": thresholds,
+        })
+
+    value_levers = [
+        {
+            "id": "budget_substitution",
+            "priority": 1,
+            "title": "Replace fragmented external spend",
+            "logic": "Move already-budgeted event-tech, agency, content-production and reporting work into one reusable platform where finance can verify avoided spend.",
+            "evidence_needed": "Finance-approved current supplier / agency / event-tech baseline and like-for-like scope.",
+            "base_case": True,
+        },
+        {
+            "id": "contracted_partner_value",
+            "priority": 2,
+            "title": "Contract partner inventory before the event",
+            "logic": "Turn partner packages into contracted deliverables with fulfillment evidence instead of post-hoc sponsorship reporting.",
+            "evidence_needed": "Signed partner contracts, contracted deliverables, recognized contribution and delivery cost.",
+            "base_case": True,
+        },
+        {
+            "id": "reuse",
+            "priority": 3,
+            "title": "Reuse one platform across 365 media + multiple events",
+            "logic": "Amortize product, content and operating capability across repeated launches instead of rebuilding event microsites and workflows each time.",
+            "evidence_needed": "Historic cost per event/content launch versus actual platform run cost.",
+            "base_case": True,
+        },
+        {
+            "id": "operations",
+            "priority": 4,
+            "title": "Reduce manual operations and recovery cost",
+            "logic": "Automate registration, QR, waitlist, venue changes, notifications, partner evidence and reporting; measure hours and outsourced cost removed.",
+            "evidence_needed": "Baseline staff/vendor hours and actual post-pilot operating hours/cost.",
+            "base_case": True,
+        },
+        {
+            "id": "owned_relationship",
+            "priority": 5,
+            "title": "Increase return through an owned consent-first audience",
+            "logic": "Measure whether the same audience returns to content, replay and future events without repurchasing the relationship from scratch.",
+            "evidence_needed": "Agreed attribution window, returning-user denominator and marketing acquisition baseline.",
+            "base_case": False,
+        },
+        {
+            "id": "product_sales",
+            "priority": 99,
+            "title": "Product-sales uplift",
+            "logic": "Do not include in the base ROI case unless legal/compliance approve the attribution model and finance validates incremental contribution.",
+            "evidence_needed": "Approved attribution methodology, compliant data basis and finance-approved incremental contribution.",
+            "base_case": False,
+            "gated": True,
+        },
+    ]
+
+    value_case_truth = {
+        "price_claim": "50-100m RUB is presented as a scoped programme envelope, not an asserted valuation.",
+        "payback_formula": "payback_months = investment / annual_verified_net_value * 12",
+        "annual_verified_net_value_formula": (
+            "verified avoided spend + recognized partner contribution + verified operating savings "
+            "+ other finance-approved incremental contribution - recurring platform run cost"
+        ),
+        "double_count_guardrail": "The same economic effect may appear in one value bucket only.",
+        "fastest_path": (
+            "Prioritize already-budgeted spend substitution and contracted partner value first; "
+            "treat retention and product-sales uplift as upside until real pilot evidence exists."
+        ),
+    }
+
     diligence_domains = [
         {
             "id": "product_experience",
@@ -388,6 +554,11 @@ def snapshot(c):
         "defensibility": defensibility,
         "capital_milestones": capital_milestones,
         "investor_thesis": investor_thesis,
+        "public_company_context": public_company_context,
+        "investment_envelopes": investment_envelopes,
+        "payback_reference": payback_reference,
+        "value_levers": value_levers,
+        "value_case_truth": value_case_truth,
         "diligence_domains": diligence_domains,
         "risk_register": risk_register,
         "scale_paths": scale_paths,
