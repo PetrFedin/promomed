@@ -339,3 +339,10 @@ def seed_demo(c,actor="system@demo"):
             for role in REVIEW_ROLES:
                 review_candidate(c,result["candidate_id"],role,actor,"accept_demo","Seed baseline admission.")
             admit_candidate(c,result["candidate_id"],actor)
+    target=c.execute("SELECT source_id FROM evidence_watch_targets WHERE id=?",(target_id,)).fetchone()
+    if target and target["source_id"]:
+        c.execute(
+            "INSERT OR IGNORE INTO evidence_citations(id,claim_id,source_id,locator,quote_excerpt,support_type,status,demo_only) "
+            "VALUES('EC-EXT-CL01','CL01',?,'provider-metadata:baseline','','supports','active',1)",
+            (target["source_id"],),
+        )
