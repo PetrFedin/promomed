@@ -354,6 +354,85 @@ UI requirements:
 
 ---
 
+### Phase 2.5 — External Evidence Monitoring & Source Admission
+
+**Status:** ADOPT after native Evidence Graph / Change Impact foundation.
+
+Verified provider/reference stack:
+
+- **PubMed / NCBI E-utilities** — source identity, PMID metadata, publication types and linked errata/retraction records. Use provider-specific requests only; do not crawl arbitrary URLs.
+- **Crossref REST API** — DOI metadata from publishers/members and trusted sources; no sign-up required for ordinary REST metadata access.
+- **Crossmark / Crossref update metadata** — machine-readable post-publication update types such as correction, expression of concern, partial retraction, retraction and withdrawal.
+- **Crossref Retraction Watch data** — additional production retraction metadata exposed through Crossref REST; treat as a high-value signal, not an automatic medical verdict.
+- **DOI identity** — normalize DOI to a canonical lowercase identifier and retain the publisher/Crossref source reference separately.
+
+Provider facts verified 2026-10-06:
+
+- NCBI E-utilities supports ESearch / ESummary / EFetch for PubMed; NCBI requests should identify the tool/email and an API key is appropriate above the documented unauthenticated request rate.
+- Crossref REST exposes scholarly metadata and post-publication updates from members/trusted sources.
+- Crossref documents 12 Crossmark update types, including correction, erratum, expression of concern, partial retraction, retraction and withdrawal.
+- Retraction Watch data is available through Crossref production services; legacy Labs access must not be used.
+
+Target architecture:
+
+`watch target / query -> provider fetch -> canonical identity -> normalized snapshot -> SHA-256 -> diff/change classification -> admission candidate -> editorial review -> scientific/medical review -> admitted source update -> Evidence Graph -> Change Impact Engine`
+
+Native entities:
+
+- `evidence_watch_targets`;
+- `evidence_watch_queries`;
+- `evidence_provider_snapshots`;
+- `evidence_admission_candidates`;
+- `evidence_admission_reviews`.
+
+Admission rules:
+
+1. External metadata is a **signal**, not Promomed medical truth.
+2. A provider fetch never edits a public claim directly.
+3. Every snapshot stores provider, external identifier, fetched timestamp, normalized payload hash and version/status markers.
+4. Duplicate DOI/PMID identities must converge to one canonical source identity while preserving provider-specific provenance.
+5. Cross-provider conflicts create a review gap; they must not be resolved by provider precedence alone.
+6. Retraction/correction/update metadata may create an admission candidate immediately, but Change Impact starts only after admission.
+7. A newly discovered systematic review does **not** automatically supersede prior evidence; it enters the evidence-admission queue and must be linked to claims/topics by review.
+8. High/critical changes require separate editorial and scientific/medical acceptance in production; current MVP may simulate these roles but must label the simulation.
+9. Provider outage, timeout or malformed metadata produces `provider_error/stale`, never a silent “no change”.
+10. Monitoring is idempotent: the same normalized snapshot hash must not create duplicate candidates.
+11. External abstracts/full text must respect provider copyright/usage terms; store only metadata/excerpts permitted for the product use case.
+12. PubMed/Crossref availability must never become runtime authority for the participant app; admitted snapshots remain locally durable and auditable.
+
+MVP acceptance:
+
+- an editor can register a DOI or PMID watch target;
+- provider metadata can be fetched through a provider-specific adapter;
+- normalized snapshots are hashed and diffed;
+- correction/retraction/update signals generate a pending admission candidate;
+- duplicate snapshots do not create duplicate candidates;
+- a candidate cannot reach Evidence Graph / Change Impact before admission;
+- admitted high/critical changes create the existing Change Impact workflow and publication holds;
+- provider provenance and raw-normalized snapshot digest remain inspectable;
+- a watch query can discover a new PubMed record as a **candidate**, not a trusted claim;
+- demo/production boundaries are explicit.
+
+Production hardening before continuous monitoring:
+
+- provider retry/backoff/rate-limit policy;
+- NCBI registered `tool` / `email` and secret-stored API key if required by request volume;
+- scheduled polling worker/outbox;
+- dead-letter/error observability;
+- independent scientific/medical reviewer identity and authorization;
+- retention policy for raw provider payloads;
+- legal review for stored abstracts/full text.
+
+References:
+
+- NCBI E-utilities: https://www.ncbi.nlm.nih.gov/books/NBK25499/
+- Crossref REST API: https://www.crossref.org/documentation/retrieve-metadata/rest-api/
+- Crossmark update types: https://www.crossref.org/documentation/crossmark/participating-in-crossmark/
+- Crossref Retraction Watch: https://www.crossref.org/documentation/retrieve-metadata/retraction-watch/
+- Crossref versioning/corrections/retractions: https://www.crossref.org/documentation/principles-practices/best-practices/versioning/
+
+---
+
 ### Phase 3 — Search and semantic discovery
 
 #### 3.1 Meilisearch
