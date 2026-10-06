@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from app import corporate, db, executive, investor, investment_proof
+from app import corporate, db, executive, investor, investment_proof, contract_builder
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval
@@ -310,6 +310,12 @@ class H(SimpleHTTPRequestHandler):
    if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
    c=conn()
    try:d=executive.snapshot(c)
+   finally:c.close()
+   return self.out(d)
+  if p=="/api/contract-builder":
+   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
+   c=conn()
+   try:d=contract_builder.snapshot(c)
    finally:c.close()
    return self.out(d)
   if p=="/api/investment-proof-system":
