@@ -370,9 +370,20 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     page.reload(wait_until="domcontentloaded")
     page.evaluate("show('editor')")
     expect(page.locator("#evidenceCoverage")).to_contain_text("75.0%")
-    page.get_by_role("button", name="DEMO · источник отозван").click()
+    expect(page.locator("#evidenceMonitorDesk")).to_contain_text("CROSSREF")
+    expect(page.locator("#evidenceMonitorDesk")).to_contain_text("SHA-256")
+    page.get_by_role("button", name="DEMO · provider retraction snapshot").click()
+    pending=page.locator("#evidenceMonitorDesk .card").filter(has_text="SOURCE_RETRACTED").first
+    expect(pending).to_contain_text("PENDING REVIEW")
+    pending.get_by_role("button", name="Editorial accept").click()
+    pending=page.locator("#evidenceMonitorDesk .card").filter(has_text="SOURCE_RETRACTED").first
+    pending.get_by_role("button", name="Scientific accept").click()
+    pending=page.locator("#evidenceMonitorDesk .card").filter(has_text="SOURCE_RETRACTED").first
+    expect(pending).to_contain_text("REVIEW READY")
+    pending.get_by_role("button", name="Admit").click()
     expect(page.locator("#changeImpactControl")).to_contain_text("SOURCE_RETRACTED")
     expect(page.locator("#changeImpactControl")).to_contain_text("PUBLICATION HOLD")
+    expect(page.locator("#evidenceMonitorDesk")).to_contain_text("ADMITTED DEMO")
     page.evaluate("openContent('CT01')")
     expect(page.locator("#sheet")).to_contain_text("UNDER REVIEW · PUBLICATION HOLD")
     page.keyboard.press("Escape")
