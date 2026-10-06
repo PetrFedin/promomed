@@ -142,6 +142,22 @@ class ExternalEvidenceAdmissionTests(unittest.TestCase):
         finally:
             self.monitor.fetch_live=original
 
+    def test_worker_self_heals_missing_job_for_existing_active_target(self):
+        target_id=self.monitor.ensure_target(self.c,"pubmed","999003","editor@demo.ru",0)
+        self.c.execute("DELETE FROM evidence_monitor_jobs WHERE target_id=?",(target_id,))
+        original=self.monitor.fetch_live
+        try:
+            self.monitor.fetch_live=lambda *args,**kwargs: {"result":{"999003":{"uid":"999003","title":"Existing target","pubdate":"2026","source":"Test","pubtype":["Journal Article"]}}}
+            now=1700003000
+            result=self.monitor.run_due_jobs(self.c,now=now,email="monitor@example.com")
+            self.assertEqual(result["processed"],1)
+            job=self.c.execute("SELECT status,attempt_count FROM evidence_monitor_jobs WHERE target_id=?",(target_id,)).fetchone()
+            self.assertIsNotNone(job)
+            self.assertEqual(job["status"],"queued")
+            self.assertEqual(job["attempt_count"],0)
+        finally:
+            self.monitor.fetch_live=original
+
     def test_dead_job_requires_explicit_requeue(self):
         target_id=self.monitor.ensure_target(self.c,"pubmed","999002","editor@demo.ru",0)
         self.c.execute("UPDATE evidence_monitor_jobs SET status='dead',attempt_count=5 WHERE target_id=?",(target_id,))
