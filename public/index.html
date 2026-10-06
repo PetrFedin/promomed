@@ -85,6 +85,20 @@ body.presentationMode .presentationLauncher{display:block}
 .presentationMenuCard b{display:block;margin-bottom:5px}.presentationMenuCard span{display:block;font-size:10px;line-height:1.45;color:#667085}
 .presentationTruth{margin-top:12px;padding:12px 14px;border-radius:14px;background:#f6f8fb;border:1px solid var(--l);font-size:10px;line-height:1.5;color:#475467}
 @media(max-width:639px){.presentationLauncher{right:12px;top:max(10px,env(safe-area-inset-top));padding:9px 12px}.presentationMenuGrid{grid-template-columns:1fr}}
+/* value case room */
+.valueCaseGrid{display:grid;grid-template-columns:1fr;gap:12px}
+.valueEnvelope{border:1px solid var(--l);border-radius:20px;padding:16px;background:#fff}
+.valueEnvelope.selected{border-color:#9cbff9;box-shadow:0 10px 30px rgba(36,84,220,.08)}
+.valueEnvelope h3{margin:7px 0 5px}
+.valueEnvelope ul{margin:10px 0 0;padding-left:18px}
+.valueEnvelope li{margin:5px 0;font-size:11px;line-height:1.45}
+.paybackTable{width:100%;border-collapse:collapse;font-size:10px}
+.paybackTable th,.paybackTable td{padding:9px 7px;border-bottom:1px solid var(--l);text-align:right}
+.paybackTable th:first-child,.paybackTable td:first-child{text-align:left}
+.valueLever{display:grid;grid-template-columns:auto 1fr;gap:11px;padding:13px 0;border-bottom:1px solid var(--l)}
+.valueLever:last-child{border-bottom:0}.valueLever .n{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:#eaf2ff;color:#2454a6;font-weight:850}
+.valueTruth{background:#071d36;color:#fff;border-radius:20px;padding:17px}.valueTruth .muted{color:#afc2d3}
+@media(min-width:1024px){.valueCaseGrid{grid-template-columns:repeat(3,1fr)}}
 /* investor readiness layer */
 .investorStatus{display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;font-size:8px;font-weight:850;letter-spacing:.7px;border:1px solid transparent;white-space:nowrap}
 .investorStatus.live{background:#e8f7f1;color:#12684e;border-color:#cbeadd}
@@ -276,6 +290,13 @@ body.presentationMode .presentationLauncher{display:block}
 <div class="section"><div class="ey blue">DEFENSIBILITY · WHY THIS IS NOT JUST AN EVENT APP</div><h2>Moat строится на связи journey, consent, operations и evidence</h2><div id="investorMoat" class="investorMoatGrid"></div><div id="investorDisclaimers"></div></div>
 <div class="section"><div class="ey blue">INVESTMENT THESIS · PLATFORM, NOT ONE-OFF EVENT</div><h2>Что именно здесь может накапливать стоимость</h2><div id="investorThesis" class="investorThesis"><p class="small muted">Загрузка investment thesis…</p></div></div>
 <div class="section"><div class="ey blue">CAPITAL MILESTONES · MONEY → CAPABILITY → PROOF</div><h2>Каждый следующий этап открывается только после доказательства предыдущего</h2><div id="investorMilestones"></div></div>
+<div class="section"><div class="ey blue">50–100M ₽ VALUE CASE · WHAT THE COMPANY ACTUALLY BUYS</div><h2>Не стоимость сайта. Программа создания повторно используемого коммерческого и операционного актива.</h2>
+<div id="valueCompanyContext" class="valueTruth"><p class="small muted">Загрузка публичного масштаба компании…</p></div>
+<div id="valueEnvelopes" class="valueCaseGrid" style="margin-top:12px"></div>
+<div class="card" style="margin-top:12px"><div class="row"><div><div class="ey blue">PAYBACK THRESHOLD</div><h3>Сколько подтверждённой годовой ценности нужно, чтобы вернуть инвестицию</h3></div><span class="pill">FORMULA · NOT FORECAST</span></div><div id="valuePaybackTable"></div></div>
+<div class="card"><div class="ey blue">FASTEST VALUE PATH</div><h3>Сначала то, что можно подтвердить финансами, а не маркетинговой верой</h3><div id="valueLevers"></div></div>
+<div id="valueTruthBoundary" class="valueTruth"></div>
+</div>
 <div class="section"><div class="ey blue">INVESTMENT COMMITTEE ROOM · DILIGENCE BEFORE STORYTELLING</div><h2>Что должен увидеть инвестиционный комитет до следующего транша</h2><div id="committeeState" class="committeeHero"><p class="small muted">Загрузка committee state…</p></div><div id="diligenceGrid" class="committeeGrid"></div></div>
 <div class="section"><div class="ey blue">RISK REGISTER · EXPLICIT, NOT HIDDEN</div><h2>Что может сломать thesis и чем это закрывается</h2><div id="investorRisks" class="card"></div></div>
 <div class="section"><div class="ey blue">SCALE PATHS · OPTION VALUE AFTER PROOF</div><h2>Куда продукт может расти после оплаченного доказательства</h2><div id="investorScalePaths"></div><div class="investorDisclaimer">Scale paths — стратегические опции, а не обещание рынка или будущей оценки. White-label и scientific-information направления остаются GATED до соответствующих proof points.</div></div>
@@ -685,6 +706,18 @@ async function loadInvestorReadiness(){
   if(thesis)thesis.innerHTML='<div class="ey" style="color:#8edcff">CATEGORY</div><h2 style="color:#fff;margin-top:7px">'+esc(it.category||'—')+'</h2><p class="small">'+esc(it.statement||'')+'</p><p class="tiny muted">'+esc(it.what_is_not||'')+'</p><div class="investorLogic">'+(it.value_creation_logic||[]).map((x,i)=>'<div><span class="tiny muted">VALUE LEVER '+(i+1)+'</span><b>'+esc(x)+'</b></div>').join('')+'</div>';
   const milestones=document.getElementById('investorMilestones');
   if(milestones)milestones.innerHTML=(d.capital_milestones||[]).map(x=>'<div class="investorMilestone"><div><b>'+esc(x.title)+'</b><div class="tiny muted">'+esc(x.decision)+'</div></div>'+investorStatus(x.status)+'</div>').join('');
+  const pc=d.public_company_context||{},ctx=document.getElementById('valueCompanyContext');
+  if(ctx)ctx.innerHTML='<div class="ey" style="color:#8edcff">PUBLIC COMPANY SCALE · '+esc(pc.period||'')+'</div><div class="investorRuntimeGrid">'+[
+    ['Revenue',pc.revenue_rub?formatMoney(pc.revenue_rub):'—'],['Adjusted EBITDA',pc.adjusted_ebitda_rub?formatMoney(pc.adjusted_ebitda_rub):'—'],['Net profit',pc.net_profit_rub?formatMoney(pc.net_profit_rub):'—'],['Use','Scale context only']
+  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+x[0]+'</span><strong>'+esc(x[1])+'</strong></div>').join('')+'</div><div class="tiny muted" style="margin-top:10px">'+esc(pc.boundary||'')+'</div>';
+  const ve=document.getElementById('valueEnvelopes');
+  if(ve)ve.innerHTML=(d.investment_envelopes||[]).map((x,i)=>'<div class="valueEnvelope '+(i===1?'selected':'')+'"><span class="pill">'+esc(x.commercial_state||'').replaceAll('_',' ').toUpperCase()+'</span><h3>'+esc(x.label)+'</h3><p class="small muted">'+esc(x.purpose)+'</p><div class="tiny"><b>Получает:</b></div><ul>'+((x.includes||[]).map(v=>'<li>'+esc(v)+'</li>').join(''))+'</ul><div class="tiny muted" style="margin-top:8px"><b>Не включает:</b> '+(x.excludes||[]).map(esc).join(' · ')+'</div></div>').join('');
+  const pr=document.getElementById('valuePaybackTable');
+  if(pr){const rows=[];(d.payback_reference||[]).forEach(x=>(x.thresholds||[]).forEach(t=>rows.push({label:(d.investment_envelopes||[]).find(e=>e.id===x.id)?.label||x.id,months:t.months,value:t.annual_verified_value_rub,rev:t.pct_fy2025_revenue,ebitda:t.pct_fy2025_adjusted_ebitda})));pr.innerHTML='<table class="paybackTable"><thead><tr><th>Контур</th><th>Payback</th><th>Нужно value / год</th><th>% revenue</th><th>% EBITDA</th></tr></thead><tbody>'+rows.map(x=>'<tr><td>'+esc(x.label)+'</td><td>'+x.months+' мес.</td><td>'+formatMoney(x.value)+'</td><td>'+x.rev.toFixed(3)+'%</td><td>'+x.ebitda.toFixed(3)+'%</td></tr>').join('')+'</tbody></table>'}
+  const vl=document.getElementById('valueLevers');
+  if(vl)vl.innerHTML=(d.value_levers||[]).sort((a,b)=>a.priority-b.priority).map(x=>'<div class="valueLever"><div class="n">'+(x.priority===99?'↑':x.priority)+'</div><div><b>'+esc(x.title)+'</b><div class="small muted">'+esc(x.logic)+'</div><div class="tiny muted" style="margin-top:5px"><b>Proof:</b> '+esc(x.evidence_needed)+'</div><span class="pill '+(x.base_case?'green':'')+'">'+(x.base_case?'BASE CASE':'UPSIDE / GATED')+'</span></div></div>').join('');
+  const vt=document.getElementById('valueTruthBoundary'),v=d.value_case_truth||{};
+  if(vt)vt.innerHTML='<div class="ey" style="color:#8edcff">VALUE CASE TRUTH BOUNDARY</div><h3 style="color:#fff">Быстрая окупаемость должна быть доказана, а не нарисована.</h3><p class="small">'+esc(v.fastest_path||'')+'</p><div class="tiny muted"><b>Formula:</b> '+esc(v.payback_formula||'')+'<br><b>Net value:</b> '+esc(v.annual_verified_net_value_formula||'')+'<br><b>Guardrail:</b> '+esc(v.double_count_guardrail||'')+'</div>';
   const committee=document.getElementById('committeeState'),cs=d.committee_state||{};
   if(committee)committee.innerHTML='<div class="ey blue">CURRENT EVIDENCE STATE</div><h3>'+esc(String(cs.evidence_state||'—').replaceAll('_',' ').toUpperCase())+'</h3><p class="small">'+esc(cs.current_scope||'')+'</p><div class="notice"><b>NEXT GATE</b><br>'+esc(cs.next_gate||'—')+'</div><div class="tiny muted"><b>NOT CLAIMED:</b> '+(cs.not_claimed||[]).map(esc).join(' · ')+'</div>';
   const diligence=document.getElementById('diligenceGrid');
