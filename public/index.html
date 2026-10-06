@@ -332,6 +332,13 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
 <div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
 </div>
+<div class="section"><div class="ey blue">CAPITAL PLAN EXECUTION AUTHORITY · PLAN → COMMIT → ACTUAL → VALUE</div><h2>Контроль исполнения каждого Security package</h2>
+<div id="capitalExecutionSummary" class="card"><p class="small muted">Загрузка execution authority…</p></div>
+<div id="capitalExecutionPackages"></div>
+<div id="capitalExecutionVariance" class="card"></div>
+<div class="actions"><button class="btn" onclick="advanceCapitalExecutionDemo()">Принять S2 evidence · demo</button><button class="btn ghost" onclick="resetCapitalExecutionDemo()">Сбросить execution demo</button></div>
+<div class="notice"><b>EXECUTION BOUNDARY:</b> demo actuals не являются данными ERP/закупок. Spend не разблокирует value без принятого evidence.</div>
+</div>
 <div class="section"><div class="ey blue">EXECUTABLE CAPITAL ALLOCATION PLAN · SECURITY 10M ₽</div><h2>Recommendation → work packages → owners → deadlines → evidence gates → portfolio trajectory</h2>
 <div id="capitalPlanSummary" class="card"><p class="small muted">Загрузка executable plan…</p></div>
 <div id="capitalPlanPackages"></div>
@@ -865,6 +872,33 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let capitalExecutionData=null;
+async function loadCapitalExecution(){
+ const d=await api('/api/capital-plan-execution');capitalExecutionData=d;renderCapitalExecution(d);return d
+}
+function signedMoney(v){const n=Number(v||0);return (n>0?'+':'')+formatMoney(n)}
+function renderCapitalExecution(d){
+ const t=d.totals||{},s=document.getElementById('capitalExecutionSummary');
+ if(s)s.innerHTML='<div class="row"><div><div class="ey blue">SECURITY EXECUTION · 10M PLAN</div><h3>'+formatMoney(t.actual_rub||0)+' actual / '+formatMoney(t.planned_rub||0)+' planned</h3><p class="small muted">'+esc(d.next_action||'')+'</p></div><span class="pill">'+Number(t.evidence_accepted_count||0)+' / '+Number(t.package_count||0)+' evidence accepted</span></div><div class="proofgrid">'+[
+ ['PLANNED',t.planned_rub],['COMMITTED',t.committed_rub],['ACTUAL',t.actual_rub],['UNCOMMITTED',t.uncommitted_rub],['COMMITTED · UNSPENT',t.committed_unspent_rub],['UNLOCKED VALUE',t.unlocked_value_rub]
+ ].map(x=>'<div class="proofmetric"><span class="tiny muted">'+x[0]+'</span><strong>'+formatMoney(x[1]||0)+'</strong></div>').join('')+'</div>';
+ const packs=document.getElementById('capitalExecutionPackages');
+ if(packs)packs.innerHTML=(d.packages||[]).map(x=>'<div class="card"><div class="row"><div><div class="ey blue">'+esc(x.title)+'</div><h3>'+formatMoney(x.actual_rub||0)+' actual</h3><div class="tiny muted">Owner: '+esc(x.owner)+' · '+esc(x.deadline)+'</div></div><span class="execStatus '+(x.evidence_accepted?'live':x.status==='in_progress'?'demo':'gated')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span></div><div class="proofgrid">'+[
+ ['PLAN',x.planned_rub],['COMMITTED',x.committed_rub],['ACTUAL',x.actual_rub],['VS PLAN',x.actual_vs_plan_variance_rub],['UNLOCKED',x.unlocked_value_rub]
+ ].map(v=>'<div class="proofmetric"><span class="tiny muted">'+v[0]+'</span><strong>'+(v[0]==='VS PLAN'?signedMoney(v[1]):formatMoney(v[1]||0))+'</strong></div>').join('')+'</div><div class="small muted"><b>Evidence:</b> '+esc(x.evidence_status).replaceAll('_',' ')+' · '+esc(x.evidence_ref||'not attached')+'</div><div class="tiny muted"><b>Gate:</b> '+esc(x.evidence_gate)+'<br><b>Note:</b> '+esc(x.note||'')+'</div></div>').join('');
+ const v=document.getElementById('capitalExecutionVariance');
+ if(v)v.innerHTML='<div class="ey blue">EXECUTION VARIANCE</div><h3>'+signedMoney(t.actual_vs_plan_variance_rub||0)+' actual vs full plan</h3><p class="small muted">Uncommitted '+formatMoney(t.uncommitted_rub||0)+' is still free capacity. Committed-but-unspent '+formatMoney(t.committed_unspent_rub||0)+' is already reserved and must not be treated as free capital.</p><ul class="execList">'+(d.control_rules||[]).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>';
+}
+async function advanceCapitalExecutionDemo(){
+ try{
+  const d=await api('/api/capital-plan-execution/update-demo',{method:'POST',body:JSON.stringify({package_id:'s2',status:'accepted_demo',committed_rub:3000000,actual_rub:2850000,evidence_status:'accepted_demo',evidence_ref:'demo://postgres-ready-restore-proof',note:'Production and restore proof accepted in presentation simulation.'})});
+  capitalExecutionData=d;renderCapitalExecution(d)
+ }catch(e){alert('Execution Authority: '+e.message)}
+}
+async function resetCapitalExecutionDemo(){
+ try{const d=await api('/api/capital-plan-execution/reset-demo',{method:'POST',body:'{}'});capitalExecutionData=d;renderCapitalExecution(d)}
+ catch(e){alert('Execution reset: '+e.message)}
+}
 let capitalAllocationPlanData=null;
 async function loadCapitalAllocationPlan(){
  const d=await api('/api/capital-allocation-plan');capitalAllocationPlanData=d;renderCapitalAllocationPlan(d);return d
@@ -1062,7 +1096,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer(),loadCapitalAllocationPlan(),loadCapitalExecution()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
