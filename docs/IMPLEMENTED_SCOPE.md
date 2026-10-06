@@ -421,3 +421,34 @@ Truth boundary:
 - provider metadata is never automatically converted into medical truth or rewritten claims;
 - durable polling schedule state, exponential retry/backoff and dead-letter jobs are implemented in repository scope;
 - an external production scheduler/worker deployment, provider credentials/rate-limit policy and independent reviewer authorization remain open hardening work.
+
+
+## Independent Medical / Scientific Reviewer Authority — Phase 2.6 repository checkpoint
+
+Added a governed authority chain above External Evidence Admission:
+
+`editorial review -> assigned reviewer -> credential/scope check -> conflict disclosure -> scientific decision -> immutable digest/audit -> separate governance admission`.
+
+Repository/runtime scope:
+
+- dedicated `reviewer` and `governance` account roles;
+- reviewer profiles with credential state, issuer/reference, validity and independence attestation;
+- authorized expertise scopes;
+- explicit reviewer assignment per evidence candidate;
+- mandatory conflict disclosure and automatic recusal on material conflict;
+- production scientific review blocked from the editor shortcut;
+- scientific decisions bound to the exact provider snapshot SHA-256;
+- authenticated-session decision digest and rationale;
+- database triggers preventing update/delete of decisions and authority events;
+- tamper-evident previous-hash event chain;
+- final production admission restricted to a separate governance actor;
+- reviewer/governance projection and CI contract tests;
+- production reviewer attestation CLI requiring PostgreSQL production readiness.
+
+Truth boundary:
+
+- the authority mechanism is executable repository code;
+- demo reviewer profile is explicitly `demo_attested` and is not independent credential verification;
+- external professional credential registry verification is not yet integrated;
+- the SHA-256 decision digest is not represented as a legal electronic signature;
+- production institutional reviewer onboarding and signing policy remain required before claiming independent medical governance in production.
