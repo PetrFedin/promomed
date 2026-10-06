@@ -1,7 +1,7 @@
 from collections import Counter
 
 
-KINDS = ("content","expert","event","studio","replay","learning","topic","partner","product")
+KINDS = ("content","expert","event","studio","replay","transcript","takeaway","learning","topic","partner","product")
 
 
 def _norm(value):
@@ -52,6 +52,22 @@ def _index(c):
             "content_type":"studio","expert":x["speaker_name"] or "","event":x["item_id"] or "","replay":x["status"]=="ready","review_status":x["status"],
             "partner":"","search_text":" ".join(map(str,[x["title"],x["dek"],x["topic"],x["speaker_name"],x["status"]])),
         })
+
+    try:
+        for x in c.execute("SELECT t.id,t.item_id,t.studio_id,t.start_sec,t.end_sec,t.text,t.review_status,s.name speaker_name,p.track,p.title event_title FROM transcript_segments t LEFT JOIN speakers s ON s.id=t.speaker_id LEFT JOIN program_items p ON p.id=t.item_id WHERE t.review_status IN ('reviewed','reviewed_demo')"):
+            rows.append({
+                "kind":"transcript","ref":x["id"],"title":x["text"],"subtitle":f"{x['speaker_name'] or 'Speaker'} · {x['start_sec']}–{x['end_sec']} sec","topic":x["track"] or "",
+                "content_type":"transcript_segment","expert":x["speaker_name"] or "","event":x["item_id"],"replay":True,"review_status":x["review_status"],
+                "partner":"","offset_sec":x["start_sec"],"search_text":" ".join(map(str,[x["text"],x["speaker_name"],x["track"],x["event_title"]])),
+            })
+        for x in c.execute("SELECT g.id,g.item_id,g.studio_id,g.title,g.body,g.segment_start_sec,g.segment_end_sec,g.status,p.track,p.title event_title FROM generated_takeaways g LEFT JOIN program_items p ON p.id=g.item_id WHERE g.status IN ('approved','approved_demo')"):
+            rows.append({
+                "kind":"takeaway","ref":x["id"],"title":x["title"],"subtitle":x["body"],"topic":x["track"] or "",
+                "content_type":"reviewed_takeaway","expert":"","event":x["item_id"],"replay":True,"review_status":x["status"],
+                "partner":"","offset_sec":x["segment_start_sec"],"search_text":" ".join(map(str,[x["title"],x["body"],x["track"],x["event_title"]])),
+            })
+    except Exception:
+        pass
 
     for x in c.execute("SELECT id,topic,title,summary,duration_days,level FROM learning_tracks"):
         rows.append({
