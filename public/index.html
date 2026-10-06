@@ -860,10 +860,12 @@ async function copyCorporateMemo(button){
 async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await loadExecutiveRoom();window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
-  const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{};
+  const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
   const tr=(d.funding_tranches||[]).map(x=>x.title+': '+x.status+' | gate: '+x.release_gate).join('\n');
+  const thresholds=(pvc.payback_reference||[]).map(r=>{const t=(r.thresholds||[]).find(x=>x.months===12)||{};return formatMoney(r.amount_rub||0)+' investment -> '+formatMoney(t.annual_verified_value_rub||0)+' accepted annual net value for 12m payback'}).join('\n');
+  const capture=(pvc.value_capture_map||[]).map(x=>x.title+' | owner: '+x.owner+' | status: '+x.status).join('\n');
   const truth=d.truth_boundary||{};
-  const memo=['СОСТОЯНИЕ · Executive / CVC Board Memo','Decision: '+(b.decision_label||'—'),'Thesis: '+(b.thesis||'—'),'Ask: '+(b.ask||'—'),'Next gate: '+(b.next_gate||'—'),'','Funding gates:',tr,'','Truth boundary:','Production ready: '+!!truth.can_claim_production_ready,'Market traction proven: '+!!truth.can_claim_market_traction,'Validated unit economics: '+!!truth.can_claim_validated_unit_economics,'Medical governance production-ready: '+!!truth.can_claim_medical_governance].join('\n');
+  const memo=['СОСТОЯНИЕ · Executive / CVC Board Memo','Decision: '+(b.decision_label||'—'),'Thesis: '+(b.thesis||'—'),'Ask: '+(b.ask||'—'),'Next gate: '+(b.next_gate||'—'),'','12-month payback thresholds:',thresholds,'','Value capture owners:',capture,'','Funding gates:',tr,'','Truth boundary:','Production ready: '+!!truth.can_claim_production_ready,'Market traction proven: '+!!truth.can_claim_market_traction,'Validated unit economics: '+!!truth.can_claim_validated_unit_economics,'Medical governance production-ready: '+!!truth.can_claim_medical_governance].join('\n');
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Board Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
