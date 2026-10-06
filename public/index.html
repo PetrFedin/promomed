@@ -335,8 +335,10 @@ body.presentationMode .presentationLauncher{display:block}
 <div class="section"><div class="ey blue">PILOT DEAL ROOM · OBLIGATION → EVIDENCE → REMEDIATION → PAYMENT</div><h2>Milestone readiness считается из принятых обязательств и открытых issues</h2>
 <div id="dealRoomSummary" class="card"><p class="small muted">Загрузка Pilot Deal Room…</p></div>
 <div class="execTwoCol"><div id="dealRoomObligations" class="card"></div><div id="dealRoomIssues" class="card"></div></div>
+<div class="execTwoCol"><div id="dealRoomOwnerInbox" class="card"></div><div id="dealRoomEvidenceRegistry" class="card"></div></div>
+<div id="dealRoomPaymentRequest" class="card"></div>
 <div id="dealRoomBoardPacket" class="card"></div>
-<div class="actions"><button class="btn ghost" onclick="resetDealRoomDemo()">Сбросить demo deal room</button></div>
+<div class="actions"><button class="btn" id="dealPaymentRequestBtn" onclick="createDealPaymentRequest()">Создать demo payment request → Finance</button><button class="btn ghost" onclick="exportDealBoardPacket()">Экспорт Board Packet JSON</button><button class="btn ghost" onclick="resetDealRoomDemo()">Сбросить demo deal room</button></div>
 <div class="notice"><b>PAYMENT BOUNDARY:</b> даже состояние ELIGIBLE_DEMO_PREVIEW не авторизует реальный платёж. Production требует юридически принятого evidence, authorized identities и payment authority.</div>
 </div>
 <div class="section"><div class="ey blue">CONTRACT BUILDER · SCOPE → PAYMENT → EVIDENCE → BOARD</div><h2>Выберите инвестиционный контур и получите управляемый договорный каркас</h2>
@@ -855,14 +857,35 @@ function renderDealRoom(d){
  if(ob)ob.innerHTML='<div class="ey blue">NAMED OBLIGATIONS</div><h3>Что должно быть принято</h3>'+(d.obligations||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.title)+'</b><div class="tiny muted">Owner: '+esc(x.owner)+'</div><div class="tiny muted">Required evidence: '+esc(x.required_evidence)+'</div><div class="tiny muted">Evidence ref: '+esc(x.evidence_ref||'not attached')+'</div></div><div><span class="execStatus '+(x.status==='accepted_demo'?'live':'gated')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span>'+(x.status==='accepted_demo'?'':'<button class="btn ghost" style="margin-top:6px;padding:7px 9px;font-size:9px" onclick="acceptDealObligation(\''+esc(x.id)+'\')">Attach + accept demo</button>')+'</div></div>').join('');
  const issues=document.getElementById('dealRoomIssues');
  if(issues)issues.innerHTML='<div class="ey blue">ISSUES & REMEDIATION</div><h3>Почему milestone заблокирован</h3>'+(d.issues||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.title)+'</b><div class="tiny muted">Severity: '+esc(x.severity)+' · Owner: '+esc(x.owner)+'</div><div class="tiny muted"><b>Remediation:</b> '+esc(x.remediation)+'</div></div><span class="execStatus '+(x.status==='open'?'gated':'live')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+ const inbox=document.getElementById('dealRoomOwnerInbox');
+ if(inbox)inbox.innerHTML='<div class="ey blue">OWNER INBOX · SLA</div><h3>Что кому нужно закрыть</h3>'+(d.owner_inbox||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.title)+'</b><div class="tiny muted">Owner: '+esc(x.owner)+' · due '+esc(x.due_at_iso)+'</div><div class="tiny muted">До deadline: '+x.days_remaining+' дн. · escalation → '+esc(x.escalation_owner)+'</div><div class="tiny muted"><b>Required:</b> '+esc(x.required_evidence)+'</div></div><span class="execStatus '+(x.status==='accepted_demo'?'live':'gated')+'">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span></div>').join('');
+ const docs=document.getElementById('dealRoomEvidenceRegistry');
+ if(docs)docs.innerHTML='<div class="ey blue">EVIDENCE DOCUMENT REGISTRY</div><h3>Зарегистрированные evidence references</h3>'+((d.evidence_registry||[]).length?(d.evidence_registry||[]).map(x=>'<div class="execKpi"><div><b>'+esc(x.title)+'</b><div class="tiny muted">'+esc(x.document_type)+' · '+esc(x.owner)+'</div><div class="tiny muted">'+esc(x.storage_ref)+'</div><div class="tiny muted">SHA-256: '+esc((x.content_sha256||'').slice(0,24))+'…</div></div><span class="execStatus live">'+esc(x.status).replaceAll('_',' ').toUpperCase()+'</span></div>').join(''):'<p class="small muted">Документов пока нет. Registry хранит references + hash; бинарное production storage ещё не подключено.</p>');
+ const pr=document.getElementById('dealRoomPaymentRequest'),req=(d.payment_requests||[])[0];
+ if(pr)pr.innerHTML='<div class="ey blue">FINANCE PAYMENT REQUEST</div>'+(req?'<div class="row"><div><h3>'+formatMoney(req.amount_rub||0)+'</h3><div class="tiny muted">Request: '+esc(req.id)+' · Finance owner: '+esc(req.finance_owner)+'</div><div class="tiny muted">Evidence packet: '+esc((req.evidence_packet_hash||'').slice(0,24))+'…</div></div><span class="execStatus demo">'+esc(req.status).replaceAll('_',' ').toUpperCase()+'</span></div><div class="notice"><b>PAYMENT AUTHORIZED:</b> '+(req.payment_authorized?'YES':'NO')+'</div>':'<p class="small muted">Payment request появится только после полной demo readiness milestone.</p>');
+ const payBtn=document.getElementById('dealPaymentRequestBtn');if(payBtn)payBtn.disabled=!r.demo_payment_eligible;
  const bp=document.getElementById('dealRoomBoardPacket'),p=d.board_packet||{};
  if(bp)bp.innerHTML='<div class="ey blue">BOARD PACKET</div><div class="row"><div><h3>'+esc(p.decision_preview||'HOLD')+'</h3><div class="tiny muted">Packet: '+esc(p.packet_id||'—')+'</div><div class="tiny muted">SHA-256: '+esc((p.packet_hash||'—').slice(0,28))+'…</div></div><span class="pill">'+formatMoney(p.payment_amount_rub||0)+'</span></div><div class="small muted"><b>Included:</b> '+(p.included_sections||[]).map(esc).join(' · ')+'</div><div class="notice"><b>LEGAL EFFECT:</b> '+esc(p.legal_effect||'NONE')+' · <b>PAYMENT AUTHORITY:</b> '+esc(p.payment_authority||'NONE')+'</div>';
 }
 async function acceptDealObligation(id){
  try{
-  const d=await api('/api/deal-room/accept-demo',{method:'POST',body:JSON.stringify({tranche_id:'t50',milestone_id:'m3',obligation_id:id,evidence_ref:'demo://signed-delivery-acceptance',note:'Presentation remediation simulation'})});
+  const storageRef='demo://signed-'+id+'-acceptance';
+  await api('/api/deal-room/register-evidence-demo',{method:'POST',body:JSON.stringify({tranche_id:'t50',milestone_id:'m3',obligation_id:id,title:'Signed '+id.replaceAll('_',' ')+' evidence',document_type:'acceptance_reference',storage_ref:storageRef})});
+  const d=await api('/api/deal-room/accept-demo',{method:'POST',body:JSON.stringify({tranche_id:'t50',milestone_id:'m3',obligation_id:id,evidence_ref:storageRef,note:'Presentation remediation simulation'})});
   dealRoomData=d;renderDealRoom(d)
  }catch(e){alert('Deal Room: '+e.message)}
+}
+async function createDealPaymentRequest(){
+ try{
+  const d=await api('/api/deal-room/create-payment-request-demo',{method:'POST',body:'{}'});dealRoomData=d;renderDealRoom(d)
+ }catch(e){alert('Payment request: '+e.message)}
+}
+function exportDealBoardPacket(){
+ if(!dealRoomData)return;
+ const packet=dealRoomData.board_packet||{};
+ const exportPayload={...packet,exported_at:new Date().toISOString(),truth_boundary:dealRoomData.truth_boundary||{}};
+ const blob=new Blob([JSON.stringify(exportPayload,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(packet.export||{}).filename||'promomed-board-packet.json';a.click();URL.revokeObjectURL(a.href)
 }
 async function resetDealRoomDemo(){
  try{const d=await api('/api/deal-room/reset-demo',{method:'POST',body:'{}'});dealRoomData=d;renderDealRoom(d)}
