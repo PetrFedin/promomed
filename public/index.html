@@ -216,6 +216,7 @@ body.presentationMode .presentationLauncher{display:block}
 <p class="small muted">Рекомендации строятся только из ваших явных интересов и действий в СОСТОЯНИИ. Без диагностики, treatment-рекомендаций и health-risk scoring.</p>
 <div id="personalizedContinue" class="card"><p class="small muted">Загрузка персонального маршрута…</p></div>
 </div>
+<div class="section"><div class="row"><div><div class="ey blue">RELATIONSHIP 365</div><h2>До события → событие → D1 → D7 → D30</h2></div><span id="journey365Progress" class="pill">0%</span></div><div id="journey365Timeline" class="card"><p class="small muted">Загрузка 365 journey…</p></div></div>
 <div class="section"><div class="ey blue">TOPIC HUBS</div><h2>Четыре входа в экосистему</h2><div class="hubgrid"><div class="hubCard" onclick="openHub('metabolic')"><span class="ey">01 · HUB</span><div><h3>Метаболическое здоровье</h3><p class="tiny">Вес · диабет · питание · движение · терапия</p></div></div><div class="hubCard" onclick="openHub('ageing')"><span class="ey">02 · HUB</span><div><h3>Healthy ageing</h3><p class="tiny">Кожа · профилактика · качество жизни</p></div></div><div class="hubCard" onclick="openHub('brain')"><span class="ey">03 · HUB</span><div><h3>Мозг и энергия</h3><p class="tiny">Сон · внимание · стресс · recovery</p></div></div><div class="hubCard" onclick="openHub('complex')"><span class="ey">04 · HUB</span><div><h3>Сложные состояния</h3><p class="tiny">Навигация · поддержка · профессиональный контур</p></div></div></div></div>
 <div class="section"><div class="feedTitle"><div><div class="ey blue">PROMOMED · PRODUCT CONTEXT</div><h2>От темы к решению</h2></div></div><p class="small muted">Карточки реальных брендов показываются как официальный информационный контекст, а не как независимая медицинская рекомендация.</p><div id="homeProducts" class="hscroll"><div class="notice">Загрузка каталога…</div></div></div>
 <div class="section"><div class="studioStage" onclick="show('studio')"><span class="pill dark liveDot">STUDIO</span><h2>СОСТОЯНИЕ Studio</h2><p class="small">Один сильный вопрос. Эксперт, R&D или opinion leader. 12–20 минут, live → shorts → transcript → related topic.</p><div class="actions"><button class="btn white" onclick="event.stopPropagation();show('studio')">В Studio →</button></div></div></div>
@@ -535,6 +536,22 @@ function openPersonalizedTarget(kind,ref){
  if(kind==='community')return show('community');
  return show('today')
 }
+function renderJourney365(s){
+ const root=document.getElementById('journey365Timeline'),badge=document.getElementById('journey365Progress');if(!root)return;
+ if(badge)badge.textContent=Number(s.journey365_progress_pct||0)+'%';
+ const stages=s.journey365_stages||[],next=s.journey365_next_action||{};
+ root.innerHTML='<div class="ownerbar">'+stages.map(x=>'<i class="'+(x.status==='complete'?'on':'')+'"></i>').join('')+'</div>'+stages.map(x=>'<div class="ownerstep"><div class="n">'+(x.status==='complete'?'✓':x.label.replace('EVENT DAY','E'))+'</div><div><div class="ey blue">'+esc(x.label)+' · '+esc(x.status).toUpperCase()+'</div><b>'+esc(x.title)+'</b><div class="tiny muted">'+esc(x.goal)+'</div></div></div>').join('')+'<div class="notice ok"><b>Следующий шаг:</b> '+esc(next.title||'Продолжить маршрут')+'</div><div class="actions"><button class="btn" onclick="openJourney365Action(\''+esc(next.kind||'discovery')+'\',\''+esc(next.ref||'')+'\')">Продолжить →</button></div><div class="tiny muted" style="margin-top:8px">Это behavioural relationship journey, а не медицинский patient journey.</div>';
+}
+function openJourney365Action(kind,ref){
+ if(kind==='event'&&ref)return openSessionDetail(ref);
+ if(kind==='replay'&&ref){show('live');return openReplay(ref)}
+ if(kind==='content'&&ref)return openContent(ref);
+ if(kind==='studio')return show('studio');
+ if(kind==='community')return show('community');
+ if(kind==='expert'&&ref)return openProfile(ref);
+ if(kind==='learning'){show('me');return}
+ return show('events')
+}
 function renderPersonalizedJourney(s){
  const root=document.getElementById('personalizedContinue');if(!root)return;
  const items=s.personalized_items||[],sig=s.personalization_signals||{};
@@ -667,7 +684,7 @@ async function syncState(force=false){
   if(document.getElementById('adminLive'))document.getElementById('adminLive').textContent=String(s.live_state||'scheduled').toUpperCase()+' · server authority';
   if(document.getElementById('adminQuestions'))document.getElementById('adminQuestions').textContent=(s.questions||0)+' вопросов в текущем demo-run';
   if(document.getElementById('adminGate'))document.getElementById('adminGate').textContent=(s.checkins||0)+' подтверждённых check-in';
-  renderPersonalVault(s); renderProgram(s); renderChallenge(s); renderProductExperience(s); renderPersonalizedJourney(s); renderInbox(s); if(['organizer','partner','sales'].includes(role))loadIntelligence();
+  renderPersonalVault(s); renderProgram(s); renderChallenge(s); renderProductExperience(s); renderPersonalizedJourney(s); renderJourney365(s); renderInbox(s); if(['organizer','partner','sales'].includes(role))loadIntelligence();
   if(document.getElementById('meetingCount'))document.getElementById('meetingCount').textContent=(s.meetings||0)+' запланировано';
   const pu=document.getElementById('passportUI');if(pu&&s.passport){const vals=[s.passport.content,s.passport.event,s.passport.network,s.passport.partner];pu.querySelectorAll('.stamp').forEach((x,i)=>x.classList.toggle('done',!!vals[i]))}
  }catch(e){}
