@@ -332,6 +332,12 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="digitalContractCertificates" class="card"><p class="small muted">Загрузка certificate preview…</p></div>
 <div class="actions"><button class="btn ghost" onclick="resetDemoContract()">Сбросить demo acceptance</button></div>
 </div>
+<div class="section"><div class="ey blue">CAPITAL ALLOCATION OPTIMIZER · NEXT 10M ₽</div><h2>Куда направить следующий капитал — и где капитал вообще не нужен</h2>
+<div id="capitalOptimizerRecommendation" class="card"><p class="small muted">Загрузка recommendation…</p></div>
+<div id="capitalOptimizerScenarios"></div>
+<div id="capitalOptimizerMethod" class="card"></div>
+<div class="notice"><b>DECISION BOUNDARY:</b> optimizer использует явные demo assumptions. Реальное решение требует утверждённых budget, probability, delivery estimates и owners.</div>
+</div>
 <div class="section"><div class="ey blue">PORTFOLIO CAPITAL CONTROL · CEO / CFO VIEW</div><h2>Committed → paid → eligible → blocked → at risk → forecast → programme decision</h2>
 <div id="portfolioCapitalSummary" class="card"><p class="small muted">Загрузка портфеля капитала…</p></div>
 <div id="portfolioWorkstreams"></div>
@@ -852,6 +858,22 @@ function renderExecutiveRoom(d){
  ].map(x=>'<div class="investorRuntimeMetric"><span class="tiny muted">'+esc(x[0])+'</span><strong>'+(x[1]?'YES':'NO')+'</strong></div>').join('')+'</div>';
 }
 async function loadExecutiveRoom(){const d=await api('/api/executive-room');renderExecutiveRoom(d);return d}
+let capitalOptimizerData=null;
+async function loadCapitalOptimizer(){
+ const d=await api('/api/capital-allocation-optimizer');capitalOptimizerData=d;renderCapitalOptimizer(d);return d
+}
+function renderCapitalOptimizer(d){
+ const r=d.recommendation||{},root=document.getElementById('capitalOptimizerRecommendation');
+ if(root)root.innerHTML='<div class="row"><div><div class="ey blue">RECOMMENDATION</div><h3>'+esc(r.title||'—')+'</h3><p class="small muted">'+esc(r.why||'')+'</p></div><span class="execStatus live">'+esc(r.decision||'—')+'</span></div><div class="proofgrid">'+[
+ ['ALLOCATE',formatMoney(r.allocation_rub||0)],['BEFORE SPENDING',formatMoney((r.before_spending||{}).capital_required_rub||0)],['NO-CAPITAL UNLOCK',formatMoney((r.before_spending||{}).potential_unlock_rub||0)]
+ ].map(x=>'<div class="proofmetric"><span class="tiny muted">'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('')+'</div><div class="notice"><b>Sequence:</b><br>'+(r.sequence||[]).map(esc).join('<br>')+'</div>';
+ const sc=document.getElementById('capitalOptimizerScenarios');
+ if(sc)sc.innerHTML=(d.scenarios||[]).map(x=>'<div class="card"><div class="row"><div><div class="ey blue">'+esc(x.title)+'</div><h3>'+Number(x.decision_score||0).toFixed(1)+' / 100</h3></div><span class="pill">'+esc(x.capital_recommendation).replaceAll('_',' ')+'</span></div><div class="proofgrid">'+[
+ ['ALLOC',x.allocation_rub],['RISK-ADJ UNLOCK',x.risk_adjusted_unlock_rub],['DAYS',x.days_to_decision],['EVIDENCE +',x.evidence_confidence_delta_pp+' pp']
+ ].map(v=>'<div class="proofmetric"><span class="tiny muted">'+v[0]+'</span><strong>'+(typeof v[1]==='number'&&v[0]!=='DAYS'&&v[0]!=='EVIDENCE +'?formatMoney(v[1]):v[1])+'</strong></div>').join('')+'</div><p class="small muted"><b>Dependency:</b> '+esc(x.dependency)+'</p><p class="small muted"><b>Management action:</b> '+esc(x.management_action)+'</p></div>').join('');
+ const m=document.getElementById('capitalOptimizerMethod'),method=d.method||{};
+ if(m)m.innerHTML='<div class="ey blue">SCORING METHOD</div><h3>'+esc(method.score_formula||'')+'</h3><p class="small muted">'+esc(method.risk_adjusted_unlock_formula||'')+'</p><p class="tiny muted">'+esc(method.capital_attribution_rule||'')+'</p>';
+}
 let portfolioCapitalData=null;
 async function loadPortfolioCapitalControl(){
  const d=await api('/api/portfolio-capital-control');portfolioCapitalData=d;renderPortfolioCapitalControl(d);return d
@@ -1017,7 +1039,7 @@ async function copyCorporateMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Security Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl()]);window.scrollTo({top:0,behavior:'instant'})}
+async function showExecutiveRoom(){closeSheet();await goldenLogin();show('executiveRoom');await Promise.all([loadExecutiveRoom(),loadInvestmentProofSystem(),loadContractBuilder(),loadDealRoom(),loadPortfolioCapitalControl(),loadCapitalOptimizer()]);window.scrollTo({top:0,behavior:'instant'})}
 async function copyExecutiveMemo(button){
  try{
   const d=executiveData||await loadExecutiveRoom(),b=d.board_summary||{},pvc=d.programme_value_case||{};
