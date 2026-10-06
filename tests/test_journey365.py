@@ -34,6 +34,13 @@ class Journey365Tests(unittest.TestCase):
         d=self.journey.snapshot(self.c,self.email)
         status={x["id"]:x["status"] for x in d["journey365_stages"]}
         self.assertEqual(status["event"],"complete")
+    def test_discovery_save_completes_before_stage(self):
+        self.c.execute("INSERT INTO discovery_saves(email,target_kind,target_ref,title,topic,created_at,demo_only) VALUES(?,?,?,?,?,1,1)",(self.email,"content","CT02","Example","Научная грамотность"))
+        self.c.commit()
+        d=self.journey.snapshot(self.c,self.email)
+        status={x["id"]:x["status"] for x in d["journey365_stages"]}
+        self.assertEqual(status["before"],"complete")
+
     def test_progress_is_monotonic_by_completed_stage_count(self):
         a=self.journey.snapshot(self.c,self.email)["journey365_progress_pct"]
         self.c.execute("INSERT INTO topic_subscriptions(email,topic,status,ts) VALUES(?,?,'active',1)",(self.email,"Метаболическое здоровье"))
