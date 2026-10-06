@@ -25,6 +25,13 @@ def _topic_match(topic, signals):
     return any(s in t or t in s for s in signals if s)
 
 
+def _is_held(c,kind,ref):
+    try:
+        return bool(c.execute("SELECT 1 FROM publication_holds WHERE artifact_kind=? AND artifact_ref=? AND status='active' LIMIT 1",(kind,ref)).fetchone())
+    except Exception:
+        return False
+
+
 def _reason(code, detail=""):
     return {
         "code": code,
@@ -88,6 +95,8 @@ def snapshot(c, email=None):
     except Exception:
         saved_rows = []
     for row in saved_rows:
+        if _is_held(c,row["target_kind"],row["target_ref"]):
+            continue
         items.append({
             "id": f"saved:{row['target_kind']}:{row['target_ref']}",
             "kind": row["target_kind"],
@@ -110,7 +119,7 @@ def snapshot(c, email=None):
         current = int(enrollment.get("current_step") or 0)
         next_step = next((x for x in steps if int(x["step_no"]) > current), steps[-1] if steps else None)
         track = tracks.get(track_id)
-        if track and next_step:
+        if track and next_step and not _is_held(c,"learning",track_id):
             items.append({
                 "id": f"continue:{track_id}",
                 "kind": "learning",
@@ -125,6 +134,8 @@ def snapshot(c, email=None):
 
     # 2) Content that matches explicit topics/subscriptions.
     for row in cont.get("content_catalog", []):
+        if row.get("publication_hold"):
+            continue
         status = str(row.get("status") or "")
         if status not in ("published", "concept", "review"):
             continue
@@ -232,7 +243,7 @@ def snapshot(c, email=None):
             (x for x in cont.get("content_catalog", []) if x.get("status") == "published"),
             None,
         )
-        if published:
+        if published and not published.get("publication_hold"):
             items.append({
                 "id": f"editorial:{published['id']}",
                 "kind": "content",
