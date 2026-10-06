@@ -208,3 +208,43 @@ def retract_demo_claim(c,claim_id,note,reviewer):
         "UPDATE evidence_claims SET status='retracted_demo',reviewer=?,reviewed_at=?,correction_note=? WHERE id=?",
         (reviewer,int(time.time()),str(note or "Retracted in demo review.")[:500],claim_id),
     )
+
+
+def coverage(c):
+    claims=_claims(c)
+    rows=[]
+    for claim in claims:
+        citations=_citations(c,claim["id"])
+        links=_links(c,claim["id"])
+        trust=_trust_status(claim,citations,links)
+        gaps=[]
+        if not trust["has_reviewer"]: gaps.append("reviewer_missing")
+        if not trust["has_active_source"]: gaps.append("active_source_missing")
+        if not trust["has_exact_locator"]: gaps.append("exact_locator_missing")
+        if not trust["has_graph_trace"]: gaps.append("graph_trace_missing")
+        if trust["superseded"]: gaps.append("superseded")
+        if trust["retracted"]: gaps.append("retracted")
+        rows.append({
+            "claim_id":claim["id"],
+            "artifact_kind":claim["artifact_kind"],
+            "artifact_ref":claim["artifact_ref"],
+            "claim_text":claim["claim_text"],
+            "status":trust["status"],
+            "trusted":trust["trusted"],
+            "gaps":gaps,
+            "reviewer":claim.get("reviewer"),
+        })
+    current=[x for x in rows if x["status"] not in ("SUPERSEDED","RETRACTED")]
+    trusted=sum(1 for x in current if x["trusted"])
+    return {
+        "version":"evidence-coverage-v1",
+        "summary":{
+            "current_claims":len(current),
+            "trusted_current_claims":trusted,
+            "coverage_pct":round((trusted/len(current)*100.0),1) if current else 0.0,
+            "open_gaps":sum(len(x["gaps"]) for x in current),
+            "historical_versions":sum(1 for x in rows if x["status"] in ("SUPERSEDED","RETRACTED")),
+        },
+        "claims":rows,
+        "publication_gate":"Current claims with evidence gaps must not be presented as VERIFIED.",
+    }
