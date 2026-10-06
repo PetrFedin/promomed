@@ -281,23 +281,55 @@ def admit_candidate(c,candidate_id,actor):
     return {"source_id":source_id,"change_event_id":event_id}
 
 
+def record_provider_error(c,provider,external_id,error,actor="system"):
+    provider=str(provider or "").lower()
+    try:
+        ext=canonical_external_id(provider,external_id)
+        target_id=ensure_target(c,provider,ext,actor,1)
+    except Exception:
+        ext=str(external_id or "")[:160]
+        target_id=None
+    now=int(time.time())
+    raw=f"{provider}|{ext}|{type(error).__name__}|{now}|{time.time_ns()}"
+    error_id="provider-error:"+hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
+    c.execute(
+        "INSERT INTO evidence_provider_errors(id,target_id,provider,external_id,error_type,error_message,occurred_at,demo_only) VALUES(?,?,?,?,?,?,?,1)",
+        (error_id,target_id,provider,ext,type(error).__name__,str(error)[:500],now),
+    )
+    return error_id
+
+
+def fetch_and_ingest(c,provider,external_id,actor,tool="promomed-sostoyanie",email=""):
+    try:
+        payload=fetch_live(provider,external_id,tool=tool,email=email)
+    except Exception as e:
+        record_provider_error(c,provider,external_id,e,actor)
+        raise ValueError("provider_fetch_failed")
+    return ingest_payload(c,provider,external_id,payload,actor,demo_only=0)
+
+
 def snapshot(c):
     targets=[dict(r) for r in c.execute("SELECT id,provider,external_id,canonical_key,source_id,status,created_by,created_at FROM evidence_watch_targets ORDER BY created_at,id")]
     snapshots=[dict(r) for r in c.execute("SELECT id,target_id,provider,external_id,payload_hash,provider_status,version_marker,fetched_at,is_current FROM evidence_provider_snapshots ORDER BY fetched_at DESC,id DESC LIMIT 50")]
     candidates=[dict(r) for r in c.execute("SELECT id,target_id,snapshot_id,change_type,severity,reason,status,created_at,admitted_at,admitted_by,admitted_source_id,change_event_id FROM evidence_admission_candidates ORDER BY created_at DESC,id DESC LIMIT 50")]
     reviews=[dict(r) for r in c.execute("SELECT candidate_id,review_role,status,reviewer,reviewed_at,note FROM evidence_admission_reviews ORDER BY candidate_id,review_role")]
+    try:
+        errors=[dict(r) for r in c.execute("SELECT id,target_id,provider,external_id,error_type,error_message,occurred_at,resolved_at FROM evidence_provider_errors ORDER BY occurred_at DESC,id DESC LIMIT 30")]
+    except Exception:
+        errors=[]
     return {
         "version":"external-evidence-admission-v1",
         "targets":targets,
         "snapshots":snapshots,
         "candidates":candidates,
         "reviews":reviews,
+        "provider_errors":errors,
         "summary":{
             "watch_targets":len(targets),
             "current_snapshots":sum(1 for x in snapshots if int(x["is_current"])),
             "pending_candidates":sum(1 for x in candidates if x["status"] in ("pending_review","review_ready")),
             "admitted_candidates":sum(1 for x in candidates if x["status"]=="admitted_demo"),
-            "provider_errors":0,
+            "provider_errors":sum(1 for x in errors if not x.get("resolved_at")),
         },
         "admission_rule":"External provider metadata is a signal. Evidence Graph and Change Impact update only after governed admission.",
         "truth_boundary":{
