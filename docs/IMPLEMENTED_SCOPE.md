@@ -312,3 +312,25 @@ Repository/runtime scope:
 Publication rule: a takeaway is public only after human review and must resolve to an exact transcript time range.
 
 This checkpoint does not claim automated transcription provider integration, production speech-to-text accuracy or automatic medical publication. AI-generated text remains draft evidence until reviewed.
+
+
+## Claim Evidence Graph — evidence-addressable knowledge checkpoint
+
+Added a machine-checkable trust layer over editorial content:
+
+`article claim -> citation -> source -> reviewer -> transcript/expert/event/replay -> version history`.
+
+Repository/runtime scope:
+
+- `evidence_sources` for typed source records and disclosure;
+- `evidence_claims` for claim text, artifact binding, reviewer, status and immutable version lineage;
+- `evidence_citations` for exact source locators and support relation;
+- `evidence_links` for graph edges to transcript segments, experts, events and replay ranges;
+- derived trust status with fail-closed checks for reviewer, active source, exact locator and graph trace;
+- article-level `Why trust this?` UI;
+- explicit `SUPERSEDED` and `RETRACTED` lifecycle states;
+- editor correction creates a new version without erasing the previous claim;
+- editor retraction preserves the record and removes trusted status;
+- Golden Demo reset/reseed keeps evidence history reproducible.
+
+Current MVP sources are explicitly DEMO records. The graph proves workflow and machine-checkability; it does not claim that demo sources are externally verified scientific publications. Production admission requires replacing demo evidence sources with verified source metadata and accepted editorial/medical review.
