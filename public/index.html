@@ -172,6 +172,13 @@ body.presentationMode .presentationLauncher{display:block}
 .execFocus{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.execFocus span{padding:6px 8px;border-radius:999px;background:#ffffff12;border:1px solid #ffffff20;font-size:8px;font-weight:800}
 @media(min-width:800px){.execDecisionGrid{grid-template-columns:repeat(4,1fr)}.execTwoCol{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(min-width:1024px){.execModeTabs{top:82px}}
+@media(max-width:600px){
+ .section,.card,.row,.actions,.proofgrid,.proofmetric,.execTwoCol,.execKpi,.execTranche,.execReadiness,.execDataRoom{min-width:0;max-width:100%}
+ .row>*{min-width:0}
+ .execStatus,.pill{white-space:normal;max-width:100%;overflow-wrap:anywhere;word-break:break-word;text-align:center}
+ .notice,.small,.tiny,.execKpi b,.execTranche b,.proofmetric strong{overflow-wrap:anywhere;word-break:break-word}
+ .actions>.btn{max-width:100%;white-space:normal}
+}
 .corpHero{border-radius:28px;padding:22px;background:linear-gradient(145deg,#091a2a,#153a55 68%,#176a77);color:#fff;position:relative;overflow:hidden}
 .corpHero:after{content:'DILIGENCE';position:absolute;right:-12px;bottom:-22px;font-size:58px;font-weight:900;letter-spacing:-4px;color:#ffffff08}
 .corpHero .muted{color:#bdd0d8}.corpHero h1{color:#fff;margin:8px 0 10px}
