@@ -101,3 +101,38 @@ def build(c, *, artifact_kind, artifact_ref):
         "validForProcess": state in ("VERIFIED_DEMO_PROCESS", "VERIFIED_PROCESS"),
         "medicalEfficacyCertified": False,
     }
+
+
+def portable_bundle(c, *, artifact_kind, artifact_ref):
+    seal = build(c, artifact_kind=artifact_kind, artifact_ref=artifact_ref)
+    canonical = {
+        "schemaVersion": "promomed-content-evidence-bundle-v1",
+        "artifact": seal["artifact"],
+        "state": seal["state"],
+        "counts": seal["counts"],
+        "claims": [
+            {
+                "id": claim["id"],
+                "version": claim["version"],
+                "status": claim["status"],
+                "trusted": claim["trusted"],
+                "reviewedAt": claim["reviewedAt"],
+                "citations": claim["citations"],
+                "links": claim["links"],
+            }
+            for claim in seal["currentClaims"]
+        ],
+        "truthBoundary": seal["truthBoundary"],
+        "sealSha256": seal["evidencePackageSha256"],
+        "disclosureBoundary": {
+            "reviewerIdentityIncluded": False,
+            "medicalEfficacyCertified": False,
+            "clinicalRecommendationIncluded": False,
+            "patientDataIncluded": False,
+        },
+        "signature": {"status": "unsigned", "issuer": None},
+    }
+    return {
+        **canonical,
+        "bundleSha256": _canonical_sha256(canonical),
+    }
