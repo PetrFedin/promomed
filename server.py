@@ -16,8 +16,7 @@ from app.editorial_commands import handle_command as handle_editorial_command
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
-from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command
-from app.strategic_reads import read as read_strategic_projection
+from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection
 ROOT=os.path.join(os.path.dirname(__file__),"public"); LOCK=threading.RLock()
 def conn(): return db.connect()
 def init():
