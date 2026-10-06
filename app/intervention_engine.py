@@ -141,9 +141,20 @@ def snapshot(c):
     reallocation_candidates = sum(x["reallocation_candidate_rub"] for x in diagnostics)
     freeze_recommended = any(x["freeze_new_commitments"] for x in diagnostics)
 
+    intervention_priority = {
+        "RECOVERY_SPRINT": 4,
+        "HOLD_COMMITMENT": 3,
+        "HOLD_FINAL_GATE": 2,
+        "CONTINUE_CONTROLLED": 1,
+    }
     primary = sorted(
         diagnostics,
-        key=lambda x: (x["risk_score"], x["downstream_value_at_risk_rub"], x["capital_at_risk_rub"]),
+        key=lambda x: (
+            intervention_priority.get(x["intervention_type"], 0),
+            x["risk_score"],
+            x["downstream_value_at_risk_rub"],
+            x["capital_at_risk_rub"],
+        ),
         reverse=True,
     )[0]
 
