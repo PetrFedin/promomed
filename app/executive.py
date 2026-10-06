@@ -90,6 +90,15 @@ def snapshot(c):
         },
     ]
 
+    programme_value_case = {
+        "headline": "50-100m RUB buys a governed operating platform and a measurable proof cycle, not a microsite.",
+        "envelopes": proof.get("investment_envelopes", []),
+        "payback_reference": proof.get("payback_reference", []),
+        "value_levers": proof.get("value_levers", []),
+        "public_company_context": proof.get("public_company_context", {}),
+        "truth": proof.get("value_case_truth", {}),
+    }
+
     pilot_contract = {
         "objective": "Prove that СОСТОЯНИЕ can operate as a measurable year-round health relationship platform, not just an event interface.",
         "in_scope": [
@@ -308,6 +317,7 @@ def snapshot(c):
         "board_summary": board_summary,
         "audience_modes": audience_modes,
         "funding_tranches": funding_tranches,
+        "programme_value_case": programme_value_case,
         "pilot_contract": pilot_contract,
         "kpi_dictionary": kpi_dictionary,
         "corporate_readiness": corporate_readiness,
