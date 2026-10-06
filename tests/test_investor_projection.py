@@ -100,6 +100,24 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertIn("double", truth)
         self.assertNotIn("guaranteed payback", truth)
 
+    def test_value_capture_map_has_owner_formula_proof_and_guardrail(self):
+        proof = self.investor.snapshot(self.c)
+        rows = proof["value_capture_map"]
+        self.assertGreaterEqual(len(rows), 6)
+        for row in rows:
+            self.assertTrue(row["owner"])
+            self.assertTrue(row["baseline"])
+            self.assertTrue(row["formula"])
+            self.assertTrue(row["proof"])
+            self.assertTrue(row["decision"])
+        by_id = {x["id"]: x for x in rows}
+        self.assertEqual(by_id["budget_baseline"]["counting"], "discovery_only")
+        self.assertEqual(by_id["external_substitution"]["counting"], "counts_once")
+        self.assertEqual(by_id["owned_365_audience"]["status"], "upside_until_proven")
+        protocol = proof["value_evidence_protocol"]
+        self.assertGreaterEqual(len(protocol["steps"]), 5)
+        self.assertIn("No value line enters payback twice", protocol["guardrail"])
+
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
         revenue_text = str(proof["revenue_architecture"]).lower()
