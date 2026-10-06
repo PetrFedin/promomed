@@ -2,9 +2,9 @@ import time
 
 from app.commanding import error, ok
 from app.core import audit
-from app import transcript_intelligence
+from app import transcript_intelligence, evidence_graph
 
-ROUTES = {"/api/question", "/api/cms", "/api/transcript-takeaway-review"}
+ROUTES = {"/api/question", "/api/cms", "/api/transcript-takeaway-review", "/api/evidence-claim-correct", "/api/evidence-claim-retract"}
 
 
 def handle_command(c, route, role, email, data):
@@ -17,6 +17,26 @@ def handle_command(c, route, role, email, data):
         text = str(data.get("text", "Как отличать корреляцию от причинности?"))[:500]
         c.execute("INSERT INTO questions(text,status,ts) VALUES(?,'review',?)", (text, int(time.time())))
         audit(c, "question_submitted", email, {})
+        return ok()
+
+    if route in ("/api/evidence-claim-correct", "/api/evidence-claim-retract"):
+        if role != "editor":
+            return error("forbidden", 403)
+        claim_id = str(data.get("claim_id", ""))[:80].strip()
+        if not claim_id:
+            return error("claim_id_required", 422)
+        try:
+            if route == "/api/evidence-claim-correct":
+                new_text = str(data.get("claim_text", "")).strip()
+                if not new_text:
+                    return error("claim_text_required", 422)
+                new_id = evidence_graph.correct_demo_claim(c, claim_id, new_text, email)
+                audit(c, "evidence_claim_corrected", email, {"claim_id": claim_id, "new_claim_id": new_id})
+            else:
+                evidence_graph.retract_demo_claim(c, claim_id, str(data.get("note", "")), email)
+                audit(c, "evidence_claim_retracted", email, {"claim_id": claim_id})
+        except ValueError as e:
+            return error(str(e), 404 if str(e) == "claim_not_found" else 409)
         return ok()
 
     if route == "/api/transcript-takeaway-review":
