@@ -16,6 +16,7 @@ from app.editorial_commands import handle_command as handle_editorial_command
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
+from app.strategic_reads import read as read_strategic_projection
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
 LOCK=threading.RLock()
@@ -313,36 +314,11 @@ class H(SimpleHTTPRequestHandler):
    try:d=executive.snapshot(c)
    finally:c.close()
    return self.out(d)
-  if p=="/api/capital-allocation-optimizer":
-   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
+  if a:
    c=conn()
-   try:d=capital_optimizer.snapshot(c)
+   try: strategic=read_strategic_projection(c,p,a[0])
    finally:c.close()
-   return self.out(d)
-  if p=="/api/portfolio-capital-control":
-   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
-   c=conn()
-   try:d=portfolio_control.snapshot(c)
-   finally:c.close()
-   return self.out(d)
-  if p=="/api/deal-room":
-   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
-   c=conn()
-   try:d=deal_room.snapshot(c)
-   finally:c.close()
-   return self.out(d)
-  if p=="/api/contract-builder":
-   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
-   c=conn()
-   try:d=contract_builder.snapshot(c)
-   finally:c.close()
-   return self.out(d)
-  if p=="/api/investment-proof-system":
-   if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
-   c=conn()
-   try:d=investment_proof.snapshot(c)
-   finally:c.close()
-   return self.out(d)
+   if strategic is not None: return self.out(strategic[0],strategic[1])
   if p=="/api/corporate-readiness":
    if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
    c=conn()
