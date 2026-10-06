@@ -91,6 +91,8 @@ def analyze_source_change(c,source_id,event_type,summary,actor):
     now=int(time.time())
     event_id=f"chg:{source_id}:{now}"
     base=EVENT_SEVERITY[event_type]
+    if event_type in ("source_updated","source_corrected","source_retracted"):
+        c.execute("UPDATE evidence_sources SET status=? WHERE id=?", (event_type+"_demo",source_id))
     c.execute(
         "INSERT INTO knowledge_change_events(id,source_id,event_type,summary,severity_hint,status,detected_at,created_by,demo_only) VALUES(?,?,?,?,?,'open',?,?,1)",
         (event_id,source_id,event_type,str(summary or "")[:600],base,now,actor),
