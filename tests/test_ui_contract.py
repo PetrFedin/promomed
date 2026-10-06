@@ -108,6 +108,16 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("FRAMEWORK CROSSWALK · REFERENCE, NOT CERTIFICATION", INDEX)
         self.assertIn("This is an evidence-backed readiness pack, not a security certification.", (ROOT / "app" / "corporate.py").read_text(encoding="utf-8"))
 
+    def test_investor_value_case_is_visible_and_truth_labeled(self):
+        self.assertIn("50–100M ₽ VALUE CASE · WHAT THE COMPANY ACTUALLY BUYS", INDEX)
+        self.assertIn('id="valueCompanyContext"', INDEX)
+        self.assertIn('id="valueEnvelopes"', INDEX)
+        self.assertIn('id="valuePaybackTable"', INDEX)
+        self.assertIn('id="valueLevers"', INDEX)
+        self.assertIn('id="valueTruthBoundary"', INDEX)
+        self.assertIn("FORMULA · NOT FORECAST", INDEX)
+        self.assertIn("Быстрая окупаемость должна быть доказана, а не нарисована.", INDEX)
+
     def test_investor_presentation_mode_is_shareable_and_reset_safe(self):
         self.assertIn('id="presentationLauncher"', INDEX)
         self.assertIn("const presentationModes=new Set(['menu','golden','owner','investor','executive','security'])", INDEX)
