@@ -36,10 +36,10 @@ def _reason(code, detail=""):
 def snapshot(c, email=None):
     if not email:
         return {
-            "mode": "anonymous",
-            "items": [],
-            "reason_codes": REASON_LABELS,
-            "medical_inference": False,
+            "personalization_mode": "anonymous",
+            "personalized_items": [],
+            "personalization_reason_codes": REASON_LABELS,
+            "personalization_medical_inference": False,
         }
 
     p = participant.snapshot(c, email)
@@ -236,9 +236,9 @@ def snapshot(c, email=None):
             break
 
     return {
-        "mode": "deterministic_rules_v1",
-        "relationship_stage": p.get("relationship_stage", "registered"),
-        "signals": {
+        "personalization_mode": "deterministic_rules_v1",
+        "personalization_relationship_stage": p.get("relationship_stage", "registered"),
+        "personalization_signals": {
             "interest_count": len(interests),
             "subscription_count": len(subscriptions),
             "follow_count": len(follows),
@@ -246,10 +246,10 @@ def snapshot(c, email=None):
             "booked_count": len(booked),
             "active_learning_count": len(enrollments),
         },
-        "items": ranked,
-        "reason_codes": REASON_LABELS,
-        "medical_inference": False,
-        "forbidden_outputs": [
+        "personalized_items": ranked,
+        "personalization_reason_codes": REASON_LABELS,
+        "personalization_medical_inference": False,
+        "personalization_forbidden_outputs": [
             "diagnosis",
             "treatment recommendation",
             "drug recommendation",
