@@ -97,6 +97,12 @@ class UIContractTests(unittest.TestCase):
         self.assertIn('id="investmentProofKpis"', INDEX)
         self.assertIn('id="investmentProofLedger"', INDEX)
         self.assertIn("async function loadInvestmentProofSystem()", INDEX)
+        self.assertIn("DIGITAL INVESTMENT CONTRACT · DEMO ACCEPTANCE", INDEX)
+        self.assertIn('id="digitalContractAcceptances"', INDEX)
+        self.assertIn('id="digitalContractCertificates"', INDEX)
+        self.assertIn("async function acceptDemoRequirement(", INDEX)
+        self.assertIn("LEGAL EFFECT:", INDEX)
+        self.assertIn("not an electronic signature", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
