@@ -294,7 +294,17 @@ body.presentationMode .presentationLauncher{display:block}
 <div id="valueCompanyContext" class="valueTruth"><p class="small muted">Загрузка публичного масштаба компании…</p></div>
 <div id="valueEnvelopes" class="valueCaseGrid" style="margin-top:12px"></div>
 <div class="card" style="margin-top:12px"><div class="row"><div><div class="ey blue">PAYBACK THRESHOLD</div><h3>Сколько подтверждённой годовой ценности нужно, чтобы вернуть инвестицию</h3></div><span class="pill">FORMULA · NOT FORECAST</span></div><div id="valuePaybackTable"></div></div>
-<div class="card"><div class="ey blue">FASTEST VALUE PATH</div><h3>Сначала то, что можно подтвердить финансами, а не маркетинговой верой</h3><div id="valueLevers"></div></div>
+<div class="card"><div class="row"><div><div class="ey blue">VERIFIED VALUE LAB · COMPANY INPUTS</div><h3>Проверить окупаемость на цифрах ПРОМОМЕД</h3></div><span class="pill">NO SAVED FORECAST</span></div>
+<div class="scenarioGrid">
+<div class="scenarioField"><label>INVESTMENT · ₽</label><input id="valueInvestment" type="number" min="0" step="5000000" value="75000000" oninput="calcVerifiedValue()"></div>
+<div class="scenarioField"><label>AVOIDED EXTERNAL SPEND / YEAR · ₽</label><input id="valueAvoided" type="number" min="0" step="1000000" value="0" oninput="calcVerifiedValue()"></div>
+<div class="scenarioField"><label>PARTNER CONTRIBUTION / YEAR · ₽</label><input id="valuePartner" type="number" min="0" step="1000000" value="0" oninput="calcVerifiedValue()"></div>
+<div class="scenarioField"><label>OPERATING SAVINGS / YEAR · ₽</label><input id="valueOps" type="number" min="0" step="1000000" value="0" oninput="calcVerifiedValue()"></div>
+<div class="scenarioField"><label>OTHER FINANCE-APPROVED VALUE / YEAR · ₽</label><input id="valueOther" type="number" min="0" step="1000000" value="0" oninput="calcVerifiedValue()"></div>
+<div class="scenarioField"><label>RECURRING PLATFORM RUN COST / YEAR · ₽</label><input id="valueRunCost" type="number" min="0" step="1000000" value="0" oninput="calcVerifiedValue()"></div>
+</div><div id="verifiedValueOutput" class="scenarioOutput" style="margin-top:10px"></div>
+<div class="tiny muted" style="margin-top:8px">Вводите только значения, которые можно подтвердить бюджетом, договором или finance-approved actuals. Рост продаж лекарств не включается автоматически.</div>
+</div><div class="card"><div class="ey blue">FASTEST VALUE PATH</div><h3>Сначала то, что можно подтвердить финансами, а не маркетинговой верой</h3><div id="valueLevers"></div></div>
 <div id="valueTruthBoundary" class="valueTruth"></div>
 </div>
 <div class="section"><div class="ey blue">INVESTMENT COMMITTEE ROOM · DILIGENCE BEFORE STORYTELLING</div><h2>Что должен увидеть инвестиционный комитет до следующего транша</h2><div id="committeeState" class="committeeHero"><p class="small muted">Загрузка committee state…</p></div><div id="diligenceGrid" class="committeeGrid"></div></div>
@@ -679,6 +689,12 @@ function calcInvestorScenario(){
  const root=document.getElementById('investorEconomicsOutput');if(!root)return;
  root.innerHTML='<div class="proofgrid"><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">MODELED ANNUAL REVENUE</span><strong>'+formatMoney(revenue)+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">CONTRIBUTION</span><strong>'+formatMoney(contribution)+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">CONTRIBUTION MARGIN</span><strong>'+(margin===null?'—':margin.toFixed(1)+'%')+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">PAYBACK</span><strong>'+(payback===null?'—':payback.toFixed(1)+' мес.')+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">MAX REVENUE-LINE CONCENTRATION</span><strong>'+(concentration===null?'—':concentration.toFixed(1)+'%')+'</strong></div></div><div class="tiny muted" style="margin-top:10px">Scenario only · значения не сохраняются и не являются прогнозом.</div>'
 }
+function calcVerifiedValue(){
+ const investment=econValue('valueInvestment'),avoided=econValue('valueAvoided'),partner=econValue('valuePartner'),ops=econValue('valueOps'),other=econValue('valueOther'),run=econValue('valueRunCost');
+ const gross=avoided+partner+ops+other,net=gross-run,monthly=net>0?net/12:0,payback=investment>0&&monthly>0?investment/monthly:null,coverage=investment>0?net/investment:null;
+ const root=document.getElementById('verifiedValueOutput');if(!root)return;
+ root.innerHTML='<div class="proofgrid"><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">GROSS VERIFIED VALUE / YEAR</span><strong>'+formatMoney(gross)+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">NET VERIFIED VALUE / YEAR</span><strong>'+formatMoney(net)+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">PAYBACK</span><strong>'+(payback===null?'—':payback.toFixed(1)+' мес.')+'</strong></div><div class="proofmetric" style="background:#102b49;border-color:#234462"><span class="tiny muted">ANNUAL VALUE / INVESTMENT</span><strong>'+(coverage===null?'—':(coverage*100).toFixed(1)+'%')+'</strong></div></div><div class="tiny muted" style="margin-top:9px">Formula: (avoided spend + partner contribution + operating savings + other finance-approved value − recurring run cost). No double counting.</div>';
+}
 function investorStatus(status){
  const labels={live:'LIVE',ci_proven:'CI-PROVEN',demo:'DEMO',gated:'GATED'};
  return '<span class="investorStatus '+esc(status)+'">'+(labels[status]||esc(status))+'</span>'
@@ -842,7 +858,7 @@ async function copyExecutiveMemo(button){
   await navigator.clipboard.writeText(memo);if(button){const old=button.textContent;button.textContent='Board Memo скопирован ✓';setTimeout(()=>button.textContent=old,1800)}
  }catch(e){if(button)button.textContent='Copy недоступен'}
 }
-async function showInvestorProof(){closeSheet();await goldenLogin();show('investorProof');calcInvestorScenario();await Promise.all([loadInvestorProof(),loadInvestorReadiness(),loadCommand()])}
+async function showInvestorProof(){closeSheet();await goldenLogin();show('investorProof');calcInvestorScenario();calcVerifiedValue();await Promise.all([loadInvestorProof(),loadInvestorReadiness(),loadCommand()])}
 const goldenCopy=[
  ['Готово к показу','Исходное состояние сброшено. Один demo run, известные данные, никаких следов предыдущей встречи.','Подготовить полный зал'],
  ['Зал заполнен','Capacity authority показывает 120 / 120. Следующая бронь уже не может стать confirmed.','Поставить P2/P3 в waitlist'],
