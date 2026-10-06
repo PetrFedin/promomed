@@ -197,6 +197,25 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     assert_no_page_overflow(page, width, f"{name}/corporate")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-corporate.png"), full_page=True)
 
+    # Shareable investor entrypoints must work directly from a fresh URL on every viewport.
+    page.goto(BASE_URL + "?presentation=menu", wait_until="domcontentloaded")
+    page.wait_for_selector("#overlay.on")
+    expect(page.locator("#sheet")).to_contain_text("INVESTOR PRESENTATION MODE")
+    expect(page.locator("#sheet")).to_contain_text("Golden Demo")
+    expect(page.locator("#presentationLauncher")).to_be_visible()
+    assert_sheet_within_viewport(page, height, f"{name}/presentation-menu")
+    assert_no_page_overflow(page, width, f"{name}/presentation-menu")
+
+    page.goto(BASE_URL + "?presentation=executive", wait_until="domcontentloaded")
+    page.wait_for_selector("#executiveRoom.on")
+    expect(page.locator("#execBoardSummary")).to_contain_text("CONTROLLED PILOT ONLY")
+    assert_no_page_overflow(page, width, f"{name}/presentation-executive")
+
+    page.goto(BASE_URL + "?presentation=security", wait_until="domcontentloaded")
+    page.wait_for_selector("#corporateRoom.on")
+    expect(page.locator("#corpSummary")).to_contain_text("PRE PRODUCTION SECURITY REVIEW")
+    assert_no_page_overflow(page, width, f"{name}/presentation-security")
+
     assert not errors, f"{name}: page errors: {errors}"
     context.close()
 
