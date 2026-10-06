@@ -169,6 +169,11 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     page.locator("#valueRunCost").fill("5000000")
     expect(page.locator("#verifiedValueOutput")).to_contain_text(re.compile(r"75\s*000\s*000"))
     expect(page.locator("#verifiedValueOutput")).to_contain_text("12.0 мес.")
+    page.locator("#valueReuse").fill("10000000")
+    page.locator("#valueAudience").fill("0")
+    expect(page.locator("#verifiedValueOutput")).to_contain_text(re.compile(r"85\s*000\s*000"))
+    expect(page.locator("#valueCaptureMap")).to_contain_text("Replace fragmented external spend")
+    expect(page.locator("#valueEvidenceProtocol")).to_contain_text("LOCK BASELINE")
     assert_no_page_overflow(page, width, f"{name}/investor")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-investor.png"), full_page=True)
 
