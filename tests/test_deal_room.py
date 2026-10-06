@@ -70,6 +70,66 @@ class PilotDealRoomTests(unittest.TestCase):
         self.assertEqual(d["board_packet"]["legal_effect"], "NONE")
         self.assertEqual(d["board_packet"]["payment_authority"], "NONE")
 
+    def test_owner_inbox_has_three_day_sla_and_escalation(self):
+        d = self.deal_room.snapshot(self.c)
+        inbox = d["owner_inbox"]
+        self.assertEqual(len(inbox), 1)
+        item = inbox[0]
+        self.assertEqual(item["owner"], "Commercial Director")
+        self.assertEqual(item["days_remaining"], 3)
+        self.assertEqual(item["escalation_owner"], "Executive Sponsor")
+        self.assertEqual(item["status"], "awaiting")
+
+    def test_evidence_registry_hashes_reference(self):
+        self.deal_room.snapshot(self.c)
+        doc = self.deal_room.register_demo_evidence(
+            self.c,
+            "t50",
+            "m3",
+            "partner_delivery",
+            "sales@demo.ru",
+            "Signed partner delivery acceptance",
+            "acceptance_reference",
+            "demo://signed-partner-acceptance",
+        )
+        self.c.commit()
+        d = self.deal_room.snapshot(self.c)
+        self.assertEqual(len(d["evidence_registry"]), 1)
+        self.assertEqual(d["evidence_registry"][0]["id"], doc["id"])
+        self.assertEqual(d["evidence_registry"][0]["content_sha256"], doc["sha256"])
+        self.assertEqual(len(doc["sha256"]), 64)
+
+    def test_payment_request_is_blocked_until_demo_readiness(self):
+        self.deal_room.snapshot(self.c)
+        with self.assertRaisesRegex(ValueError, "milestone_not_eligible"):
+            self.deal_room.create_demo_payment_request(self.c, "sales@demo.ru")
+
+        self.deal_room.attach_and_accept_demo(
+            self.c,
+            "t50",
+            "m3",
+            "partner_delivery",
+            "sales@demo.ru",
+            "demo://signed-partner-acceptance",
+        )
+        self.c.commit()
+        request_id = self.deal_room.create_demo_payment_request(self.c, "sales@demo.ru")
+        self.c.commit()
+        d = self.deal_room.snapshot(self.c)
+        self.assertEqual(len(d["payment_requests"]), 1)
+        self.assertEqual(d["payment_requests"][0]["id"], request_id)
+        self.assertEqual(d["payment_requests"][0]["status"], "finance_review_demo")
+        self.assertFalse(d["payment_requests"][0]["payment_authorized"])
+        self.assertEqual(d["board_packet"]["payment_authority"], "NONE")
+
+    def test_board_packet_export_is_present_and_non_binding(self):
+        d = self.deal_room.snapshot(self.c)
+        export = d["board_packet"]["export"]
+        self.assertTrue(export["ready"])
+        self.assertTrue(export["filename"].endswith(".json"))
+        self.assertEqual(d["board_packet"]["legal_effect"], "NONE")
+        self.assertEqual(d["board_packet"]["payment_authority"], "NONE")
+
     def test_reset_restores_blocked_case(self):
         self.deal_room.attach_and_accept_demo(
             self.c,
