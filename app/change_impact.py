@@ -120,6 +120,11 @@ def analyze_source_change(c,source_id,event_type,summary,actor):
         "WHERE ec.source_id=? AND ec.status='active'",
         (source_id,),
     )]
+    for claim in claim_rows:
+        if claim["status"] in ("reviewed","reviewed_demo"):
+            c.execute("UPDATE evidence_claims SET status='review_required_demo',correction_note=? WHERE id=?",
+                      (f"Evidence source {source_id} changed: {event_type}",claim["id"]))
+            claim["status"]="review_required_demo"
 
     impact_count=0
     hold_artifacts=set()
