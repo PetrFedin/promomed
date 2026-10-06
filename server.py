@@ -13,6 +13,8 @@ from app.programme_commands import handle_command as handle_programme_command
 from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command
+from app.evidence_commands import handle_command as handle_evidence_command
+from app.evidence_governance import build_manifest, verification_projection
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -210,6 +212,16 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
+  if p.startswith("/api/evidence/manifest/"):
+   content_id=p.rsplit("/",1)[-1]; c=conn()
+   try: manifest=build_manifest(c,content_id=content_id)
+   finally: c.close()
+   return self.out({"error":"content_not_found"},404) if manifest is None else self.out({"data":manifest})
+  if p.startswith("/api/evidence/verify/"):
+   content_id=p.rsplit("/",1)[-1]; c=conn()
+   try: manifest=build_manifest(c,content_id=content_id)
+   finally: c.close()
+   return self.out({"error":"content_not_found"},404) if manifest is None else self.out({"data":verification_projection(manifest)})
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p=="/api/product-quality-proof":
@@ -382,6 +394,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_evidence_command(c,p,role,email,data)
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
     if outcome is None: outcome=handle_investment_command(c,p,role,email,data)
     if outcome is None: outcome=handle_deal_command(c,p,role,email,data)
