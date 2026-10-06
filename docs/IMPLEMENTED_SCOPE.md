@@ -442,6 +442,7 @@ Repository/runtime scope:
 - database triggers preventing update/delete of decisions and authority events;
 - tamper-evident previous-hash event chain;
 - final production admission restricted to a separate governance actor;
+- failed command outcomes roll back transactionally, preventing partial governance mutations from committing behind a 4xx response;
 - reviewer/governance projection and CI contract tests;
 - production reviewer attestation CLI requiring PostgreSQL production readiness.
 
