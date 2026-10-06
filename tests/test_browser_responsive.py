@@ -221,6 +221,16 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
 
     page.goto(BASE_URL + "?presentation=executive", wait_until="domcontentloaded")
     page.wait_for_selector("#executiveRoom.on")
+    page.evaluate("""async () => {
+      const token = localStorage.getItem('sostoyanie_token');
+      await fetch('/api/deal-room/reset-demo', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:'{}'
+      });
+    }""")
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector("#executiveRoom.on")
     expect(page.locator("#execBoardSummary")).to_contain_text("CONTROLLED PILOT ONLY")
     expect(page.locator("#execProgrammeValue")).to_contain_text("50 000 000")
     expect(page.locator("#execValueBridge")).to_contain_text("Finance")
