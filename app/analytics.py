@@ -1,6 +1,6 @@
 import time
 
-from app import community, content, learning, operations, participant, partners, programme
+from app import community, content, learning, operations, participant, partners, programme, personalization
 
 
 def commercial(c):
@@ -40,6 +40,7 @@ def state(c, email=None):
         partners.snapshot(c, email),
         operations.snapshot(c),
         participant.snapshot(c, email),
+        personalization.snapshot(c, email),
     ):
         d.update(projection)
 
