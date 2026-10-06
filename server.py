@@ -191,10 +191,10 @@ class H(SimpleHTTPRequestHandler):
   self.send_header("Access-Control-Allow-Methods","GET, POST, OPTIONS")
  def out(self,obj,status=200):
   b=json.dumps(obj,ensure_ascii=False).encode(); self.send_response(status)
-  self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors()
-  self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
+  self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors(); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
- def do_GET(self): p=urlparse(self.path).path; a=auth(self)
+ def do_GET(self):
+  p=urlparse(self.path).path; a=auth(self)
   if p=="/health":
    return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"demo_seed":db.demo_seed_enabled(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
   if p=="/ready":
