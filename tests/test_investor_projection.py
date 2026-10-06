@@ -78,6 +78,28 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(scale["Governed scientific-information platform"], "gated")
         self.assertEqual(scale["White-label operating system"], "gated")
 
+    def test_50_100m_value_case_is_formula_bound_and_not_a_forecast(self):
+        proof = self.investor.snapshot(self.c)
+        envelopes = {x["amount_rub"]: x for x in proof["investment_envelopes"]}
+        self.assertEqual(set(envelopes), {50_000_000, 75_000_000, 100_000_000})
+        self.assertEqual(proof["public_company_context"]["period"], "FY2025")
+        self.assertGreater(proof["public_company_context"]["revenue_rub"], 0)
+        self.assertGreater(proof["public_company_context"]["adjusted_ebitda_rub"], 0)
+        refs = {x["amount_rub"]: x for x in proof["payback_reference"]}
+        self.assertEqual(refs[50_000_000]["thresholds"][1]["months"], 12)
+        self.assertEqual(refs[50_000_000]["thresholds"][1]["annual_verified_value_rub"], 50_000_000)
+        self.assertEqual(refs[100_000_000]["thresholds"][0]["months"], 6)
+        self.assertEqual(refs[100_000_000]["thresholds"][0]["annual_verified_value_rub"], 200_000_000)
+        levers = {x["id"]: x for x in proof["value_levers"]}
+        self.assertTrue(levers["budget_substitution"]["base_case"])
+        self.assertTrue(levers["contracted_partner_value"]["base_case"])
+        self.assertFalse(levers["product_sales"]["base_case"])
+        self.assertTrue(levers["product_sales"]["gated"])
+        truth = str(proof["value_case_truth"]).lower()
+        self.assertIn("not an asserted valuation", truth)
+        self.assertIn("double", truth)
+        self.assertNotIn("guaranteed payback", truth)
+
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
         revenue_text = str(proof["revenue_architecture"]).lower()
