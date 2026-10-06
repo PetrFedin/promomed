@@ -140,7 +140,7 @@ def analyze_source_change(c,source_id,event_type,summary,actor):
                 (iid,event_id,claim["id"],kind,ref,reason,sev,_owner_for(kind),deadline,audience),
             )
             impact_count+=1
-            if sev in ("high","critical") and kind in ("content","takeaway","learning","product","recommendation"):
+            if sev in ("high","critical") and kind in ("content","takeaway","learning","product","partner","recommendation"):
                 hold_artifacts.add((kind,ref,sev,claim["id"]))
 
     for kind,ref,sev,claim_id in hold_artifacts:
