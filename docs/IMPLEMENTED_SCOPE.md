@@ -434,8 +434,9 @@ Repository/runtime scope:
 - dedicated `reviewer` and `governance` account roles;
 - reviewer profiles with credential state, issuer/reference, validity and independence attestation;
 - authorized expertise scopes;
+- editorial acceptance required before scientific assignment;
 - explicit reviewer assignment per evidence candidate;
-- mandatory conflict disclosure and automatic recusal on material conflict;
+- mandatory conflict disclosure, automatic recusal on material conflict, conflict hold on potential conflict, and same-candidate reassignment block for the conflicted reviewer;
 - production scientific review blocked from the editor shortcut;
 - scientific decisions bound to the exact provider snapshot SHA-256;
 - authenticated-session decision digest and rationale;
