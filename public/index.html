@@ -77,6 +77,14 @@ body{min-height:100vh;min-height:100dvh;overflow-x:clip}
 }
 
 
+/* investor presentation mode */
+.presentationLauncher{display:none;position:fixed;right:16px;top:max(14px,env(safe-area-inset-top));z-index:96;border:1px solid rgba(255,255,255,.28);border-radius:999px;background:#071d36;color:#fff;padding:10px 14px;font-size:10px;font-weight:850;letter-spacing:.55px;box-shadow:0 10px 32px rgba(7,29,54,.24)}
+body.presentationMode .presentationLauncher{display:block}
+.presentationMenuGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.presentationMenuCard{border:1px solid var(--l);background:#fff;border-radius:16px;padding:14px;text-align:left;cursor:pointer}
+.presentationMenuCard b{display:block;margin-bottom:5px}.presentationMenuCard span{display:block;font-size:10px;line-height:1.45;color:#667085}
+.presentationTruth{margin-top:12px;padding:12px 14px;border-radius:14px;background:#f6f8fb;border:1px solid var(--l);font-size:10px;line-height:1.5;color:#475467}
+@media(max-width:639px){.presentationLauncher{right:12px;top:max(10px,env(safe-area-inset-top));padding:9px 12px}.presentationMenuGrid{grid-template-columns:1fr}}
 /* investor readiness layer */
 .investorStatus{display:inline-flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;font-size:8px;font-weight:850;letter-spacing:.7px;border:1px solid transparent;white-space:nowrap}
 .investorStatus.live{background:#e8f7f1;color:#12684e;border-color:#cbeadd}
@@ -560,7 +568,7 @@ async function apiQuestion(b){try{const s=await api('/api/question',{method:'POS
 <div class="notice ok">Каждый шаг записывается в server authority и попадает в итоговую аналитику этого demo run.</div>
 <div style="display:flex;gap:8px"><button class="btn secondary" onclick="guidedClose()">Закрыть</button><button id="goldenNext" class="btn primary" style="flex:1" onclick="guidedNext()">Дальше →</button></div>
 </div></div>
-<div id="proofDock" style="position:fixed;left:16px;bottom:86px;z-index:89;display:none;gap:6px"><button onclick="switchRole('participant2')" style="border:1px solid #dce4ef;background:#fff;border-radius:999px;padding:9px 11px;font-size:11px">P2</button><button onclick="switchRole('participant3')" style="border:1px solid #dce4ef;background:#fff;border-radius:999px;padding:9px 11px;font-size:11px">P3</button></div><button id="goldenDemoLauncher" onclick="guidedStart()" style="display:none;position:fixed;right:16px;bottom:86px;z-index:90;border:0;border-radius:999px;background:#09264a;color:#fff;padding:12px 16px;font-weight:700;box-shadow:0 8px 30px rgba(9,38,74,.25)">▶ Golden Demo 7–10 мин</button>
+<div id="proofDock" style="position:fixed;left:16px;bottom:86px;z-index:89;display:none;gap:6px"><button onclick="switchRole('participant2')" style="border:1px solid #dce4ef;background:#fff;border-radius:999px;padding:9px 11px;font-size:11px">P2</button><button onclick="switchRole('participant3')" style="border:1px solid #dce4ef;background:#fff;border-radius:999px;padding:9px 11px;font-size:11px">P3</button></div><button id="goldenDemoLauncher" onclick="guidedStart()" style="display:none;position:fixed;right:16px;bottom:86px;z-index:90;border:0;border-radius:999px;background:#09264a;color:#fff;padding:12px 16px;font-weight:700;box-shadow:0 8px 30px rgba(9,38,74,.25)">▶ Golden Demo 7–10 мин</button><button id="presentationLauncher" class="presentationLauncher" onclick="openPresentationMenu()">◆ INVESTOR MODE</button>
 <script>
 const guidedSteps=[
 ['Платформа, а не приложение на один день','Контент → событие → участие → продолжение. Показываем годовой цикл отношений с аудиторией.','home'],
@@ -849,4 +857,50 @@ function guidedClose(){document.getElementById('guidedDemo').style.display='none
 async function apiVenue(occupied,capacity,room){try{const s=await api('/api/venue',{method:'POST',body:JSON.stringify({occupied,capacity,room})});await syncState(true);return s}catch(e){alert(e.message)}}
 async function apiPlacement(b){try{const s=await api('/api/placement',{method:'POST',body:JSON.stringify({status:'active'})});b.textContent='Размещение активно ✓'}catch(e){alert(e.message)}}
 async function apiJourney(action,b){try{await api('/api/journey',{method:'POST',body:JSON.stringify({action})});if(b)b.textContent='Зафиксировано ✓'}catch(e){alert(e.message)}}
+
+const presentationModes=new Set(['menu','golden','owner','investor','executive','security']);
+function presentationLink(mode){
+ const u=new URL(location.href);u.searchParams.set('presentation',mode);u.hash='';return u.toString()
+}
+async function copyPresentationLink(mode,button){
+ try{await navigator.clipboard.writeText(presentationLink(mode));if(button){const old=button.textContent;button.textContent='Ссылка скопирована ✓';setTimeout(()=>button.textContent=old,1600)}}
+ catch(e){if(button)button.textContent='Скопируйте URL из адресной строки'}
+}
+async function openPresentationMenu(){
+ document.body.classList.add('presentationMode');
+ try{await goldenLogin()}catch(e){}
+ sheets.presentation='<div class="ey blue">INVESTOR PRESENTATION MODE</div><h2>Один вход для 7–10-минутного показа</h2><p class="small muted">Каждый маршрут открывается напрямую. Golden Demo всегда начинает с детерминированного reset, чтобы встреча не зависела от предыдущего прогона.</p>'+
+ '<div class="presentationMenuGrid">'+
+ '<button class="presentationMenuCard" onclick="runPresentationMode(\'golden\')"><b>▶ Golden Demo</b><span>Reset → live operations → waitlist → replay → consented lead → evidence.</span></button>'+
+ '<button class="presentationMenuCard" onclick="runPresentationMode(\'owner\')"><b>Owner Route</b><span>Пользователь → контент → конференция → operations → partner proof → investment decision.</span></button>'+
+ '<button class="presentationMenuCard" onclick="runPresentationMode(\'investor\')"><b>Investor Proof</b><span>Capability truth labels, revenue architecture, scenario economics, risks and scale paths.</span></button>'+
+ '<button class="presentationMenuCard" onclick="runPresentationMode(\'executive\')"><b>Executive / CVC</b><span>Board decision, milestone funding, KPI dictionary, pilot contract and data-room index.</span></button>'+
+ '<button class="presentationMenuCard" onclick="runPresentationMode(\'security\')"><b>Security / Procurement</b><span>Privacy, controls, vendor questionnaire, procurement gates and framework crosswalk.</span></button>'+
+ '<button class="presentationMenuCard" onclick="copyPresentationLink(\'menu\',this)"><b>Скопировать launch URL</b><span>Shareable entrypoint: ?presentation=menu</span></button>'+
+ '</div><div class="presentationTruth"><b>Truth boundary:</b> текущий публичный контур — investor/demo MVP. Production-ready PostgreSQL и production medical governance не заявляются до соответствующих admission gates.</div>';
+ openSheet('presentation')
+}
+async function runPresentationMode(mode){
+ if(!presentationModes.has(mode))mode='menu';
+ document.body.classList.add('presentationMode');closeSheet();
+ try{
+  if(mode==='menu')return openPresentationMenu();
+  if(mode==='golden')return guidedStart();
+  if(mode==='owner'){await goldenLogin();await api('/api/demo/reset',{method:'POST',body:'{}'});return ownerStart()}
+  if(mode==='investor')return showInvestorProof();
+  if(mode==='executive')return showExecutiveRoom();
+  if(mode==='security')return showCorporateRoom();
+ }catch(e){
+  sheets.presentationError='<div class="ey blue">PRESENTATION MODE</div><h2>Не удалось открыть маршрут</h2><p class="small muted">'+esc(e.message||'Unknown error')+'</p><div class="actions"><button class="btn" onclick="openPresentationMenu()">Вернуться к launchpad</button></div>';
+  openSheet('presentationError')
+ }
+}
+function applyPresentationDeepLink(){
+ const mode=new URLSearchParams(location.search).get('presentation');
+ if(!mode||!presentationModes.has(mode))return;
+ document.body.classList.add('presentationMode');
+ const launcher=document.getElementById('presentationLauncher');if(launcher)launcher.style.display='block';
+ setTimeout(()=>runPresentationMode(mode),350)
+}
+setTimeout(applyPresentationDeepLink,900);
 </script></body></html>
