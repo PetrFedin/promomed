@@ -101,6 +101,8 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     expect(page.locator("#personalizedContinue")).to_contain_text("YOUR NEXT BEST ACTIONS")
     expect(page.locator("#personalizedContinue")).to_contain_text("Почему это безопасно")
     expect(page.locator("#personalizedContinue")).to_contain_text("medical inference = OFF")
+    expect(page.locator("#journey365Timeline")).to_contain_text("Следующий шаг")
+    expect(page.locator("#journey365Timeline")).to_contain_text("behavioural relationship journey")
     assert_touch_targets(page, f"{name}/home")
     assert_readable_text(page, f"{name}/home")
     assert_navigation_placement(page, width, height, f"{name}/home")
