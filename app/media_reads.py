@@ -1,11 +1,11 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, transcript_intelligence, evidence_graph
+from app import db, transcript_intelligence, evidence_graph, evidence_seal
 
 
 def serve(raw_path, role):
     parsed=urlparse(raw_path)
-    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage"):
+    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/evidence-seal"):
         return None
     q=parse_qs(parsed.query)
     c=db.connect()
@@ -17,6 +17,12 @@ def serve(raw_path, role):
             if role!="editor":
                 return {"error":"forbidden"},403
             return evidence_graph.coverage(c),200
+        if parsed.path=="/api/evidence-seal":
+            artifact_kind=(q.get("artifact_kind") or [""])[0][:30]
+            artifact_ref=(q.get("artifact_ref") or [""])[0][:80]
+            if not artifact_kind or not artifact_ref:
+                return {"error":"artifact_required"},422
+            return evidence_seal.build(c,artifact_kind=artifact_kind,artifact_ref=artifact_ref),200
         return evidence_graph.snapshot(
             c,
             artifact_kind=(q.get("artifact_kind") or [""])[0][:30] or None,

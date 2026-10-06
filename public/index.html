@@ -206,6 +206,7 @@ body.presentationMode .presentationLauncher{display:block}
 
 
 
+.evidenceSealInline{margin:10px 0;padding:10px 0;border-top:1px solid #dce6ef;border-bottom:1px solid #dce6ef}.evidenceSealInline .row{align-items:center;gap:8px;flex-wrap:wrap}
 </style></head><body>
 <main class="app"><header class="top"><div class="brand"><b>с.</b>СОСТОЯНИЕ</div><div class="topActions"><button class="icon" aria-label="Поиск" onclick="openSheet('search')">⌕</button><button class="icon" aria-label="Уведомления" onclick="openNotifications()">●</button><button class="icon" aria-label="Аккаунт и управление" onclick="openSheet('control')">•••</button></div></header>
 
@@ -555,7 +556,18 @@ function openProfile(id){
  openSheet('profile')
 }
 function openProduct(id){const p=(serverState?.products||[]).find(x=>x.id===id);if(!p)return;const related=(serverState?.content_catalog||[]).filter(x=>x.theme.toLowerCase().includes(p.theme.toLowerCase().split(' ')[0])).slice(0,3);sheets.product='<div class="profileHero"><span class="pill dark">'+(p.kind==='real'?'PROMOMED · OFFICIAL CONTEXT':'PARTNER · DEMO')+'</span><h2 style="font-size:31px">'+p.name+'</h2><p class="small" style="color:#d4e2eb">'+p.theme+(p.inn&&p.inn!=='—'?' · '+p.inn:'')+'</p></div><h3>Зачем эта карточка в СОСТОЯНИИ</h3><p class="small">'+p.summary+'</p><div class="card"><div class="ey blue">SOURCE & DISCLOSURE</div><p class="small muted">'+p.source_label+'</p><p class="tiny">'+p.disclosure+'</p></div>'+(related.length?'<h3>Сначала разобраться</h3>'+related.map(a=>'<div class="catalogCard" onclick="openContent(\''+a.id+'\')"><div class="catalogThumb">'+a.kind+'</div><div><b>'+a.title+'</b><div class="tiny muted">'+a.duration+'</div></div></div>').join(''):'')+'<div class="notice">СОСТОЯНИЕ не назначает лечение. Для реального запуска продуктовые страницы проходят medical/legal/regulatory review.</div>';openSheet('product')}
-function openContent(id){const a=(serverState?.content_catalog||[]).find(x=>x.id===id);if(!a)return;sheets.article='<div class="profileHero"><span class="pill dark">'+a.kind+' · '+a.duration+'</span><h2 style="font-size:29px">'+a.title+'</h2><p class="small" style="color:#d4e2eb">'+a.theme+'</p></div><p>'+a.dek+'</p><div class="card"><div class="ey blue">TRUST LAYER</div><p class="small"><b>Автор:</b> '+a.author+'<br><b>Review:</b> '+a.reviewer+'<br><b>Статус:</b> '+a.status+'</p>'+(a.partner?'<span class="pill">PARTNER / CORPORATE: '+a.partner+'</span>':'<span class="pill green">EDITORIAL</span>')+'<div class="actions"><button class="btn soft" onclick="openEvidenceGraph(\''+a.id+'\')">Почему этому можно доверять?</button></div></div><h3>После материала</h3><div class="actions"><button class="btn" onclick="closeSheet();show(\'events\')">Найти событие →</button><button class="btn ghost" onclick="closeSheet();show(\'studio\')">Studio</button></div>';openSheet('article')}
+function openContent(id){const a=(serverState?.content_catalog||[]).find(x=>x.id===id);if(!a)return;sheets.article='<div class="profileHero"><span class="pill dark">'+a.kind+' · '+a.duration+'</span><h2 style="font-size:29px">'+a.title+'</h2><p class="small" style="color:#d4e2eb">'+a.theme+'</p></div><p>'+a.dek+'</p><div class="card"><div class="ey blue">TRUST LAYER</div><p class="small"><b>Автор:</b> '+a.author+'<br><b>Review:</b> '+a.reviewer+'<br><b>Статус:</b> '+a.status+'</p>'+(a.partner?'<span class="pill">PARTNER / CORPORATE: '+a.partner+'</span>':'<span class="pill green">EDITORIAL</span>')+'<div id="evidenceSealInline" class="evidenceSealInline"><span class="pill">EVIDENCE SEAL · CHECKING</span></div><div class="actions"><button class="btn soft" onclick="openEvidenceGraph(\''+a.id+'\')">Почему этому можно доверять?</button></div></div><h3>После материала</h3><div class="actions"><button class="btn" onclick="closeSheet();show(\'events\')">Найти событие →</button><button class="btn ghost" onclick="closeSheet();show(\'studio\')">Studio</button></div>';openSheet('article');loadEvidenceSeal(id)}
+async function loadEvidenceSeal(contentId){
+ const root=document.getElementById('evidenceSealInline');if(!root)return;
+ try{
+  const d=await api('/api/evidence-seal?artifact_kind=content&artifact_ref='+encodeURIComponent(contentId));
+  const ok=!!d.validForProcess;
+  root.innerHTML='<div class="row"><span class="pill '+(ok?'green':'')+'">'+esc(d.state||'INCOMPLETE')+'</span><span class="tiny muted">'+Number(d.counts?.trustedCurrentClaims||0)+' / '+Number(d.counts?.currentClaims||0)+' trusted claims</span></div>'+
+   '<div class="tiny muted" style="margin-top:6px">SHA-256 '+esc(String(d.evidencePackageSha256||'').slice(0,20))+'… · medical efficacy certified: NO</div>';
+ }catch(e){
+  root.innerHTML='<span class="pill">EVIDENCE SEAL · UNAVAILABLE</span>';
+ }
+}
 async function loadEvidenceCoverage(){
  try{
   const d=await api('/api/evidence-coverage');const root=document.getElementById('evidenceCoverage');if(!root)return;const s=d.summary||{};
