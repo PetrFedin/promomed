@@ -1953,3 +1953,113 @@ This makes downstream verification possible even when content is syndicated.
 
 **Moat:** Promomed owns a repeatable evidence-governance protocol plus the longitudinal graph of reviewed claims, sources, experts and corrections.
 
+
+
+## Institutional adoption wave — Scientific Evidence Distribution Network
+
+This wave turns Promomed's Evidence Governance Standard, seals, expert graph and syndication APIs into reusable infrastructure for professional education, corporate knowledge programmes and reviewed scientific-content distribution.
+
+### Evidence Governance Interchange Profile — ADOPT
+
+Define a versioned portable profile for:
+
+- content/claim identity;
+- source references;
+- evidence class;
+- reviewer role;
+- disclosure/conflict record;
+- approval state;
+- review validity;
+- supersession/withdrawal;
+- evidence-package hash;
+- credential/seal status.
+
+The profile proves process provenance, not medical truth or clinical efficacy.
+
+### Reference Evidence Package — ADOPT
+
+Publish a synthetic/non-clinical example:
+
+`source -> claim -> review -> disclosure -> approval -> seal -> syndication -> correction/withdrawal propagation`
+
+### Institutional Publisher / Consumer Roles — ADOPT
+
+Support scoped organisations such as:
+
+- medical/scientific societies;
+- universities/education partners;
+- corporate learning teams;
+- media/content partners;
+- conference partners;
+- knowledge platforms.
+
+Institutional affiliation and external professional qualifications remain source-attributed.
+
+### Certified Syndication Partner Network — ADOPT
+
+Possible statuses:
+
+- Evidence API Integrated;
+- Withdrawal Propagation Verified;
+- Disclosure Workflow Integrated;
+- Credential Verification Integrated;
+- Education Completion Sync Integrated.
+
+These certify process/technical integration only.
+
+### External Expert / Institution Contribution — ADOPT
+
+Approved contributors may submit:
+
+- source recommendations;
+- review input;
+- disclosure records;
+- programme materials;
+- correction notices;
+- institutional metadata.
+
+Submissions enter normal editorial/scientific review and cannot self-approve.
+
+### Enterprise Knowledge Bundles — ADOPT
+
+Potential products:
+
+- Evidence API;
+- reviewed knowledge feed;
+- embedded evidence widgets;
+- professional education/academy;
+- credential verification;
+- expert review workspace;
+- enterprise content governance.
+
+### Longitudinal Evidence Change Graph — ADOPT
+
+Track:
+
+`source -> claim -> review -> publication -> correction -> supersession -> withdrawal -> downstream partner propagation`
+
+This history becomes a critical institutional asset.
+
+### Legitimate Switching Cost — ADOPT
+
+Compounding value:
+
+- reviewed claim/source graph;
+- correction history;
+- expert review history;
+- disclosure records;
+- partner syndication mappings;
+- credential/seal verification history;
+- programme completion history.
+
+### Additional acceptance
+
+- external contribution never bypasses review authority;
+- withdrawal/correction propagates to integrations;
+- institutional branding cannot convert a process seal into an efficacy claim;
+- expert graph contains factual activity, not popularity;
+- professional credentials remain independently sourced and expiry-aware.
+
+**Sequencing:** Evidence Governance Standard -> interchange profile -> reference package -> partner certification -> external contribution -> enterprise knowledge distribution.
+
+**Moat:** Promomed becomes a governed scientific-content rail whose accumulated review and correction history is more defensible than a content library alone.
