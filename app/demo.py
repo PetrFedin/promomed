@@ -1,6 +1,7 @@
 import time
 
 from app.core import audit, notify, promote_waitlist, setv, sval
+from app import transcript_intelligence
 
 DEMO_STEPS = [
     ("ready", "Исходное состояние подготовлено"),
@@ -28,6 +29,7 @@ def reset_demo(c, actor):
         "capital_plan_execution",
         "capital_interventions",
         "capital_reallocation_approvals","capital_reallocation_proposals","discovery_saves",
+        "transcript_segments","generated_takeaways",
     ):
         c.execute("DELETE FROM " + t)
     for k, v in {
@@ -44,6 +46,7 @@ def reset_demo(c, actor):
         "INSERT OR REPLACE INTO registrations(email,status,ts) VALUES('participant@demo.ru','confirmed',?)",
         (int(time.time()),),
     )
+    transcript_intelligence.seed_demo(c)
     audit(c, "demo_reset", actor, {"run": sval(c, "demo_run")})
 
 
