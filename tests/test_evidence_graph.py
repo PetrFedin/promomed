@@ -73,6 +73,17 @@ class ClaimEvidenceGraphTests(unittest.TestCase):
         self.assertEqual(row["trust"]["status"],"RETRACTED")
         self.assertFalse(row["trust"]["trusted"])
 
+    def test_coverage_surfaces_incomplete_current_claim(self):
+        d=self.graph.coverage(self.c)
+        self.assertEqual(d["summary"]["current_claims"],4)
+        self.assertEqual(d["summary"]["trusted_current_claims"],3)
+        self.assertEqual(d["summary"]["coverage_pct"],75.0)
+        gap=next(x for x in d["claims"] if x["claim_id"]=="CL05")
+        self.assertEqual(gap["status"],"INCOMPLETE_EVIDENCE")
+        self.assertIn("active_source_missing",gap["gaps"])
+        self.assertIn("exact_locator_missing",gap["gaps"])
+        self.assertIn("graph_trace_missing",gap["gaps"])
+
     def test_graph_contains_transcript_expert_event_and_replay_links(self):
         d=self.graph.snapshot(self.c,"content","CT01")
         cl=next(x for x in d["claims"] if x["id"]=="CL01")
