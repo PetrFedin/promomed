@@ -1,11 +1,11 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor
+from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority
 
 
 def serve(raw_path, role):
     parsed=urlparse(raw_path)
-    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/change-impact","/api/evidence-monitor"):
+    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/change-impact","/api/evidence-monitor","/api/reviewer-authority"):
         return None
     q=parse_qs(parsed.query)
     c=db.connect()
@@ -22,9 +22,13 @@ def serve(raw_path, role):
                 return {"error":"forbidden"},403
             return change_impact.snapshot(c,(q.get("event_id") or [""])[0][:180] or None),200
         if parsed.path=="/api/evidence-monitor":
-            if role!="editor":
+            if role not in ("editor","reviewer","governance"):
                 return {"error":"forbidden"},403
             return evidence_monitor.snapshot(c),200
+        if parsed.path=="/api/reviewer-authority":
+            if role not in ("editor","reviewer","governance"):
+                return {"error":"forbidden"},403
+            return reviewer_authority.snapshot(c),200
         return evidence_graph.snapshot(
             c,
             artifact_kind=(q.get("artifact_kind") or [""])[0][:30] or None,
