@@ -14,6 +14,7 @@ from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command
 from app.demo_commands import handle_command as handle_demo_command
+from app.investment_commands import handle_command as handle_investment_command
 
 ROOT=os.path.join(os.path.dirname(__file__),"public")
 LOCK=threading.RLock()
@@ -385,6 +386,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_investment_command(c,p,role,email,data)
     if outcome is None: return self.out({"error":"not_found"},404)
     c.commit()
     payload=state(c,email) if outcome.use_state else outcome.payload
