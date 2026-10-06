@@ -82,7 +82,7 @@ def _claims(c,artifact_kind=None,artifact_ref=None):
 
 def _citations(c,claim_id):
     return [dict(r) for r in c.execute(
-        "SELECT e.id,e.claim_id,e.source_id,e.locator,e.quote_excerpt,e.support_type,e.status,s.source_kind,s.title source_title,s.publisher,s.source_ref,s.published_at,s.disclosure FROM evidence_citations e JOIN evidence_sources s ON s.id=e.source_id WHERE e.claim_id=? ORDER BY e.id",
+        "SELECT e.id,e.claim_id,e.source_id,e.locator,e.quote_excerpt,e.support_type,e.status,s.status source_status,s.source_kind,s.title source_title,s.publisher,s.source_ref,s.published_at,s.disclosure FROM evidence_citations e JOIN evidence_sources s ON s.id=e.source_id WHERE e.claim_id=? ORDER BY e.id",
         (claim_id,),
     )]
 
@@ -95,7 +95,7 @@ def _links(c,claim_id):
 
 
 def _trust_status(claim,citations,links):
-    active_citations=[x for x in citations if x["status"]=="active"]
+    active_citations=[x for x in citations if x["status"]=="active" and x.get("source_status")=="active"]
     has_reviewer=bool(claim.get("reviewer") and claim.get("reviewed_at"))
     has_source=bool(active_citations)
     has_locator=bool(active_citations and all(str(x.get("locator") or "").strip() for x in active_citations))
