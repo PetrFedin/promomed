@@ -5,7 +5,7 @@ import time
 import urllib.parse
 import urllib.request
 
-from app import change_impact
+from app import change_impact, reviewer_authority
 
 
 REVIEW_ROLES=("editorial","scientific")
@@ -157,6 +157,7 @@ def ensure_target(c,provider,external_id,actor,demo_only=1):
         "VALUES(?,?,?,?,'active',?,?,?) ON CONFLICT(provider,external_id) DO NOTHING",
         (target_id,provider,ext,key,actor,now,int(bool(demo_only))),
     )
+    _ensure_monitor_job(c,target_id,now=now,demo_only=demo_only)
     return target_id
 
 
@@ -283,21 +284,31 @@ def ingest_payload(c,provider,external_id,payload,actor,demo_only=1):
 def review_candidate(c,candidate_id,review_role,actor,decision="accept_demo",note=""):
     if review_role not in REVIEW_ROLES:
         raise ValueError("unsupported_review_role")
-    candidate=c.execute("SELECT id,status FROM evidence_admission_candidates WHERE id=?",(candidate_id,)).fetchone()
+    candidate=c.execute("SELECT id,status,demo_only FROM evidence_admission_candidates WHERE id=?",(candidate_id,)).fetchone()
     if not candidate:
         raise ValueError("candidate_not_found")
     if candidate["status"] not in ("pending_review","review_ready"):
         raise ValueError("candidate_not_reviewable")
-    status="accepted_demo" if decision=="accept_demo" else "rejected_demo"
+    is_demo=bool(candidate["demo_only"])
+    if review_role=="scientific" and not is_demo:
+        raise ValueError("scientific_review_authority_required")
+    accepted=decision in ("accept","accept_demo")
+    if review_role=="editorial":
+        status=("accepted_demo" if is_demo else "accepted_editorial") if accepted else ("rejected_demo" if is_demo else "rejected_editorial")
+    else:
+        status="accepted_demo" if accepted else "rejected_demo"
     c.execute(
         "UPDATE evidence_admission_reviews SET status=?,reviewer=?,reviewed_at=?,note=? WHERE candidate_id=? AND review_role=?",
-        (status,actor,int(time.time()),str(note or "")[:500],candidate_id,review_role),
+        (status,actor,time.time_ns(),str(note or "")[:500],candidate_id,review_role),
     )
-    rows=list(c.execute("SELECT status FROM evidence_admission_reviews WHERE candidate_id=?",(candidate_id,)))
-    if any(x["status"]=="rejected_demo" for x in rows):
-        c.execute("UPDATE evidence_admission_candidates SET status='rejected_demo' WHERE id=?",(candidate_id,))
-    elif rows and all(x["status"]=="accepted_demo" for x in rows):
-        c.execute("UPDATE evidence_admission_candidates SET status='review_ready' WHERE id=?",(candidate_id,))
+    rows={x["review_role"]:x["status"] for x in c.execute("SELECT review_role,status FROM evidence_admission_reviews WHERE candidate_id=?",(candidate_id,))}
+    if any(str(x).startswith("rejected") for x in rows.values()):
+        c.execute("UPDATE evidence_admission_candidates SET status=? WHERE id=?",("rejected_demo" if is_demo else "rejected_review",candidate_id))
+    else:
+        editorial_ok=rows.get("editorial") in ("accepted_demo","accepted_editorial")
+        scientific_ok=rows.get("scientific") in ("accepted_demo","accepted_authority")
+        if editorial_ok and scientific_ok:
+            c.execute("UPDATE evidence_admission_candidates SET status='review_ready' WHERE id=?",(candidate_id,))
 
 
 def _source_id_for_target(target_id):
@@ -306,7 +317,7 @@ def _source_id_for_target(target_id):
 
 def admit_candidate(c,candidate_id,actor):
     row=c.execute(
-        "SELECT ac.id,ac.target_id,ac.snapshot_id,ac.change_type,ac.severity,ac.status,wt.provider,wt.external_id,wt.source_id,s.normalized_json "
+        "SELECT ac.id,ac.target_id,ac.snapshot_id,ac.change_type,ac.severity,ac.status,ac.demo_only,wt.provider,wt.external_id,wt.source_id,s.normalized_json "
         "FROM evidence_admission_candidates ac JOIN evidence_watch_targets wt ON wt.id=ac.target_id "
         "JOIN evidence_provider_snapshots s ON s.id=ac.snapshot_id WHERE ac.id=?",
         (candidate_id,),
@@ -315,21 +326,41 @@ def admit_candidate(c,candidate_id,actor):
         raise ValueError("candidate_not_found")
     if row["status"]!="review_ready":
         raise ValueError("candidate_reviews_required")
+    is_demo=bool(row["demo_only"])
+    reviews=list(c.execute("SELECT review_role,status,reviewer FROM evidence_admission_reviews WHERE candidate_id=?",(candidate_id,)))
+    review_by_role={x["review_role"]:x for x in reviews}
+    if not is_demo:
+        account=c.execute("SELECT role,status FROM accounts WHERE email=?",(actor.lower(),)).fetchone()
+        if not account or account["role"]!="governance" or account["status"]!="active":
+            raise ValueError("governance_admission_required")
+        editorial=review_by_role.get("editorial")
+        scientific=review_by_role.get("scientific")
+        if not editorial or editorial["status"]!="accepted_editorial":
+            raise ValueError("editorial_review_required")
+        if not scientific or scientific["status"]!="accepted_authority":
+            raise ValueError("scientific_authority_review_required")
+        reviewers={str(editorial["reviewer"] or "").lower(),str(scientific["reviewer"] or "").lower()}
+        if "" in reviewers or len(reviewers)!=2 or actor.lower() in reviewers:
+            raise ValueError("separation_of_duties_violation")
 
     normalized=json.loads(row["normalized_json"])
     source_id=row["source_id"] or _source_id_for_target(row["target_id"])
     now=int(time.time())
     existing=c.execute("SELECT id FROM evidence_sources WHERE id=?",(source_id,)).fetchone()
-    disclosure=f"External metadata admitted from {row['provider']} after editorial + scientific demo review."
+    disclosure=(
+        f"External metadata admitted from {row['provider']} after governed editorial + independent scientific review."
+        if not is_demo else
+        f"External metadata admitted from {row['provider']} after editorial + scientific demo review."
+    )
     if existing:
         c.execute(
-            "UPDATE evidence_sources SET title=?,publisher=?,source_ref=?,published_at=?,status='active',disclosure=? WHERE id=?",
-            (normalized.get("title") or "",normalized.get("publisher") or "",normalized.get("source_ref") or "",normalized.get("published_at") or "",disclosure,source_id),
+            "UPDATE evidence_sources SET title=?,publisher=?,source_ref=?,published_at=?,status='active',disclosure=?,demo_only=? WHERE id=?",
+            (normalized.get("title") or "",normalized.get("publisher") or "",normalized.get("source_ref") or "",normalized.get("published_at") or "",disclosure,int(is_demo),source_id),
         )
     else:
         c.execute(
-            "INSERT INTO evidence_sources(id,source_kind,title,publisher,source_ref,published_at,status,disclosure,demo_only) VALUES(?,?,?,?,?,?,'active',?,1)",
-            (source_id,f"external_{row['provider']}",normalized.get("title") or "",normalized.get("publisher") or "",normalized.get("source_ref") or "",normalized.get("published_at") or "",disclosure),
+            "INSERT INTO evidence_sources(id,source_kind,title,publisher,source_ref,published_at,status,disclosure,demo_only) VALUES(?,?,?,?,?,?,'active',?,?)",
+            (source_id,f"external_{row['provider']}",normalized.get("title") or "",normalized.get("publisher") or "",normalized.get("source_ref") or "",normalized.get("published_at") or "",disclosure,int(is_demo)),
         )
     c.execute("UPDATE evidence_watch_targets SET source_id=? WHERE id=?",(source_id,row["target_id"]))
 
@@ -340,11 +371,13 @@ def admit_candidate(c,candidate_id,actor):
             f"Admitted external evidence change from {row['provider']} {row['external_id']}: {row['change_type']}",
             actor,
         )
-
+    status="admitted_demo" if is_demo else "admitted"
     c.execute(
-        "UPDATE evidence_admission_candidates SET status='admitted_demo',admitted_at=?,admitted_by=?,admitted_source_id=?,change_event_id=? WHERE id=?",
-        (now,actor,source_id,event_id,candidate_id),
+        "UPDATE evidence_admission_candidates SET status=?,admitted_at=?,admitted_by=?,admitted_source_id=?,change_event_id=? WHERE id=?",
+        (status,now,actor,source_id,event_id,candidate_id),
     )
+    if not is_demo:
+        reviewer_authority.record_governance_admission(c,candidate_id,actor,source_id,event_id)
     return {"source_id":source_id,"change_event_id":event_id}
 
 
