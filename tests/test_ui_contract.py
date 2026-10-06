@@ -130,6 +130,14 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("OWNER INBOX · SLA", INDEX)
         self.assertIn("EVIDENCE DOCUMENT REGISTRY", INDEX)
         self.assertIn("FINANCE PAYMENT REQUEST", INDEX)
+        self.assertIn("PORTFOLIO CAPITAL CONTROL · CEO / CFO VIEW", INDEX)
+        self.assertIn('id="portfolioCapitalSummary"', INDEX)
+        self.assertIn('id="portfolioWorkstreams"', INDEX)
+        self.assertIn('id="portfolioOverdue"', INDEX)
+        self.assertIn('id="portfolioForecast"', INDEX)
+        self.assertIn('id="portfolioNextRelease"', INDEX)
+        self.assertIn('id="portfolioControlRules"', INDEX)
+        self.assertIn("async function loadPortfolioCapitalControl()", INDEX)
 
     def test_corporate_security_room_is_truth_labeled(self):
         self.assertIn('id="corporateRoom"', INDEX)
