@@ -191,3 +191,15 @@ def correct_demo_claim(c,claim_id,new_claim_text,reviewer):
             (f"{link['id']}-{new_id}",new_id,link["target_kind"],link["target_ref"],link["relation"],link["start_sec"],link["end_sec"]),
         )
     return new_id
+
+
+def retract_demo_claim(c,claim_id,note,reviewer):
+    row=c.execute("SELECT id,status FROM evidence_claims WHERE id=?",(claim_id,)).fetchone()
+    if not row:
+        raise ValueError("claim_not_found")
+    if row["status"] not in ("reviewed_demo","reviewed"):
+        raise ValueError("claim_not_current")
+    c.execute(
+        "UPDATE evidence_claims SET status='retracted_demo',reviewer=?,reviewed_at=?,correction_note=? WHERE id=?",
+        (reviewer,int(time.time()),str(note or "Retracted in demo review.")[:500],claim_id),
+    )
