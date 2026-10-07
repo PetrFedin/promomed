@@ -153,6 +153,8 @@ Every submission is canonicalized and SHA-256 bound.
 
 Exact duplicate payloads are idempotent replays, not new submissions.
 
+A `request_changes` decision never mutates the original submission. The contributor creates a new immutable revision that records `supersedes_contribution_id`; the prior payload and review history remain intact.
+
 ## 8. Review authority
 
 External contributors cannot self-approve.
@@ -295,6 +297,7 @@ Core routes:
 - `POST /api/syndication/subscription`
 - `POST /api/syndication/obligation/acknowledge`
 - `POST /api/external-contribution/submit`
+- `POST /api/external-contribution/revise`
 - `POST /api/external-contribution/review`
 - `POST /api/external-contribution/admit`
 - `GET /api/external-contribution/receipt`
