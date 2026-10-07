@@ -165,6 +165,8 @@ def start_qualification(c,organization_id,actor,validity_seconds=15552000,demo_o
     if validity_seconds<86400 or validity_seconds>31536000:
         raise ValueError("qualification_validity_invalid")
     current=_current_qualification(c,organization_id)
+    if current and current["status"]=="revoked":
+        raise ValueError("qualification_revoked_reinstatement_required")
     if current and current["status"] in ("pending","qualified","requalification_due"):
         raise ValueError("qualification_cycle_already_open")
     now=int(time.time())
@@ -310,6 +312,8 @@ def revoke_qualification(c,organization_id,reason,actor):
     q=_current_qualification(c,organization_id)
     if not q:
         raise ValueError("qualification_not_found")
+    if q["status"]=="revoked":
+        return qualification_snapshot(c,organization_id)
     reason=str(reason or "").strip()
     if len(reason)<3:
         raise ValueError("qualification_reason_required")
