@@ -543,6 +543,22 @@ body{background:var(--canvas);color:var(--text)}
  #me .tickethead{min-height:250px}
  #me .stamp{min-height:96px}
 }
+/* Today v2: action-first home instead of duplicated topic navigation */
+#today .dailyRail button{display:inline-flex;align-items:center;gap:7px;min-height:42px;font-weight:800}
+#today .dailyRail button span{font-size:13px;opacity:.86}
+#today .homeUtilityGrid{display:grid;grid-template-columns:1fr;gap:0}
+#today .homeUtility{min-width:0}
+#today .homeUtility .card{height:calc(100% - 10px)}
+@media(min-width:768px) and (min-height:521px){
+ #today .homeUtilityGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+ #today .homeUtility{display:flex;flex-direction:column}
+ #today .homeUtility .card{flex:1}
+}
+@media(min-width:1200px){
+ #today .premiumHero{min-height:420px}
+ #today .premiumHero h1{margin-top:48px}
+ #today .dailyRail{max-width:650px}
+}
 /* accessibility + predictable interaction states */
 a,button,[role="button"],.tap{ -webkit-tap-highlight-color:transparent }
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
@@ -563,13 +579,15 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
 <main class="app"><header class="top"><div class="brand"><b>с.</b>СОСТОЯНИЕ</div><div class="topActions"><button class="icon" aria-label="Поиск" onclick="openSheet('search')"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg></button><button class="icon" aria-label="Уведомления" onclick="openNotifications()"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.3-2.1V10a4.2 4.2 0 0 0-8.4 0v4.4z"></path><path d="M10 19a2.2 2.2 0 0 0 4 0"></path></svg></button><button class="icon" aria-label="Аккаунт и управление" onclick="openSheet('control')"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"></circle><circle cx="12" cy="12" r="1.2"></circle><circle cx="19" cy="12" r="1.2"></circle></svg></button></div></header>
 
 <section id="today" class="screen on participant">
-<div class="premiumHero"><div class="heroKicker"><div class="ey" style="color:#9ee6ef">СОСТОЯНИЕ × ПРОМОМЕД · CONCEPT</div><span class="pill dark">365</span></div><h1>Знать больше.<br>Жить лучше.</h1><p class="small">Health media, эксперты, продукты, практики и главное событие года — в одном персональном пространстве.</p><div class="glass"><div class="ey" style="color:#9ee6ef">СЕГОДНЯ В ФОКУСЕ</div><b>Метаболическое здоровье без информационного шума</b><div class="tiny" style="color:#cfe0e8;margin-top:5px">12 мин · редакционный разбор · medical review</div></div><div class="heroRail"><button onclick="openHub('metabolic')">Метаболизм</button><button onclick="openHub('ageing')">Healthy ageing</button><button onclick="openHub('brain')">Мозг и энергия</button><button onclick="openHub('complex')">Сложные состояния</button></div></div>
+<div class="premiumHero"><div class="heroKicker"><div class="ey" style="color:#9ee6ef">СОСТОЯНИЕ × ПРОМОМЕД · CONCEPT</div><span class="pill dark">365</span></div><h1>Знать больше.<br>Жить лучше.</h1><p class="small">Health media, эксперты, продукты, практики и главное событие года — в одном персональном пространстве.</p><div class="glass"><div class="ey" style="color:#9ee6ef">СЕГОДНЯ В ФОКУСЕ</div><b>Метаболическое здоровье без информационного шума</b><div class="tiny" style="color:#cfe0e8;margin-top:5px">12 мин · редакционный разбор · medical review</div></div><div class="heroRail dailyRail"><button onclick="document.getElementById('personalizedContinue').scrollIntoView({behavior:'smooth',block:'center'})"><span>↳</span>Продолжить</button><button onclick="show('events')"><span>◫</span>События</button><button onclick="show('studio')"><span>▶</span>Studio</button><button onclick="show('me')"><span>○</span>Моё</button></div></div>
 <div class="section"><div class="feedTitle"><div><div class="ey blue">FOR YOU · EDITORIAL</div><h2>Главное сегодня</h2></div><button class="chip" onclick="show('media')">Все материалы →</button></div><div class="hscroll"><div class="coverCard" onclick="openContent('CT01')"><span class="pill dark">COVER STORY</span><h3>Метаболическое здоровье: новая реальность</h3><p class="small">Что меняется в языке веса, диабета и качества жизни.</p></div><div class="coverCard alt" onclick="openContent('CT07')"><span class="pill dark">PROMOMED INSIDE</span><h3>Наука как бренд</h3><p class="small">Как R&D и прозрачная коммуникация становятся активом доверия.</p></div><div class="coverCard warm" onclick="openContent('CT05')"><span class="pill dark">СОСТОЯНИЕ FM</span><h3>Можно ли сделать ЗОЖ менее тревожным?</h3><p class="small">Врач × creator · 38 минут.</p></div></div></div>
-<div class="section"><div class="feedTitle"><div><div class="ey blue">CONTINUE JOURNEY · PERSONAL</div><h2>Продолжить с места, где вы остановились</h2></div><span class="pill">EXPLAINABLE</span></div>
-<p class="small muted">Рекомендации строятся только из ваших явных интересов и действий в СОСТОЯНИИ. Без диагностики, treatment-рекомендаций и health-risk scoring.</p>
+<div class="homeUtilityGrid">
+<div class="section homeUtility"><div class="feedTitle"><div><div class="ey blue">CONTINUE JOURNEY · PERSONAL</div><h2>Продолжить</h2></div><span class="pill">EXPLAINABLE</span></div>
+<p class="small muted">Только ваши явные интересы и действия. Без диагностики, treatment-рекомендаций и health-risk scoring.</p>
 <div id="personalizedContinue" class="card"><p class="small muted">Загрузка персонального маршрута…</p></div>
 </div>
-<div class="section"><div class="row"><div><div class="ey blue">RELATIONSHIP 365</div><h2>До события → событие → D1 → D7 → D30</h2></div><span id="journey365Progress" class="pill">0%</span></div><div id="journey365Timeline" class="card"><p class="small muted">Загрузка 365 journey…</p></div></div>
+<div class="section homeUtility"><div class="row"><div><div class="ey blue">RELATIONSHIP 365</div><h2>Ваш путь 1 / 7 / 30</h2></div><span id="journey365Progress" class="pill">0%</span></div><div id="journey365Timeline" class="card"><p class="small muted">Загрузка 365 journey…</p></div></div>
+</div>
 <div class="section"><div class="ey blue">TOPIC HUBS</div><h2>Четыре входа в экосистему</h2><div class="hubgrid"><div class="hubCard" onclick="openHub('metabolic')"><span class="ey">01 · HUB</span><div><h3>Метаболическое здоровье</h3><p class="tiny">Вес · диабет · питание · движение · терапия</p></div></div><div class="hubCard" onclick="openHub('ageing')"><span class="ey">02 · HUB</span><div><h3>Healthy ageing</h3><p class="tiny">Кожа · профилактика · качество жизни</p></div></div><div class="hubCard" onclick="openHub('brain')"><span class="ey">03 · HUB</span><div><h3>Мозг и энергия</h3><p class="tiny">Сон · внимание · стресс · recovery</p></div></div><div class="hubCard" onclick="openHub('complex')"><span class="ey">04 · HUB</span><div><h3>Сложные состояния</h3><p class="tiny">Навигация · поддержка · профессиональный контур</p></div></div></div></div>
 <div class="section"><div class="feedTitle"><div><div class="ey blue">PROMOMED · PRODUCT CONTEXT</div><h2>От темы к решению</h2></div></div><p class="small muted">Карточки реальных брендов показываются как официальный информационный контекст, а не как независимая медицинская рекомендация.</p><div id="homeProducts" class="hscroll"><div class="notice">Загрузка каталога…</div></div></div>
 <div class="section"><div class="studioStage" onclick="show('studio')"><span class="pill dark liveDot">STUDIO</span><h2>СОСТОЯНИЕ Studio</h2><p class="small">Один сильный вопрос. Эксперт, R&D или opinion leader. 12–20 минут, live → shorts → transcript → related topic.</p><div class="actions"><button class="btn white" onclick="event.stopPropagation();show('studio')">В Studio →</button></div></div></div>
