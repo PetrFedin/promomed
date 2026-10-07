@@ -177,4 +177,5 @@ Participant-facing asynchronous surfaces use calm, consistent states:
 - successful sync must replace loading copy and skeletons; browser QA verifies this;
 - transcript intelligence failure is recoverable in-place with a Retry action;
 - error states preserve context and do not navigate the participant away from the current surface;
+- participant action failures use non-blocking toasts instead of browser alerts; organizer/admin alert behaviour is outside this checkpoint;
 - operator/investor loading states are intentionally outside this participant-state checkpoint.
