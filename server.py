@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
-from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, evidence_checkpoint
+from urllib.parse import urlparse
+from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval
@@ -14,6 +14,7 @@ from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command
 from app.evidence_checkpoint_commands import handle_command as handle_evidence_checkpoint_command
+from app.evidence_trust_reads import serve_get as serve_evidence_trust_get, serve_public_post as serve_evidence_trust_post
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -209,17 +210,8 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
-  if p in ("/api/evidence-seal","/api/evidence-bundle"):
-   q=parse_qs(urlparse(self.path).query); kind=(q.get("artifact_kind") or [""])[0][:30]; ref=(q.get("artifact_ref") or [""])[0][:80]
-   if not kind or not ref:return self.out({"error":"artifact_required"},422)
-   c=conn()
-   try:
-    d=evidence_seal.build(c,artifact_kind=kind,artifact_ref=ref) if p=="/api/evidence-seal" else evidence_seal.portable_bundle(c,artifact_kind=kind,artifact_ref=ref)
-   finally:c.close()
-   return self.out({"data":d})
-  if p=="/api/evidence-checkpoint/public-key":
-   try:return self.out({"data":evidence_checkpoint.public_key_document()})
-   except ValueError as e:return self.out({"error":str(e)},503)
+  d=serve_evidence_trust_get(p,self.path)
+  if d is not None:return self.out(d[0],d[1])
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
@@ -372,10 +364,8 @@ class H(SimpleHTTPRequestHandler):
   p=urlparse(self.path).path
   try: data=body(self)
   except Exception: return self.out({"error":"bad_json"},400)
-  if p=="/api/evidence-checkpoint/verify":
-   c=conn()
-   try:return self.out({"data":evidence_checkpoint.verify(c,data.get("envelope") or {})})
-   finally:c.close()
+  d=serve_evidence_trust_post(p,data)
+  if d is not None:return self.out(d[0],d[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
    c=conn()
