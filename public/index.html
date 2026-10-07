@@ -607,6 +607,12 @@ body{background:var(--canvas);color:var(--text)}
  #events .lc-grid{grid-template-columns:56px repeat(7,150px)}
  #events .stagegrid,#events .eventOpsGrid{min-width:0;max-width:100%}
 }
+/* Events horizontal rails must remain internal scroll surfaces */
+#events .momentstrip{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;contain:inline-size;-webkit-overflow-scrolling:touch}
+#events .momenttile{flex:0 0 min(82%,680px);min-width:0}
+@media(max-height:520px) and (orientation:landscape){
+ #events .momenttile{flex-basis:min(78vw,620px)}
+}
 /* accessibility + predictable interaction states */
 a,button,[role="button"],.tap{ -webkit-tap-highlight-color:transparent }
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
