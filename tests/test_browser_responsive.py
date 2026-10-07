@@ -31,8 +31,28 @@ def assert_no_page_overflow(page, width: int, label: str):
           bodyWidth: document.body.scrollWidth
         })"""
     )
-    assert metrics["scrollWidth"] <= width + 1, f"{label}: html overflow {metrics}"
-    assert metrics["bodyWidth"] <= width + 1, f"{label}: body overflow {metrics}"
+    if metrics["scrollWidth"] > width + 1 or metrics["bodyWidth"] > width + 1:
+        offenders = page.evaluate(
+            """(viewportWidth) => [...document.querySelectorAll('body *')]
+              .map(e => {
+                const r=e.getBoundingClientRect(), s=getComputedStyle(e);
+                return {
+                  tag:e.tagName.toLowerCase(),
+                  id:e.id||'',
+                  cls:typeof e.className==='string'?e.className:'',
+                  left:Math.round(r.left),
+                  right:Math.round(r.right),
+                  width:Math.round(r.width),
+                  scrollWidth:e.scrollWidth,
+                  overflowX:s.overflowX
+                };
+              })
+              .filter(x => x.width > 0 && (x.right > viewportWidth + 1 || x.left < -1))
+              .sort((a,b) => b.right-a.right)
+              .slice(0,12)""",
+            width,
+        )
+        raise AssertionError(f"{label}: page overflow {metrics}; offenders={offenders}")
 
 
 def assert_touch_targets(page, label: str):
