@@ -12,6 +12,7 @@ ROUTES={
     "/api/syndication/subscription",
     "/api/syndication/obligation/acknowledge",
     "/api/external-contribution/submit",
+    "/api/external-contribution/revise",
     "/api/external-contribution/review",
     "/api/external-contribution/admit",
 }
@@ -33,6 +34,16 @@ def handle_command(c,route,role,email,data):
                 c,
                 str(data.get("organization_id") or "")[:100],
                 str(data.get("contribution_type") or "")[:80],
+                str(data.get("title") or "")[:240],
+                data.get("payload") or {},
+                email,
+            )
+            return custom({"data":result},201 if not result.get("idempotentReplay") else 200)
+
+        if route=="/api/external-contribution/revise":
+            result=syndication_network.revise_contribution(
+                c,
+                str(data.get("contribution_id") or "")[:120],
                 str(data.get("title") or "")[:240],
                 data.get("payload") or {},
                 email,
