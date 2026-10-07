@@ -125,3 +125,14 @@ The Today surface shifts from duplicated topic navigation to action-first daily 
 - personal continuation and Relationship 365 form one compact working zone on tablet/desktop;
 - desktop hero height is reduced to keep actionable content closer to the first viewport;
 - medical-personalisation boundaries remain visible next to continuation logic.
+
+## 13. Media experience v2
+
+Media is treated as a daily knowledge workspace rather than a decorative feed:
+
+- controls that look like filters must perform a real action; decorative category chips are not allowed;
+- current MVP top actions are Search / Studio / Catalog;
+- paired editorial/corporate/audio cards move to two-column grids on tablet/desktop;
+- learning programmes use a three-column grid where viewport allows it;
+- desktop density increases through layout, never by reducing readable text;
+- long-form rails remain touch-native on phone.
