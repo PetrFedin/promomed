@@ -4,6 +4,7 @@
   "title": "Promomed Evidence Governance Interchange Profile v1",
   "type": "object",
   "required": [
+    "schemaId",
     "profileVersion",
     "artifact",
     "sources",
@@ -187,6 +188,9 @@
         "reviewerIdentityExported",
         "externalQualificationClaimsSourceAttributed"
       ]
+    },
+    "schemaId": {
+      "const": "urn:promomed:schema:evidence-governance-interchange:v1"
     }
   },
   "additionalProperties": false
