@@ -62,12 +62,14 @@ def assert_navigation_placement(page, width: int, height: int, label: str):
     nav = page.locator("#nav").bounding_box()
     top = page.locator(".top").bounding_box()
     assert nav and top, f"{label}: navigation/header missing"
-    if width >= 1024:
-        assert nav["y"] <= 32, f"{label}: desktop nav not promoted to top: {nav}"
-        assert nav["y"] + nav["height"] <= top["y"] + 2, f"{label}: desktop nav overlaps header: nav={nav}, top={top}"
+    if width >= 768:
+        assert nav["x"] <= 24, f"{label}: tablet/desktop nav not promoted to left rail: {nav}"
+        assert nav["y"] <= 24, f"{label}: left rail starts too low: {nav}"
+        assert nav["y"] + nav["height"] <= height - 8, f"{label}: left rail exceeds viewport: {nav}"
+        assert nav["x"] + nav["width"] + 8 <= top["x"], f"{label}: left rail overlaps working canvas: nav={nav}, top={top}"
     else:
-        assert nav["y"] + nav["height"] >= height - 3, f"{label}: mobile/tablet nav not anchored to bottom: {nav}"
-
+        assert nav["y"] + nav["height"] >= height - 12, f"{label}: phone nav not anchored to bottom: {nav}"
+        assert nav["x"] >= 8 and nav["x"] + nav["width"] <= width - 8, f"{label}: phone nav exceeds safe horizontal bounds: {nav}"
 
 def assert_sheet_within_viewport(page, height: int, label: str):
     sheet = page.locator("#sheet").bounding_box()
