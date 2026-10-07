@@ -1045,7 +1045,7 @@ def behavior_scorecard(c,organization_id,now=None,window_seconds=30*86400):
     }
 
 
-def evaluate_requalification(c,organization_id,now=None):
+def evaluate_requalification(c,organization_id,now=None,apply=True):
     now=int(now or time.time())
     q=syndication_network.refresh_qualification_state(c,organization_id,now=now)
     score=behavior_scorecard(c,organization_id,now=now)
@@ -1073,7 +1073,7 @@ def evaluate_requalification(c,organization_id,now=None):
     )
     suspension_review=(critical_withdrawal or dead_events>=3)
     changed=False
-    if requalification and q and q["status"]=="qualified":
+    if apply and requalification and q and q["status"]=="qualified":
         reason=(
             "Observed delivery behaviour requires requalification: "
             f"sla_breaches={sla_breaches}, dead_events={dead_events}, "
@@ -1090,6 +1090,9 @@ def evaluate_requalification(c,organization_id,now=None):
         "organizationId":organization_id,
         "requalificationDue":bool(requalification),
         "qualificationStateChanged":changed,
+        "wouldChangeQualification":bool(
+            requalification and q and q["status"]=="qualified"
+        ),
         "suspensionReviewRecommended":bool(suspension_review),
         "automaticSuspension":False,
         "automaticRevocation":False,
@@ -1125,7 +1128,6 @@ def endpoint_snapshot(c,organization_id=None):
 
 
 def runtime_snapshot(c,organization_id=None):
-    reconcile_sla(c)
     orgs=[organization_id] if organization_id else [
         r["organization_id"] for r in c.execute(
             "SELECT DISTINCT organization_id FROM syndication_delivery_endpoints ORDER BY organization_id"
@@ -1174,7 +1176,7 @@ def runtime_snapshot(c,organization_id=None):
         "events":events,
         "attempts":attempts,
         "scorecards":[behavior_scorecard(c,org) for org in orgs],
-        "requalification":[evaluate_requalification(c,org) for org in orgs],
+        "requalification":[evaluate_requalification(c,org,apply=False) for org in orgs],
         "truthBoundary":{
             "signedWebhookProtocolImplemented":True,
             "productionExternalEndpointConfigured":production_endpoint,
