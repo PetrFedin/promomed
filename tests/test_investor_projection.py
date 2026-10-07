@@ -47,6 +47,9 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(statuses["medical_review"], "gated")
         self.assertEqual(statuses["evidence_claim"], "gated")
         self.assertEqual(statuses["medical_info"], "gated")
+        self.assertEqual(statuses["institutional_evidence_network"], "ci_proven")
+        self.assertEqual(proof["counts"]["institutional_organizations"], 0)
+        self.assertEqual(proof["counts"]["evidence_exchange_packages"], 0)
 
     def test_capital_milestones_are_dependency_gated(self):
         proof = self.investor.snapshot(self.c)
@@ -117,6 +120,16 @@ class InvestorProjectionTests(unittest.TestCase):
         protocol = proof["value_evidence_protocol"]
         self.assertGreaterEqual(len(protocol["steps"]), 5)
         self.assertIn("No value line enters payback twice", protocol["guardrail"])
+
+    def test_institutional_distribution_is_commercially_visible_without_traction_claim(self):
+        proof = self.investor.snapshot(self.c)
+        products = {x["id"]: x for x in proof["revenue_architecture"]}
+        institutional = products["knowledge_licensing"]
+        self.assertEqual(institutional["status"], "ci_proven")
+        text = (institutional["model"] + " " + institutional["evidence"]).lower()
+        self.assertIn("no external institution", text)
+        self.assertNotIn("signed customer", text)
+        self.assertNotIn("arr", text)
 
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
