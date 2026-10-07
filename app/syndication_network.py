@@ -575,13 +575,13 @@ def acknowledge_obligation(c,obligation_id,organization_id,evidence_ref,actor=No
         raise ValueError("institutional_operator_membership_required")
     if row["status"]=="acknowledged":
         return dict(row)
-    if row["status"]!="pending":
+    if row["status"] not in ("pending","breached"):
         raise ValueError("obligation_not_acknowledgeable")
     evidence_ref=str(evidence_ref or "").strip()
     if not evidence_ref:
         raise ValueError("obligation_evidence_required")
     now=int(time.time())
-    status="acknowledged" if now<=int(row["due_at"]) else "breached"
+    status="breached" if row["status"]=="breached" or now>int(row["due_at"]) else "acknowledged"
     c.execute(
         """UPDATE syndication_delivery_obligations
            SET status=?,acknowledged_at=?,evidence_ref=? WHERE id=?""",
