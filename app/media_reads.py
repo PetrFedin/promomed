@@ -7,6 +7,7 @@ PUBLIC_EVIDENCE_ROUTES=(
     "/api/evidence-checkpoint/public-key",
     "/api/evidence-checkpoint/issuer",
     "/api/evidence-checkpoint/status-list",
+    "/api/evidence-checkpoint/checkpoint",
 )
 
 
@@ -41,6 +42,13 @@ def serve(raw_path, role):
         if parsed.path=="/api/evidence-checkpoint/status-list":
             issuer_id=(q.get("issuer_id") or [""])[0][:120] or None
             return {"data":evidence_checkpoint.status_list(c,issuer_id)},200
+
+        if parsed.path=="/api/evidence-checkpoint/checkpoint":
+            checkpoint_sha=(q.get("sha256") or [""])[0][:64]
+            try:
+                return {"data":evidence_checkpoint.checkpoint_document(c,checkpoint_sha)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404 if str(exc)=="checkpoint_not_found" else 422
 
         if parsed.path in ("/api/evidence-seal","/api/evidence-bundle"):
             kind=(q.get("artifact_kind") or [""])[0][:30]
