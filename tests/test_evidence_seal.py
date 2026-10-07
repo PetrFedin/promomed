@@ -1,7 +1,8 @@
 import sqlite3
+import unittest
 
 from app.evidence_graph import seed_demo
-from app.evidence_seal import build
+from app.evidence_seal import build, portable_bundle
 
 
 def _db():
@@ -17,42 +18,46 @@ def _db():
     return c
 
 
-def test_demo_seal_is_deterministic_and_truth_bounded():
-    c=_db()
-    one=build(c,artifact_kind="content",artifact_ref="CT01")
-    two=build(c,artifact_kind="content",artifact_ref="CT01")
-    assert one["state"]=="VERIFIED_DEMO_PROCESS"
-    assert one["validForProcess"] is True
-    assert one["medicalEfficacyCertified"] is False
-    assert one["counts"]["currentClaims"]==2
-    assert one["counts"]["trustedCurrentClaims"]==2
-    assert len(one["evidencePackageSha256"])==64
-    assert one["evidencePackageSha256"]==two["evidencePackageSha256"]
+class EvidenceSealTests(unittest.TestCase):
+    def setUp(self):
+        self.c=_db()
+
+    def tearDown(self):
+        self.c.close()
+
+    def test_demo_seal_is_deterministic_and_truth_bounded(self):
+        one=build(self.c,artifact_kind="content",artifact_ref="CT01")
+        two=build(self.c,artifact_kind="content",artifact_ref="CT01")
+        self.assertEqual(one["state"],"VERIFIED_DEMO_PROCESS")
+        self.assertTrue(one["validForProcess"])
+        self.assertFalse(one["medicalEfficacyCertified"])
+        self.assertEqual(one["counts"]["currentClaims"],2)
+        self.assertEqual(one["counts"]["trustedCurrentClaims"],2)
+        self.assertEqual(len(one["evidencePackageSha256"]),64)
+        self.assertEqual(one["evidencePackageSha256"],two["evidencePackageSha256"])
+
+    def test_missing_locator_fails_closed(self):
+        self.c.execute("UPDATE evidence_citations SET locator='' WHERE claim_id='CL01'")
+        seal=build(self.c,artifact_kind="content",artifact_ref="CT01")
+        self.assertEqual(seal["state"],"INCOMPLETE")
+        self.assertFalse(seal["validForProcess"])
+
+    def test_no_claims_never_gets_seal(self):
+        seal=build(self.c,artifact_kind="content",artifact_ref="CT99")
+        self.assertEqual(seal["state"],"NO_CURRENT_CLAIMS")
+        self.assertFalse(seal["validForProcess"])
+
+    def test_portable_bundle_is_redacted_and_hash_stable(self):
+        one=portable_bundle(self.c,artifact_kind="content",artifact_ref="CT01")
+        two=portable_bundle(self.c,artifact_kind="content",artifact_ref="CT01")
+        self.assertEqual(one["schemaVersion"],"promomed-content-evidence-bundle-v1")
+        self.assertFalse(one["disclosureBoundary"]["reviewerIdentityIncluded"])
+        self.assertFalse(one["disclosureBoundary"]["medicalEfficacyCertified"])
+        self.assertEqual(one["signature"]["status"],"unsigned")
+        self.assertEqual(len(one["bundleSha256"]),64)
+        self.assertEqual(one["bundleSha256"],two["bundleSha256"])
+        self.assertNotIn("reviewer",one["claims"][0])
 
 
-def test_missing_locator_fails_closed():
-    c=_db()
-    c.execute("UPDATE evidence_citations SET locator='' WHERE claim_id='CL01'")
-    seal=build(c,artifact_kind="content",artifact_ref="CT01")
-    assert seal["state"]=="INCOMPLETE"
-    assert seal["validForProcess"] is False
-
-
-def test_no_claims_never_gets_seal():
-    c=_db()
-    seal=build(c,artifact_kind="content",artifact_ref="CT99")
-    assert seal["state"]=="NO_CURRENT_CLAIMS"
-    assert seal["validForProcess"] is False
-
-
-def test_portable_bundle_is_redacted_and_hash_stable():
-    c=_db()
-    one=__import__("app.evidence_seal", fromlist=["portable_bundle"]).portable_bundle(c,artifact_kind="content",artifact_ref="CT01")
-    two=__import__("app.evidence_seal", fromlist=["portable_bundle"]).portable_bundle(c,artifact_kind="content",artifact_ref="CT01")
-    assert one["schemaVersion"]=="promomed-content-evidence-bundle-v1"
-    assert one["disclosureBoundary"]["reviewerIdentityIncluded"] is False
-    assert one["disclosureBoundary"]["medicalEfficacyCertified"] is False
-    assert one["signature"]["status"]=="unsigned"
-    assert len(one["bundleSha256"])==64
-    assert one["bundleSha256"]==two["bundleSha256"]
-    assert "reviewer" not in one["claims"][0]
+if __name__=="__main__":
+    unittest.main()
