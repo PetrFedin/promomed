@@ -7,6 +7,8 @@ from app import change_impact, evidence_checkpoint, evidence_graph, evidence_sea
 
 PROFILE_VERSION="promomed-evidence-governance-interchange-v1"
 PACKAGE_VERSION="promomed-reference-evidence-package-v1"
+PROFILE_SCHEMA_ID="urn:promomed:schema:evidence-governance-interchange:v1"
+PACKAGE_SCHEMA_ID="urn:promomed:schema:reference-evidence-package:v1"
 
 ORGANIZATION_TYPES={
     "medical_society",
@@ -221,6 +223,7 @@ def interchange_profile(c,*,artifact_kind,artifact_ref):
             claims.append(item)
 
     return {
+        "schemaId":PROFILE_SCHEMA_ID,
         "profileVersion":PROFILE_VERSION,
         "artifact":{"kind":artifact_kind,"ref":artifact_ref},
         "sources":[sources[k] for k in sorted(sources)],
@@ -274,6 +277,7 @@ def create_package(c,*,artifact_kind,artifact_ref,actor,checkpoint_sha256=None):
         raise ValueError("checkpoint_not_current")
 
     package_core={
+        "schemaId":PACKAGE_SCHEMA_ID,
         "packageVersion":PACKAGE_VERSION,
         "profile":profile,
         "checkpoint":envelope,
@@ -470,7 +474,9 @@ def withdraw_artifact_packages(c,artifact_kind,artifact_ref,reason,actor):
 
 def reference_package():
     core={
+        "schemaId":PACKAGE_SCHEMA_ID,
         "packageVersion":PACKAGE_VERSION,
+        "profileSchemaId":PROFILE_SCHEMA_ID,
         "profileVersion":PROFILE_VERSION,
         "exampleType":"synthetic_non_clinical",
         "artifact":{"kind":"reference","ref":"SYNTHETIC-KNOWLEDGE-001"},
