@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS syndication_delivery_observations(
   event_id TEXT,
   observation_type TEXT NOT NULL CHECK(observation_type IN (
     'delivery_success','delivery_retryable_failure','delivery_terminal_failure',
-    'ack_success','ack_late','sla_breach','dead_event'
+    'ack_success','ack_late','ack_missing','sla_breach','dead_event'
   )),
   severity TEXT NOT NULL CHECK(severity IN ('info','warning','critical')),
   details_json TEXT NOT NULL,
