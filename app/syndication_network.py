@@ -255,8 +255,17 @@ def finalize_qualification(c,qualification_id,actor,validity_seconds=15552000):
     validity_seconds=int(validity_seconds)
     if validity_seconds<86400 or validity_seconds>31536000:
         raise ValueError("qualification_validity_invalid")
-    valid_until=now+validity_seconds
-    next_requalification_at=now+max(86400,int(validity_seconds*0.8))
+    requested_valid_until=now+validity_seconds
+    required_expiries=[
+        int(checks[scope]["expires_at"])
+        for scope in REQUIRED_CONFORMANCE_SCOPES
+        if checks[scope].get("expires_at") is not None
+    ]
+    valid_until=min([requested_valid_until,*required_expiries]) if required_expiries else requested_valid_until
+    remaining=max(1,valid_until-now)
+    next_requalification_at=now+max(3600,int(remaining*0.8))
+    if next_requalification_at>=valid_until:
+        next_requalification_at=max(now+1,valid_until-1)
     c.execute(
         """UPDATE syndication_partner_qualifications
            SET status='qualified',effective_at=?,valid_until=?,next_requalification_at=?,
