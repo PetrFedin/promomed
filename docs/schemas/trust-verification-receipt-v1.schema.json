@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:trust-verification-receipt:v1",
+  "title": "Promomed Cross-Organisation Trust Verification Receipt v1",
+  "type": "object",
+  "required": [
+    "id",
+    "verificationStatus",
+    "verifiedAt",
+    "idempotentReplay"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verificationStatus": {
+      "enum": [
+        "valid_bundle",
+        "invalid_bundle",
+        "expired_snapshot",
+        "revoked_snapshot",
+        "unknown_issuer",
+        "revoked_issuer_key",
+        "invalid_signature"
+      ]
+    },
+    "verifiedAt": {
+      "type": "integer"
+    },
+    "idempotentReplay": {
+      "type": "boolean"
+    },
+    "result": {
+      "type": "object"
+    },
+    "authorityBoundary": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}
