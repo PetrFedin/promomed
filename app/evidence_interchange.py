@@ -468,6 +468,75 @@ def withdraw_artifact_packages(c,artifact_kind,artifact_ref,reason,actor):
     }
 
 
+def reference_package():
+    core={
+        "packageVersion":PACKAGE_VERSION,
+        "profileVersion":PROFILE_VERSION,
+        "exampleType":"synthetic_non_clinical",
+        "artifact":{"kind":"reference","ref":"SYNTHETIC-KNOWLEDGE-001"},
+        "source":{
+            "sourceId":"SRC-SYNTH-001",
+            "sourceKind":"synthetic_reference",
+            "title":"Synthetic source for interoperability testing",
+            "publisher":"Promomed Reference Fixture",
+            "sourceRef":"urn:promomed:synthetic:source:001",
+            "status":"active",
+        },
+        "claim":{
+            "claimId":"CLAIM-SYNTH-001",
+            "version":1,
+            "text":"Synthetic interoperability claims must remain distinguishable from medical claims.",
+            "topic":"Interoperability",
+            "status":"VERIFIED_PROCESS_FIXTURE",
+        },
+        "review":{
+            "reviewRole":"synthetic_governance_fixture",
+            "reviewerIdentityExported":False,
+            "decision":"approved_fixture",
+        },
+        "disclosure":{
+            "commercialContext":"none",
+            "synthetic":True,
+            "medicalContent":False,
+        },
+        "approval":{
+            "processState":"REFERENCE_FIXTURE",
+            "medicalEfficacyCertified":False,
+            "clinicalCorrectnessCertified":False,
+        },
+        "seal":{
+            "state":"REFERENCE_FIXTURE",
+            "evidencePackageSha256":"synthetic-not-a-production-seal",
+        },
+        "checkpoint":{
+            "state":"REFERENCE_FIXTURE",
+            "signatureStatus":"not_a_production_signature",
+        },
+        "syndication":{
+            "publisherRole":"institutional publisher",
+            "consumerRole":"institutional consumer",
+            "partnerMayRewriteClaims":False,
+            "withdrawalPropagationRequired":True,
+        },
+        "lifecycle":[
+            {"step":1,"event":"source_admitted","state":"active"},
+            {"step":2,"event":"claim_reviewed","state":"approved_fixture"},
+            {"step":3,"event":"package_published","state":"active"},
+            {"step":4,"event":"package_syndicated","state":"delivered"},
+            {"step":5,"event":"source_corrected","state":"review_required"},
+            {"step":6,"event":"prior_package_withdrawn","state":"withdrawn"},
+            {"step":7,"event":"corrected_package_published","state":"superseding"},
+        ],
+        "truthBoundary":{
+            "synthetic":True,
+            "medicalAdvice":False,
+            "medicalEfficacyCertified":False,
+            "productionCredential":False,
+        },
+    }
+    return {**core,"referencePackageSha256":_sha(core)}
+
+
 def institutional_snapshot(c,organization_id=None):
     if organization_id:
         organizations=[organization(c,organization_id)]
