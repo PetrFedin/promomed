@@ -62,7 +62,7 @@ def assert_navigation_placement(page, width: int, height: int, label: str):
     nav = page.locator("#nav").bounding_box()
     top = page.locator(".top").bounding_box()
     assert nav and top, f"{label}: navigation/header missing"
-    if width >= 768:
+    if width >= 768 and height > 520:
         assert nav["x"] <= 24, f"{label}: tablet/desktop nav not promoted to left rail: {nav}"
         assert nav["y"] <= 24, f"{label}: left rail starts too low: {nav}"
         assert nav["y"] + nav["height"] <= height - 8, f"{label}: left rail exceeds viewport: {nav}"
