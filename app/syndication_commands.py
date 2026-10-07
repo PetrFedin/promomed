@@ -243,6 +243,26 @@ def handle_command(c,route,role,email,data):
 
 
 def handle_public(route,data):
+    if route=="/api/syndication/delivery/acknowledge":
+        from app import db
+        c=db.connect()
+        try:
+            result=delivery_protocol.acknowledge_event(
+                c,
+                str(data.get("event_id") or "")[:160],
+                str(data.get("organization_id") or "")[:100],
+                data.get("ack") or {},
+                int(data.get("timestamp") or 0),
+                str(data.get("signature") or "")[:200],
+            )
+            c.commit()
+            return {"data":result},200
+        except ValueError as exc:
+            c.rollback()
+            return {"error":str(exc)},409
+        finally:
+            c.close()
+
     if route!="/api/external-contribution/receipt/verify-portable":
         return None
     result=syndication_network.verify_contribution_receipt(
