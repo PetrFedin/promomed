@@ -185,6 +185,24 @@ class PartnerTrustBundleTests(unittest.TestCase):
         self.assertTrue(result["currentPromomedStateVerified"])
         self.assertEqual(result["revocation"]["reason"],"Synthetic trust revocation")
 
+    def test_new_snapshot_preserves_lineage_after_revoked_predecessor(self):
+        now=int(time.time())
+        first=trust_bundle.issue_snapshot(
+            self.c,"INST-TRUST-001","governance@demo.ru",now=now
+        )
+        trust_bundle.revoke_snapshot(
+            self.c,first["id"],"Synthetic predecessor revocation",
+            "governance@demo.ru",now=now+1
+        )
+        second=trust_bundle.issue_snapshot(
+            self.c,"INST-TRUST-001","governance@demo.ru",now=now+2
+        )
+        old=trust_bundle.snapshot_document(self.c,first["id"])
+        new=trust_bundle.snapshot_document(self.c,second["id"])
+        self.assertEqual(old["status"],"revoked")
+        self.assertEqual(new["status"],"current")
+        self.assertEqual(new["supersedesSnapshotId"],first["id"])
+
     def test_snapshot_expiry_is_distinct_from_revocation(self):
         now=int(time.time())
         snapshot=trust_bundle.issue_snapshot(
