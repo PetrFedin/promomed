@@ -211,3 +211,17 @@ Modal sheet behaviour follows a predictable keyboard and focus contract:
 - the overlay exposes dialog / modal semantics and aria-hidden state.
 
 This checkpoint changes interaction quality only; business and authority semantics are unchanged.
+
+
+## 21. Motion polish v1
+
+Motion is used only to reinforce application state changes:
+
+- main screen entry: short opacity + 4 px vertical settle;
+- overlay entry: short backdrop fade;
+- sheet entry: short opacity + 8 px vertical settle;
+- duration stays below 200 ms;
+- no parallax, bouncing or decorative looping motion is allowed;
+- prefers-reduced-motion disables effective animation duration through the global accessibility contract.
+
+Motion must never delay interaction availability or become necessary to understand state.
