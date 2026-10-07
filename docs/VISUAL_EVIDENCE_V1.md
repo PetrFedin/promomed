@@ -69,3 +69,16 @@ Minor anti-aliasing, font-rasterization and sub-pixel differences are not regres
 ## Next maturity step
 
 Only after the UI system stabilizes further should selected anchor surfaces receive image-diff thresholds. Those baselines should cover a small number of high-value states rather than every generated screen.
+
+## Runtime split
+
+Visual evidence and deep functional smoke have different purposes.
+
+Every QA viewport must still produce the complete participant screenshot set and pass geometry/readability contracts.
+
+The expensive deep product/authority journey runs on two canonical devices:
+
+- iPhone 15 Pro — mobile functional path;
+- desktop 1440×900 — desktop functional path.
+
+Other viewports stop after the participant visual/account surface has been proven. The manifest records deep_journey=true/false per device so reviewers can distinguish layout evidence from deep functional evidence.
