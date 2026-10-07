@@ -89,3 +89,14 @@ def handle_command(c,route,role,email,data):
         return custom({"data":result})
     except ValueError as exc:
         return error(str(exc),409)
+
+
+def handle_public(route,data):
+    if route!="/api/evidence-interchange/verify-portable":
+        return None
+    result=evidence_interchange.verify_package_portable(
+        data.get("package") or {},
+        data.get("issuer_document") or {},
+        data.get("status_list") or {},
+    )
+    return {"data":result},200
