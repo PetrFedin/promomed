@@ -16,7 +16,8 @@ class PersistenceContractTests(unittest.TestCase):
         server.init()
 
     def test_postgres_script_splitter_preserves_dollar_quoted_function(self):
-        script="CREATE FUNCTION f() RETURNS trigger AS $ BEGIN RAISE EXCEPTION 'x'; END; $ LANGUAGE plpgsql; CREATE TABLE t(id INTEGER);"
+        dq=chr(36)*2
+        script="CREATE FUNCTION f() RETURNS trigger AS "+dq+" BEGIN RAISE EXCEPTION 'x'; END; "+dq+" LANGUAGE plpgsql; CREATE TABLE t(id INTEGER);"
         parts=db._split_postgres_script(script)
         self.assertEqual(len(parts),2)
         self.assertIn("RAISE EXCEPTION 'x'; END;",parts[0])
