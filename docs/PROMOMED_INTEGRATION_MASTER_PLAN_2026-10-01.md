@@ -2335,7 +2335,8 @@ Implemented in repository scope:
 - explicit key activation and rotation with `rotated_from_key_id` lineage;
 - key-ID collision fail-closed semantics;
 - persistent checkpoint issuance registry binding checkpoint -> issuer -> key -> artifact -> seal hash;
-- public issuer document and public checkpoint status list;
+- immutable storage/retrieval of the originally issued public checkpoint payload + signature, so historical verification survives routine key rotation without old private-key access;
+- public issuer document, checkpoint retrieval and public checkpoint status list;
 - external Ed25519 verification using public key material only, with no access to issuer private key;
 - routine key rotation preserves historical signature verification within the recorded key-validity interval;
 - issuer-key revocation and individual checkpoint revocation are distinct states;
