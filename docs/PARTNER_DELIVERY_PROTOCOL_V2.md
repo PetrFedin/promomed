@@ -117,6 +117,8 @@ An acknowledgement may arrive out of order and is still preserved, but the curso
 
 Therefore acknowledging sequence 12 does not skip an unacknowledged sequence 11.
 
+A successfully delivered event is not re-dispatched merely because acknowledgement has not yet arrived. Delivery retry is for failed attempts; missing acknowledgement is tracked separately as integration-health evidence.
+
 ## 7. Webhook signature
 
 Request headers include:
@@ -195,7 +197,11 @@ Promomed verifies against the secret version of the **successful delivery attemp
 
 This preserves valid acknowledgements across routine secret rotation.
 
+Business events are organisation-level obligations, not endpoint-level identities. If endpoint A is suspended/replaced before a queued event is sent, dispatch selects the organisation's current active endpoint B. The business event ID remains unchanged; the concrete endpoint and secret version are recorded on the append-only attempt.
+
 Acknowledgements are immutable and idempotent.
+
+Protocol acknowledgement expectation is **24 hours**. A delivered event still lacking acknowledgement after 24 hours creates an `ack_missing` behaviour observation. Three such observations inside the 30-day requalification window trigger `requalification_due`.
 
 ## 10. Automatic SLA evidence
 
@@ -249,6 +255,8 @@ Append-only observations include:
 
 These records describe integration behaviour only.
 
+The internal `GET /api/syndication/delivery-runtime` projection is side-effect free: it does not create observations, reconcile SLA state or change qualification. Those mutations occur only through explicit reconciliation/worker commands.
+
 They do not measure:
 
 - medical efficacy;
@@ -266,6 +274,7 @@ Within a 30-day observation window, requalification is triggered when any applie
 - at least 2 SLA breaches;
 - at least 2 dead delivery events;
 - at least 10 retryable failures;
+- at least 3 missing acknowledgements beyond the 24-hour expectation;
 - any withdrawal SLA breach.
 
 A withdrawal SLA breach or at least 3 dead events additionally creates:
