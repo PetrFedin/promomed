@@ -26,6 +26,7 @@ def serve(raw_path, role):
         "/api/evidence-interchange/reference",
         "/api/institutional-network",
         "/api/syndication-network",
+        "/api/syndication/certification",
         "/api/external-contribution/receipt",
         *PUBLIC_EVIDENCE_ROUTES,
     ):
@@ -66,6 +67,15 @@ def serve(raw_path, role):
                 return {"data":evidence_interchange.package_document(c,package_id)},200
             except ValueError as exc:
                 return {"error":str(exc)},404 if str(exc)=="evidence_package_not_found" else 422
+
+        if parsed.path=="/api/syndication/certification":
+            organization_id=(q.get("organization_id") or [""])[0][:100]
+            if not organization_id:
+                return {"error":"organization_id_required"},422
+            try:
+                return {"data":syndication_network.public_certification(c,organization_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
 
         if parsed.path=="/api/external-contribution/receipt":
             contribution_id=(q.get("contribution_id") or [""])[0][:120]
