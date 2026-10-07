@@ -206,8 +206,7 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
-  d=serve_evidence_trust_get(p,self.path); 
-  if d is not None:return self.out(d[0],d[1])
+  if (d:=serve_evidence_trust_get(p,self.path)) is not None:return self.out(d[0],d[1])
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
@@ -360,8 +359,7 @@ class H(SimpleHTTPRequestHandler):
   p=urlparse(self.path).path
   try: data=body(self)
   except Exception: return self.out({"error":"bad_json"},400)
-  d=serve_evidence_trust_post(p,data); 
-  if d is not None:return self.out(d[0],d[1])
+  if (d:=serve_evidence_trust_post(p,data)) is not None:return self.out(d[0],d[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
    c=conn()
