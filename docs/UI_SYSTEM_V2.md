@@ -115,3 +115,44 @@ These refinements remain presentation-only and do not modify application authori
 - Passport stamps use compact rectangular surfaces on larger screens while phone retains the original stacked rhythm;
 - browser evidence now captures the unobscured home after closing evidence sheets;
 - desktop QA also captures a dedicated collapsed-rail screenshot for visual review.
+
+## 12. Today experience v2
+
+The Today surface shifts from duplicated topic navigation to action-first daily use:
+
+- hero quick rail: Continue / Events / Studio / My;
+- topic navigation remains in dedicated Topic Hubs below rather than duplicated in the hero;
+- personal continuation and Relationship 365 form one compact working zone on tablet/desktop;
+- desktop hero height is reduced to keep actionable content closer to the first viewport;
+- medical-personalisation boundaries remain visible next to continuation logic.
+
+## 13. Media experience v2
+
+Media is treated as a daily knowledge workspace rather than a decorative feed:
+
+- controls that look like filters must perform a real action; decorative category chips are not allowed;
+- current MVP top actions are Search / Studio / Catalog;
+- paired editorial/corporate/audio cards move to two-column grids on tablet/desktop;
+- learning programmes use a three-column grid where viewport allows it;
+- desktop density increases through layout, never by reducing readable text;
+- long-form rails remain touch-native on phone.
+
+## 14. Events experience v2
+
+Events prioritizes operational use before conference storytelling:
+
+- hero actions expose Programme / My schedule / Map;
+- My schedule action switches the canonical programme renderer into mine mode;
+- Venue Concierge now/next and Partner Appointments form one operational grid on tablet/desktop;
+- phone keeps the same controls in a vertical sequence;
+- conference narrative, ecosystem and curated moments remain below the operational layer.
+
+## 15. Community experience v2
+
+Community remains consent-first and avoids generic social-feed mechanics:
+
+- explainable matches form a compact two-card workspace on tablet/desktop;
+- partner appointments and mutual meetings form a second working grid;
+- double opt-in semantics remain explicit beside mutual meeting state;
+- promotional 30-day / gift / partner discovery layers stay below networking utility;
+- no new public follower counts, popularity ranking or health-risk inference is introduced.
