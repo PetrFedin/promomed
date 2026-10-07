@@ -173,6 +173,16 @@ class EvidenceInterchangeTests(unittest.TestCase):
             delivery_role="consumer",
         )
         self.assertEqual(delivery["status"],"delivered")
+        replay=evidence_interchange.deliver_package(
+            self.c,
+            package_id=package["id"],
+            organization_id="INST-TEST-001",
+            actor="governance@test",
+            delivery_role="consumer",
+        )
+        self.assertEqual(replay["id"],delivery["id"])
+        self.assertEqual(replay["receiptSha256"],delivery["receiptSha256"])
+        self.assertTrue(replay["idempotentReplay"])
 
         with self.assertRaisesRegex(ValueError,"institutional_role_not_active"):
             evidence_interchange.deliver_package(
