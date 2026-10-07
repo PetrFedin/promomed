@@ -126,7 +126,6 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     assert_touch_targets(page, f"{name}/home")
     assert_readable_text(page, f"{name}/home")
     assert_navigation_placement(page, width, height, f"{name}/home")
-    page.screenshot(path=str(OUT / f"{clean_name(name)}-home.png"), full_page=True)
     page.keyboard.press("Escape")
     expect(page.locator("#overlay")).not_to_have_class(re.compile(r"\bon\b"))
     collapse=page.locator("#navCollapse")
@@ -139,10 +138,12 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
         assert expanded and collapsed and collapsed["width"] < expanded["width"], f"{name}: desktop rail did not collapse"
         stored=page.evaluate("localStorage.getItem('sostoyanie_nav_collapsed')")
         assert stored=="1", f"{name}: collapsed rail preference not persisted"
+        page.screenshot(path=str(OUT / f"{clean_name(name)}-home-collapsed.png"), full_page=True)
         collapse.click()
         expect(page.locator("body")).not_to_have_class(re.compile(r"\bnavCollapsed\b"))
     else:
         expect(collapse).to_be_hidden()
+    page.screenshot(path=str(OUT / f"{clean_name(name)}-home.png"), full_page=True)
 
     for screen_id in ["media", "events", "community"]:
         page.locator(f'#nav button[data-s="{screen_id}"]').click()
