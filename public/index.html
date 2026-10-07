@@ -478,6 +478,25 @@ body{background:var(--canvas);color:var(--text)}
 .icon svg{width:19px;height:19px}
 .navIcon{display:grid!important;place-items:center}
 .navIcon svg{width:21px;height:21px}
+/* editorial art direction: CSS-native, license-free MVP graphics */
+.coverCard,.hubCard,.premiumHero,.editorialVisual,.studioStage{isolation:isolate}
+.coverCard{position:relative;overflow:hidden}
+.coverCard:before{content:'';position:absolute;width:190px;height:190px;right:-58px;top:-48px;border-radius:50%;border:1px solid rgba(255,255,255,.25);box-shadow:0 0 0 28px rgba(255,255,255,.035),0 0 0 58px rgba(255,255,255,.025);z-index:0}
+.coverCard:after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.09),transparent 38%,rgba(3,18,35,.18));z-index:0;pointer-events:none}
+.coverCard>*{position:relative;z-index:1}
+.coverCard.alt:before{width:155px;height:155px;right:-24px;top:22px;border-radius:38% 62% 58% 42% / 44% 40% 60% 56%;transform:rotate(18deg)}
+.coverCard.warm:before{width:170px;height:170px;right:-34px;top:-14px;border-radius:44% 56% 37% 63% / 57% 37% 63% 43%;transform:rotate(-14deg)}
+.hubCard{position:relative;overflow:hidden}
+.hubCard:after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;right:-42px;top:-42px;border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 22px rgba(255,255,255,.025);pointer-events:none}
+.hubCard>*{position:relative;z-index:1}
+.premiumHero{background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(160deg,#071b31 0%,#123d63 56%,#58a8b8 100%);background-size:32px 32px,32px 32px,100% 100%;background-position:center}
+.premiumHero:after{background:linear-gradient(180deg,rgba(7,27,49,.02) 30%,rgba(7,27,49,.94) 100%)}
+@media(prefers-reduced-motion:no-preference){
+ .coverCard:hover:before{transform:translate3d(-5px,5px,0) scale(1.025)}
+ .coverCard.alt:hover:before{transform:rotate(18deg) translate3d(-4px,4px,0) scale(1.02)}
+ .coverCard.warm:hover:before{transform:rotate(-14deg) translate3d(-4px,4px,0) scale(1.02)}
+ .coverCard:before{transition:transform .35s ease}
+}
 .navCollapse{display:none}
 @media(min-width:1200px){
  .navCollapse{display:flex!important;margin-top:auto;border-top:1px solid var(--line)!important;border-radius:14px!important;color:#78889b!important;background:#f8fafc!important}
