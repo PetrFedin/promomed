@@ -156,3 +156,13 @@ Community remains consent-first and avoids generic social-feed mechanics:
 - double opt-in semantics remain explicit beside mutual meeting state;
 - promotional 30-day / gift / partner discovery layers stay below networking utility;
 - no new public follower counts, popularity ranking or health-risk inference is introduced.
+
+## 16. My experience v2
+
+My becomes a compact personal workspace on larger screens:
+
+- ticket and passport remain the primary identity / participation surface;
+- Takeaways and Relationship 1/7/30 form one two-column working zone on tablet/desktop;
+- Messages and Participation settings form a second two-column working zone;
+- phone retains a simple sequential layout;
+- consent-first messaging and separate data/consent semantics remain unchanged.
