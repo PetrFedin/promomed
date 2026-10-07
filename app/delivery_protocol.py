@@ -1049,7 +1049,16 @@ def behavior_scorecard(c,organization_id,now=None,window_seconds=30*86400):
 
 def evaluate_requalification(c,organization_id,now=None,apply=True):
     now=int(now or time.time())
-    q=syndication_network.refresh_qualification_state(c,organization_id,now=now)
+    if apply:
+        q=syndication_network.refresh_qualification_state(c,organization_id,now=now)
+    else:
+        qrow=syndication_network._current_qualification(c,organization_id)
+        q=dict(qrow) if qrow else None
+        if q and q["status"] not in ("suspended","revoked","expired"):
+            if q.get("valid_until") is not None and int(q["valid_until"])<=now:
+                q["status"]="expired"
+            elif q.get("next_requalification_at") is not None and int(q["next_requalification_at"])<=now:
+                q["status"]="requalification_due"
     score=behavior_scorecard(c,organization_id,now=now)
     obs=score["observations"]
     sla_breaches=int(obs.get("sla_breach",0))
