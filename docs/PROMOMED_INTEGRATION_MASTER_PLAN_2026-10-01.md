@@ -2397,7 +2397,9 @@ Commercial consequence: reviewed Promomed knowledge can now be packaged as a ver
 
 ### Certified Syndication Partner Network + External Contribution Admission v1 — repository checkpoint 2026-10-07
 
-Base authority: exact merged `main` after PR #39 — `be47c32be4d8972cff5e64e959a6a1df844fc2c8`.
+Base authority at implementation start: exact merged `main` after PR #39 — `be47c32be4d8972cff5e64e959a6a1df844fc2c8`.
+
+Merged authority checkpoint: PR #40 merged into `main` at `75f5a336c063a943656b7fea18d06989c5fb22b3`.
 
 This checkpoint implements the next approved institutional-adoption contour:
 
@@ -2441,3 +2443,29 @@ Truth boundary:
 - no production partner, institutional adoption, paid subscription, contract, ARR/MRR or revenue is claimed by this checkpoint.
 
 Commercial consequence: Promomed can now model a governed network where institutions are technically qualified, receive versioned evidence under measurable correction/withdrawal obligations, and contribute material without obtaining the authority to self-publish into Promomed's canonical scientific layer.
+
+
+### Partner Delivery Protocol v2 + Webhook/Event Delivery + Continuous Requalification — next institutional layer
+
+**Base dependency:** Certified Syndication Partner Network v1 is merged and green at `main` merge checkpoint `75f5a336c063a943656b7fea18d06989c5fb22b3`.
+
+Next implementation sequence:
+
+`endpoint registration -> endpoint verification -> signed delivery event -> deterministic event identity -> queued attempt -> webhook signature -> retry/backoff -> idempotent receiver contract -> per-partner delivery cursor -> acknowledgement evidence -> SLA reconciliation -> observed-behaviour scorecard -> requalification trigger / suspension recommendation`.
+
+Acceptance boundaries:
+
+- webhook endpoints are explicitly registered and governance-approved; URLs are not inferred from organisation metadata;
+- secrets are never returned by read APIs after registration;
+- every delivery event has a stable deterministic event ID and payload hash;
+- every attempt is append-only and records attempt number, outcome, HTTP result class and timestamps;
+- retry never creates a new business event;
+- partner acknowledgement is bound to event identity and payload digest;
+- webhook signatures are independently verifiable with endpoint-specific secret material;
+- per-partner cursor advances only after accepted delivery/ack contract, never on failed attempt;
+- correction/withdrawal obligations can be satisfied automatically only by observed delivery + accepted acknowledgement evidence;
+- repeated delivery failures, missing acknowledgements or SLA breaches feed continuous requalification evidence;
+- observed behaviour may trigger `requalification_due` or suspension recommendation, but must not silently revoke a partner without governance authority;
+- no outbound webhook integration, production endpoint, external partner traffic, uptime or delivery success is claimed until real endpoints exist.
+
+Commercial consequence: certification evolves from questionnaire/conformance proof into an operationally observed integration standard with measurable production behaviour and auditable delivery quality.
