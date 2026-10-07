@@ -40,6 +40,9 @@ def snapshot(c):
         "community_threads": _count(c, "community_threads"),
         "learning_tracks": _count(c, "learning_tracks"),
         "venues": _count(c, "venue_state"),
+        "institutional_organizations": _count(c, "institutional_organizations"),
+        "evidence_exchange_packages": _count(c, "evidence_exchange_packages"),
+        "evidence_exchange_deliveries": _count(c, "evidence_exchange_deliveries"),
     }
 
     capabilities = [
@@ -99,6 +102,16 @@ def snapshot(c):
             "status": "gated",
             "proof": "Commercial enterprise module reserved for later governed evidence stack.",
         },
+        {
+            "id": "institutional_evidence_network",
+            "title": "Institutional Evidence Distribution Network",
+            "status": "ci_proven",
+            "proof": (
+                "Versioned interchange schema, signed-checkpoint binding, publisher/consumer roles, "
+                "immutable package delivery and withdrawal propagation are repository-contract proven. "
+                "No external institution or commercial adoption is claimed."
+            ),
+        },
     ]
 
     revenue_architecture = [
@@ -144,6 +157,17 @@ def snapshot(c):
             "status": "gated",
             "evidence": "Roadmap defined; no efficacy or safety inference is activated in Phase 0.",
         },
+        {
+            "id": "knowledge_licensing",
+            "title": "Institutional knowledge distribution",
+            "model": "Evidence API / governed knowledge packs / partner syndication infrastructure",
+            "status": "ci_proven",
+            "evidence": (
+                "Machine-readable evidence packages can be bound to signed checkpoints, delivered to scoped "
+                "institutional publisher/consumer roles and withdrawn when source authority changes. "
+                "Commercial contracts and external adoption are not claimed."
+            ),
+        },
     ]
 
     defensibility = [
@@ -168,9 +192,12 @@ def snapshot(c):
             "detail": "Bounded contexts, migration checks, restore proof, durable identity and fail-closed production readiness are regression-tested.",
         },
         {
-            "title": "Future evidence governance",
-            "status": "gated",
-            "detail": "Evidence, claims, experts and scientific-information workflows become the enterprise moat only after review authority exists.",
+            "title": "Evidence governance + institutional portability",
+            "status": "ci_proven",
+            "detail": (
+                "Claim/source provenance, review state, Evidence Seal, signed checkpoints, public-key verification "
+                "and institutional package withdrawal propagation now form a machine-checkable distribution rail."
+            ),
         },
     ]
 
