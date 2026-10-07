@@ -217,6 +217,47 @@ class EvidenceInterchangeTests(unittest.TestCase):
         self.assertEqual(delivery_row["status"],"withdrawn")
         self.assertIn("source_retracted",delivery_row["withdrawal_reason"])
 
+    def test_demo_and_production_institutional_boundaries_fail_closed(self):
+        package=self._package()
+        self._organization("consumer")
+
+        with self.assertRaisesRegex(ValueError,"organization_demo_boundary_mismatch"):
+            evidence_interchange.register_organization(
+                self.c,
+                organization_id="INST-TEST-001",
+                name="Synthetic University",
+                organization_type="university",
+                actor="governance@test",
+                demo_only=False,
+            )
+
+        evidence_interchange.register_organization(
+            self.c,
+            organization_id="INST-PROD-001",
+            name="Production-like Test Organisation",
+            organization_type="knowledge_platform",
+            actor="governance@test",
+            external_ref="urn:test:prod:001",
+            credential_source="test-only source",
+            demo_only=False,
+        )
+        evidence_interchange.bind_role(
+            self.c,
+            organization_id="INST-PROD-001",
+            role_scope="consumer",
+            actor="governance@test",
+            verification_ref="test-only",
+            demo_only=False,
+        )
+        with self.assertRaisesRegex(ValueError,"package_organization_demo_boundary_mismatch"):
+            evidence_interchange.deliver_package(
+                self.c,
+                package_id=package["id"],
+                organization_id="INST-PROD-001",
+                actor="governance@test",
+                delivery_role="consumer",
+            )
+
     def test_reference_package_is_deterministic_and_non_clinical(self):
         one=evidence_interchange.reference_package()
         two=evidence_interchange.reference_package()
