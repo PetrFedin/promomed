@@ -3,11 +3,15 @@ import time
 from app.commanding import custom, error, ok
 from app.core import audit
 from app import transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority
+from app.evidence_checkpoint_commands import handle_command as handle_evidence_checkpoint_command
 
 ROUTES = {"/api/question", "/api/cms", "/api/transcript-takeaway-review", "/api/evidence-claim-correct", "/api/evidence-claim-retract", "/api/change-impact/create-demo", "/api/change-impact/resolve-demo", "/api/evidence-monitor/register", "/api/evidence-monitor/demo-change", "/api/evidence-monitor/fetch-live", "/api/evidence-monitor/review", "/api/evidence-monitor/assign-reviewer", "/api/evidence-monitor/conflict", "/api/evidence-monitor/decision", "/api/evidence-monitor/admit"}
 
 
 def handle_command(c, route, role, email, data):
+    evidence_outcome=handle_evidence_checkpoint_command(c,route,role,email,data)
+    if evidence_outcome is not None:
+        return evidence_outcome
     if route not in ROUTES:
         return None
 
