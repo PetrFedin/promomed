@@ -164,6 +164,13 @@ class ArchitectureContractTests(unittest.TestCase):
         auth_idx=SERVER.index("a=auth(self)", SERVER.index(" def do_POST(self):"))
         self.assertLess(public_idx,auth_idx)
 
+    def test_institutional_openapi_contract_is_machine_readable(self):
+        import json
+        spec = json.loads((ROOT / "docs" / "openapi" / "institutional-evidence-v1.openapi.json").read_text(encoding="utf-8"))
+        self.assertEqual(spec["openapi"], "3.1.0")
+        self.assertIn("/api/evidence-interchange/verify-portable", spec["paths"])
+        self.assertIn("/api/evidence-interchange/package/deliver", spec["paths"])
+
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 405)
 
