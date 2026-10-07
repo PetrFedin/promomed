@@ -833,6 +833,8 @@ def acknowledge_event(c,event_id,organization_id,ack_payload,ack_timestamp,signa
         raise ValueError("delivery_success_required_before_ack")
     if not isinstance(ack_payload,dict):
         raise ValueError("delivery_ack_payload_invalid")
+    if set(ack_payload)!={"eventId","payloadSha256","status"}:
+        raise ValueError("delivery_ack_payload_invalid")
     expected_event=str(ack_payload.get("eventId") or "")
     expected_payload=str(ack_payload.get("payloadSha256") or "")
     if expected_event!=event_id or expected_payload!=event["payload_sha256"]:
