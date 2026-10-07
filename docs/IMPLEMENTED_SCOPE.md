@@ -457,3 +457,21 @@ Truth boundary:
 - external professional credential registry verification is not yet integrated;
 - the SHA-256 decision digest is not represented as a legal electronic signature;
 - production institutional reviewer onboarding and signing policy remain required before claiming independent medical governance in production.
+
+
+## Participant UI System v2 — daily-use responsive shell
+
+Implemented in repository scope:
+
+- semantic visual token layer;
+- phone bottom-navigation shell with safe margins;
+- tablet compact left navigation rail;
+- desktop/monitor expanded left navigation rail;
+- centered working canvas independent of navigation width;
+- sticky translucent top actions;
+- refined card/elevation/field states;
+- hover, pressed and keyboard-focus states;
+- reduced-motion and safe-area behavior;
+- responsive QA contract updated for phone/tablet/desktop navigation placement.
+
+Truth boundary: this is the MVP product-design system, not final Promomed brand approval or licensed production artwork. See docs/UI_SYSTEM_V2.md.
