@@ -107,3 +107,11 @@ Additional daily-use refinements implemented in the polish branch:
 - reduced-motion users do not receive decorative hover motion.
 
 These refinements remain presentation-only and do not modify application authority.
+
+## 11. Visual evidence and account density
+
+- on tablet/desktop the account ticket switches to a compact two-column composition;
+- QR remains large enough for demo scanning but no longer dominates the whole working canvas;
+- Passport stamps use compact rectangular surfaces on larger screens while phone retains the original stacked rhythm;
+- browser evidence now captures the unobscured home after closing evidence sheets;
+- desktop QA also captures a dedicated collapsed-rail screenshot for visual review.
