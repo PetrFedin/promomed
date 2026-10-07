@@ -453,6 +453,107 @@ def create_event(
     }
 
 
+def enqueue_package_delivery(c,delivery_id,actor="distribution_authority"):
+    row=c.execute(
+        """SELECT d.id delivery_id,d.organization_id,d.package_id,d.status delivery_status,
+                  p.artifact_kind,p.artifact_ref,p.package_sha256,p.state package_state,
+                  o.demo_only
+           FROM evidence_exchange_deliveries d
+           JOIN evidence_exchange_packages p ON p.id=d.package_id
+           JOIN institutional_organizations o ON o.id=d.organization_id
+           WHERE d.id=?""",
+        (delivery_id,),
+    ).fetchone()
+    if not row:
+        raise ValueError("evidence_delivery_not_found")
+    if row["delivery_status"] not in ("delivered","acknowledged"):
+        return None
+    try:
+        return create_event(
+            c,row["organization_id"],"package_delivery","evidence_package",row["package_id"],
+            {
+                "packageId":row["package_id"],
+                "packageSha256":row["package_sha256"],
+                "artifact":{"kind":row["artifact_kind"],"ref":row["artifact_ref"]},
+                "packageState":row["package_state"],
+                "deliveryId":row["delivery_id"],
+            },
+            actor,demo_only=bool(row["demo_only"]),
+        )
+    except ValueError as exc:
+        if str(exc) in ("active_webhook_endpoint_required","syndication_partner_not_qualified"):
+            return None
+        raise
+
+
+def enqueue_obligation(c,obligation_id,actor="distribution_authority"):
+    row=c.execute(
+        """SELECT o.id obligation_id,o.obligation_type,o.due_at,o.status obligation_status,
+                  d.id delivery_id,d.organization_id,d.package_id,
+                  p.artifact_kind,p.artifact_ref,p.package_sha256,p.state package_state,
+                  io.demo_only
+           FROM syndication_delivery_obligations o
+           JOIN evidence_exchange_deliveries d ON d.id=o.delivery_id
+           JOIN evidence_exchange_packages p ON p.id=d.package_id
+           JOIN institutional_organizations io ON io.id=d.organization_id
+           WHERE o.id=?""",
+        (obligation_id,),
+    ).fetchone()
+    if not row:
+        raise ValueError("delivery_obligation_not_found")
+    event_type="package_withdrawal" if row["obligation_type"]=="withdrawal" else "package_update"
+    try:
+        return create_event(
+            c,row["organization_id"],event_type,"evidence_package",row["package_id"],
+            {
+                "packageId":row["package_id"],
+                "packageSha256":row["package_sha256"],
+                "artifact":{"kind":row["artifact_kind"],"ref":row["artifact_ref"]},
+                "packageState":row["package_state"],
+                "deliveryId":row["delivery_id"],
+                "obligationId":row["obligation_id"],
+                "obligationType":row["obligation_type"],
+                "dueAt":row["due_at"],
+            },
+            actor,obligation_id=row["obligation_id"],demo_only=bool(row["demo_only"]),
+        )
+    except ValueError as exc:
+        if str(exc) in ("active_webhook_endpoint_required","syndication_partner_not_qualified"):
+            return None
+        raise
+
+
+def enqueue_contribution_admission(c,contribution_id,actor="contribution_authority"):
+    row=c.execute(
+        """SELECT ec.id,ec.organization_id,ec.contribution_type,ec.payload_sha256,
+                  ec.status,ec.demo_only,r.receipt_sha256
+           FROM external_contributions ec
+           JOIN external_contribution_admission_receipts r ON r.contribution_id=ec.id
+           WHERE ec.id=?""",
+        (contribution_id,),
+    ).fetchone()
+    if not row:
+        raise ValueError("admitted_contribution_not_found")
+    if row["status"]!="admitted":
+        return None
+    try:
+        return create_event(
+            c,row["organization_id"],"contribution_admission","external_contribution",row["id"],
+            {
+                "contributionId":row["id"],
+                "contributionType":row["contribution_type"],
+                "payloadSha256":row["payload_sha256"],
+                "admissionReceiptSha256":row["receipt_sha256"],
+                "canonicalMutation":False,
+            },
+            actor,demo_only=bool(row["demo_only"]),
+        )
+    except ValueError as exc:
+        if str(exc) in ("active_webhook_endpoint_required","syndication_partner_not_qualified"):
+            return None
+        raise
+
+
 def _event_row(c,event_id):
     return c.execute(
         """SELECT e.id,e.organization_id,e.endpoint_id,e.sequence_no,e.event_type,
