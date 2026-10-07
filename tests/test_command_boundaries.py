@@ -229,6 +229,27 @@ class CommandBoundaryTests(unittest.TestCase):
         self.assertEqual(contribution.status, 409)
         self.assertEqual(contribution.payload["error"], "syndication_partner_not_qualified")
 
+    def test_partner_delivery_protocol_governance_boundary(self):
+        denied = syndication_commands.handle_command(
+            self.c, "/api/syndication/endpoint/register",
+            "participant", "participant@demo.ru",
+            {
+                "organization_id": "INST-NOT-ALLOWED",
+                "endpoint_url": "https://partner.example.test/hook",
+                "demo_only": True,
+            },
+        )
+        self.assertEqual(denied.status, 403)
+        self.assertEqual(denied.payload["error"], "forbidden")
+
+        denied_dispatch = syndication_commands.handle_command(
+            self.c, "/api/syndication/delivery/event/dispatch",
+            "editor", "editor@demo.ru",
+            {"event_id": "delivery:missing"},
+        )
+        self.assertEqual(denied_dispatch.status, 403)
+        self.assertEqual(denied_dispatch.payload["error"], "forbidden")
+
     def test_demo_control_role_boundary(self):
         denied = demo_commands.handle_command(
             self.c, "/api/demo/reset", "participant", "participant@demo.ru", {}
