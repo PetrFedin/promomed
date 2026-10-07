@@ -212,7 +212,8 @@ class H(SimpleHTTPRequestHandler):
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
-  if p in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/change-impact","/api/evidence-monitor"): d=serve_media(self.path,a[0] if a else None); return self.out(d[0],d[1])
+  media_outcome=serve_media(self.path,a[0] if a else None)
+  if media_outcome is not None: return self.out(media_outcome[0],media_outcome[1])
   if p=="/api/product-quality-proof":
    c=conn()
    proof={
