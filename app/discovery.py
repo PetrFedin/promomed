@@ -54,11 +54,19 @@ def _index(c):
         })
 
     try:
+        approved_takeaway_search={}
+        for g in c.execute("SELECT item_id,title,body,segment_start_sec,segment_end_sec FROM generated_takeaways WHERE status IN ('approved','approved_demo')"):
+            approved_takeaway_search.setdefault(g["item_id"],[]).append(dict(g))
         for x in c.execute("SELECT t.id,t.item_id,t.studio_id,t.start_sec,t.end_sec,t.text,t.review_status,s.name speaker_name,p.track,p.title event_title FROM transcript_segments t LEFT JOIN speakers s ON s.id=t.speaker_id LEFT JOIN program_items p ON p.id=t.item_id WHERE t.review_status IN ('reviewed','reviewed_demo')"):
+            related_takeaways=[
+                g for g in approved_takeaway_search.get(x["item_id"],[])
+                if int(g["segment_start_sec"]) < int(x["end_sec"]) and int(g["segment_end_sec"]) > int(x["start_sec"])
+            ]
+            takeaway_text=" ".join(" ".join(map(str,[g["title"],g["body"]])) for g in related_takeaways)
             rows.append({
                 "kind":"transcript","ref":x["id"],"title":x["text"],"subtitle":f"{x['speaker_name'] or 'Speaker'} · {x['start_sec']}–{x['end_sec']} sec","topic":x["track"] or "",
                 "content_type":"transcript_segment","expert":x["speaker_name"] or "","event":x["item_id"],"replay":True,"review_status":x["review_status"],
-                "partner":"","offset_sec":x["start_sec"],"search_text":" ".join(map(str,[x["text"],x["speaker_name"],x["track"],x["event_title"]])),
+                "partner":"","offset_sec":x["start_sec"],"search_text":" ".join(map(str,[x["text"],x["speaker_name"],x["track"],x["event_title"],takeaway_text])),
             })
         for x in c.execute("SELECT g.id,g.item_id,g.studio_id,g.title,g.body,g.segment_start_sec,g.segment_end_sec,g.status,p.track,p.title event_title FROM generated_takeaways g LEFT JOIN program_items p ON p.id=g.item_id WHERE g.status IN ('approved','approved_demo')"):
             rows.append({

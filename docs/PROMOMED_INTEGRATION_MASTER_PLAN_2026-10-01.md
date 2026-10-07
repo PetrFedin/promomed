@@ -362,7 +362,7 @@ UI requirements:
 
 Repository implementation now includes native watch targets, provider snapshots, SHA-256 idempotency, DOI/PMID normalization, admission candidates, separate editorial/scientific review gates, provider-error ledger, deterministic Crossref/PubMed normalizers, explicit live-fetch adapters, governed admission into Evidence Graph, and propagation to Change Impact only after admission.
 
-This checkpoint is **not continuous evidence surveillance**. Production scheduling, retry/backoff, independent scientific/medical reviewer authority and provider operational hardening remain required.
+This checkpoint is **not continuous evidence surveillance**. A durable polling-worker primitive with persisted schedule, exponential retry/backoff and dead-letter state is now implemented in repository scope, but an external production scheduler is not yet admitted. Independent scientific/medical reviewer authority and provider credential/rate-limit hardening remain required.
 
 Verified provider/reference stack:
 
@@ -423,8 +423,8 @@ Production hardening before continuous monitoring:
 
 - provider retry/backoff/rate-limit policy;
 - NCBI registered `tool` / `email` and secret-stored API key if required by request volume;
-- scheduled polling worker/outbox;
-- dead-letter/error observability;
+- durable polling worker state — IMPLEMENTED IN REPOSITORY (2026-10-06), including self-healing creation of missing jobs for pre-existing active watch targets; external production scheduler still required;
+- retry/backoff + dead-letter job state — IMPLEMENTED IN REPOSITORY (2026-10-06); operational alerting still required;
 - independent scientific/medical reviewer identity and authorization;
 - retention policy for raw provider payloads;
 - legal review for stored abstracts/full text.

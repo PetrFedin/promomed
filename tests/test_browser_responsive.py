@@ -48,10 +48,10 @@ def assert_touch_targets(page, label: str):
 
 
 def assert_readable_text(page, label: str):
-    sizes = page.locator("#today.on .small, #today.on .tiny").evaluate_all(
+    sizes = page.locator(".screen.on .small, .screen.on .tiny, .sheet .small, .sheet .tiny").evaluate_all(
         """els => els.filter(e => {
             const s=getComputedStyle(e); const r=e.getBoundingClientRect();
-            return s.display !== 'none' && r.width > 0 && r.height > 0;
+            return s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0 && r.height > 0;
           }).slice(0,30).map(e => parseFloat(getComputedStyle(e).fontSize))"""
     )
     assert sizes, f"{label}: no readable sample text"
@@ -125,6 +125,8 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     assert_readable_text(page, f"{name}/home")
     assert_navigation_placement(page, width, height, f"{name}/home")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-home.png"), full_page=True)
+    page.keyboard.press("Escape")
+    expect(page.locator("#overlay")).not_to_have_class(re.compile(r"\bon\b"))
 
     for screen_id in ["media", "events", "community"]:
         page.locator(f'#nav button[data-s="{screen_id}"]').click()
