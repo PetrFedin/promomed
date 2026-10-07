@@ -86,6 +86,76 @@ def handle_command(c,route,role,email,data):
         if denied:
             return denied
 
+        if route=="/api/syndication/endpoint/register":
+            result=delivery_protocol.register_endpoint(
+                c,
+                str(data.get("organization_id") or "")[:100],
+                str(data.get("endpoint_url") or "")[:1000],
+                email,
+                bool(data.get("demo_only",False)),
+            )
+            return custom({"data":result},201 if not result.get("idempotentReplay") else 200)
+
+        if route=="/api/syndication/endpoint/verify":
+            result=delivery_protocol.verify_endpoint(
+                c,
+                str(data.get("endpoint_id") or "")[:120],
+                email,
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/endpoint/rotate-secret":
+            result=delivery_protocol.rotate_endpoint_secret(
+                c,
+                str(data.get("endpoint_id") or "")[:120],
+                email,
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/endpoint/suspend":
+            result=delivery_protocol.suspend_endpoint(
+                c,
+                str(data.get("endpoint_id") or "")[:120],
+                email,
+                str(data.get("reason") or "")[:500],
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/endpoint/revoke":
+            result=delivery_protocol.revoke_endpoint(
+                c,
+                str(data.get("endpoint_id") or "")[:120],
+                email,
+                str(data.get("reason") or "")[:500],
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/delivery/event/create":
+            result=delivery_protocol.create_event(
+                c,
+                str(data.get("organization_id") or "")[:100],
+                str(data.get("event_type") or "")[:80],
+                str(data.get("subject_kind") or "")[:80],
+                str(data.get("subject_ref") or "")[:180],
+                data.get("payload") or {},
+                email,
+                obligation_id=(str(data.get("obligation_id") or "")[:160] or None),
+                demo_only=bool(data.get("demo_only",False)),
+            )
+            return custom({"data":result},201 if not result.get("idempotentReplay") else 200)
+
+        if route=="/api/syndication/delivery/event/dispatch":
+            result=delivery_protocol.dispatch_event(
+                c,
+                str(data.get("event_id") or "")[:160],
+                actor=email,
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/delivery/reconcile":
+            result=delivery_protocol.reconcile_sla(c)
+            return custom({"data":result})
+
         if route=="/api/institution/member":
             result=syndication_network.bind_member(
                 c,
