@@ -493,6 +493,28 @@ def matching_subscription(c,organization_id,artifact_kind,artifact_ref,topic=Non
     return None
 
 
+def _matching_subscription_at(c,organization_id,artifact_kind,artifact_ref,at_time,topic=None):
+    rows=list(c.execute(
+        """SELECT * FROM syndication_subscriptions
+           WHERE organization_id=? AND effective_at<=?
+             AND (expires_at IS NULL OR expires_at>?)
+           ORDER BY CASE subscription_scope
+             WHEN 'artifact' THEN 1 WHEN 'topic' THEN 2 WHEN 'artifact_kind' THEN 3 ELSE 4 END,
+             created_at DESC""",
+        (organization_id,int(at_time),int(at_time)),
+    ))
+    for row in rows:
+        if row["subscription_scope"]=="all_evidence":
+            return dict(row)
+        if row["subscription_scope"]=="artifact" and row["scope_ref"]==f"{artifact_kind}:{artifact_ref}":
+            return dict(row)
+        if row["subscription_scope"]=="artifact_kind" and row["scope_ref"]==artifact_kind:
+            return dict(row)
+        if row["subscription_scope"]=="topic" and topic and row["scope_ref"]==topic:
+            return dict(row)
+    return None
+
+
 def create_delivery_obligations(c,package_id,obligation_type,now=None):
     if obligation_type not in ("update","withdrawal"):
         raise ValueError("obligation_type_invalid")
@@ -505,13 +527,14 @@ def create_delivery_obligations(c,package_id,obligation_type,now=None):
         return []
     created=[]
     deliveries=list(c.execute(
-        """SELECT id,organization_id FROM evidence_exchange_deliveries
+        """SELECT id,organization_id,delivered_at FROM evidence_exchange_deliveries
            WHERE package_id=? AND status IN ('delivered','acknowledged','withdrawn','superseded')""",
         (package_id,),
     ))
     for delivery in deliveries:
-        subscription=matching_subscription(
-            c,delivery["organization_id"],package["artifact_kind"],package["artifact_ref"],now=now
+        subscription=_matching_subscription_at(
+            c,delivery["organization_id"],package["artifact_kind"],package["artifact_ref"],
+            delivery["delivered_at"]
         )
         if not subscription:
             continue
