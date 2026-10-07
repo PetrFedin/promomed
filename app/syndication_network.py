@@ -658,7 +658,7 @@ def revise_contribution(c,contribution_id,title,payload,submitted_by):
         """INSERT INTO external_contributions(
              id,organization_id,contribution_type,title,payload_json,payload_sha256,
              status,submitted_by,submitted_at,supersedes_contribution_id,demo_only
-           ) VALUES(?,?,?,?,?,?,'submitted',?,?,?,?,?)""",
+           ) VALUES(?,?,?,?,?,?,'submitted',?,?,?,?)""",
         (
             new_id,prior["organization_id"],prior["contribution_type"],title[:240],
             _canonical(body),digest,submitted_by,now,contribution_id,int(prior["demo_only"]),
