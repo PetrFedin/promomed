@@ -1,0 +1,227 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Promomed Partner Trust Bundle API",
+    "version": "1.0.0",
+    "description": "Signed institutional status snapshots, portable partner trust bundles and cross-organisation verification receipts. Cryptographic/process verification only."
+  },
+  "paths": {
+    "/api/trust/snapshot": {
+      "get": {
+        "summary": "Retrieve immutable signed institutional status snapshot",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot document"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/trust/bundle": {
+      "get": {
+        "summary": "Retrieve immutable partner trust bundle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trust bundle"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/trust-network": {
+      "get": {
+        "summary": "Read governed trust registry projection",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trust registry"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/trust/snapshot/issue": {
+      "post": {
+        "summary": "Issue or idempotently replay current signed status snapshot",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Snapshot issued"
+          },
+          "403": {
+            "description": "Governance required"
+          }
+        }
+      }
+    },
+    "/api/trust/snapshot/revoke": {
+      "post": {
+        "summary": "Revoke snapshot status without mutating immutable snapshot core",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Snapshot status revoked"
+          }
+        }
+      }
+    },
+    "/api/trust/status/issue": {
+      "post": {
+        "summary": "Issue fresh signed snapshot status statement",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Signed status statement"
+          }
+        }
+      }
+    },
+    "/api/trust/bundle/create": {
+      "post": {
+        "summary": "Create immutable trust bundle from exact snapshot",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Bundle created"
+          }
+        }
+      }
+    },
+    "/api/trust/verify-portable": {
+      "post": {
+        "summary": "Verify trust bundle without Promomed DB/private key",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "bundle"
+                ],
+                "properties": {
+                  "bundle": {
+                    "$ref": "../schemas/partner-trust-bundle-v1.schema.json"
+                  },
+                  "current_status_statement": {
+                    "type": "object"
+                  },
+                  "current_issuer_document": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Portable verification result"
+          }
+        }
+      }
+    },
+    "/api/trust/verification/record": {
+      "post": {
+        "summary": "Record verifier-organisation receipt over exact trust bundle hash",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Verification receipt recorded"
+          },
+          "409": {
+            "description": "Membership/bundle boundary failure"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "InstitutionalStatusSnapshot": {
+        "$ref": "../schemas/institutional-status-snapshot-v1.schema.json"
+      },
+      "PartnerTrustBundle": {
+        "$ref": "../schemas/partner-trust-bundle-v1.schema.json"
+      },
+      "TrustVerificationReceipt": {
+        "$ref": "../schemas/trust-verification-receipt-v1.schema.json"
+      }
+    }
+  }
+}
