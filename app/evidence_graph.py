@@ -104,6 +104,7 @@ def _trust_status(claim,citations,links):
     superseded=claim_status.startswith("superseded")
     retracted=claim_status.startswith("retracted")
     reviewed=claim_status in ("reviewed","reviewed_demo")
+    review_required=claim_status in ("review_required","review_required_demo")
     trusted=reviewed and has_reviewer and has_source and has_locator and has_trace and not superseded and not retracted
     if retracted:
         status="RETRACTED"
@@ -111,7 +112,7 @@ def _trust_status(claim,citations,links):
         status="SUPERSEDED"
     elif trusted:
         status="VERIFIED_DEMO"
-    elif reviewed:
+    elif reviewed or review_required:
         status="INCOMPLETE_EVIDENCE"
     else:
         status="DRAFT"
@@ -119,6 +120,7 @@ def _trust_status(claim,citations,links):
         "status":status,
         "trusted":trusted,
         "reviewed":reviewed,
+        "review_required":review_required,
         "has_reviewer":has_reviewer,
         "has_active_source":has_source,
         "has_exact_locator":has_locator,
