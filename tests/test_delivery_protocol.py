@@ -293,6 +293,25 @@ class PartnerDeliveryProtocolTests(unittest.TestCase):
             )
         self.c.rollback()
 
+    def test_successful_delivery_is_not_redispatched_without_new_business_event(self):
+        self._subscribe()
+        _,delivery=self._package_and_delivery()
+        event_id=delivery["outboundEvent"]["id"]
+        first,_=self._dispatch_success(event_id)
+        self.assertEqual(first["eventStatus"],"delivered")
+
+        calls=[]
+        def should_not_run(url,body,headers):
+            calls.append(1)
+            return {"status":204,"body":b""}
+
+        replay=delivery_protocol.dispatch_event(
+            self.c,event_id,transport=should_not_run
+        )
+        self.assertTrue(replay["idempotentReplay"])
+        self.assertEqual(replay["status"],"delivered")
+        self.assertEqual(calls,[])
+
     def test_ack_survives_secret_rotation_and_advances_cursor_once(self):
         self._subscribe()
         package,delivery=self._package_and_delivery()
@@ -317,6 +336,24 @@ class PartnerDeliveryProtocolTests(unittest.TestCase):
 
         replay=self._ack(event_id,secret=self.secret)
         self.assertTrue(replay["idempotentReplay"])
+        event=self.c.execute(
+            "SELECT payload_sha256 FROM syndication_delivery_events WHERE id=?",
+            (event_id,),
+        ).fetchone()
+        conflicting={
+            "eventId":event_id,
+            "payloadSha256":event["payload_sha256"],
+            "status":"accepted",
+            "extra":"not-the-original-ack",
+        }
+        ts=int(time.time())
+        bad_sig=delivery_protocol.acknowledgement_signature(
+            self.secret,ts,event_id,conflicting
+        )
+        with self.assertRaisesRegex(ValueError,"delivery_ack_conflict"):
+            delivery_protocol.acknowledge_event(
+                self.c,event_id,"INST-DELIVERY-001",conflicting,ts,bad_sig
+            )
         count=self.c.execute(
             "SELECT COUNT(*) n FROM syndication_delivery_acknowledgements WHERE event_id=?",
             (event_id,),
@@ -404,6 +441,40 @@ class PartnerDeliveryProtocolTests(unittest.TestCase):
         evaluation=result["evaluations"][0]
         self.assertTrue(evaluation["requalificationDue"])
         self.assertTrue(evaluation["suspensionReviewRecommended"])
+        self.assertFalse(evaluation["automaticSuspension"])
+        self.assertFalse(evaluation["automaticRevocation"])
+
+    def test_three_missing_acknowledgements_trigger_requalification_only(self):
+        self._subscribe()
+        package,delivery=self._package_and_delivery()
+        first_event=delivery["outboundEvent"]["id"]
+        self._dispatch_success(first_event)
+
+        for index in (2,3):
+            event=delivery_protocol.create_event(
+                self.c,
+                "INST-DELIVERY-001",
+                "qualification_status",
+                "qualification",
+                f"synthetic-{index}",
+                {"state":"qualified","iteration":index},
+                "governance@demo.ru",
+                demo_only=True,
+            )
+            self._dispatch_success(event["id"])
+
+        old=int(time.time())-delivery_protocol.ACK_EXPECTATION_SECONDS-5
+        self.c.execute(
+            """UPDATE syndication_delivery_event_state
+               SET delivered_at=? WHERE status='delivered'""",
+            (old,),
+        )
+        result=delivery_protocol.reconcile_sla(self.c)
+        self.assertEqual(result["missingAcknowledgements"],3)
+        q=syndication_network.qualification_snapshot(self.c,"INST-DELIVERY-001")
+        self.assertEqual(q["qualification"]["status"],"requalification_due")
+        evaluation=result["evaluations"][0]
+        self.assertEqual(evaluation["evidence"]["missingAcknowledgements"],3)
         self.assertFalse(evaluation["automaticSuspension"])
         self.assertFalse(evaluation["automaticRevocation"])
 
