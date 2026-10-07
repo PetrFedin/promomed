@@ -561,6 +561,25 @@ Truth boundary:
 - API authority, evidence, medical review, booking and persistence semantics are unchanged.
 
 
+#### Cross-cutting Product Experience — Visual Evidence v1 — repository checkpoint 2026-10-07
+
+Responsive browser QA now produces a complete, machine-readable participant visual evidence package.
+
+Required evidence:
+
+- Today / Media / Events / Community / My screenshots for every supported viewport;
+- collapsed navigation evidence on desktop;
+- visual-evidence-manifest.json containing viewport geometry, shell mode and screenshot inventory;
+- browser QA fails when the expected evidence set is incomplete;
+- screenshots are unobscured by transient sheets when they represent a base screen;
+- navigation placement, touch-target, readability and no-horizontal-overflow contracts remain active.
+
+Current boundary:
+
+- this is a completeness and geometry evidence layer, not brittle pixel-perfect image comparison;
+- pixel-diff thresholds may be added later only after the visual system stabilizes further.
+
+
 ---
 
 ### Phase 3 — Search and semantic discovery
