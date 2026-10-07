@@ -597,6 +597,20 @@ Required behaviour:
 
 Authority boundary: this affects interaction mechanics only and does not change evidence, consent, booking, account or persistence authority.
 
+#### Cross-cutting Product Experience — Visual Photography v1 — repository checkpoint 2026-10-07
+
+The MVP investor/demo surface no longer relies on abstract gradients and circular decorative graphics as its primary visual language.
+
+Implemented:
+
+- locally vendored open-license contextual photography for Today, Media, Studio, Events, Community and Investor Proof;
+- source/author/license manifest at `public/assets/editorial/ATTRIBUTION.md`;
+- explicit illustrative-context boundary: open-source people and venues are never represented as actual Promomed participants, facilities or events;
+- responsive photo crops and contrast overlays for phone, tablet and monitor;
+- no third-party image CDN dependency during localhost/investor demonstrations.
+
+Final commissioned/licensed Promomed brand photography and official brand approval remain open production work. This checkpoint changes presentation only and does not change medical, evidence, consent, account or persistence authority.
+
 
 ---
 
