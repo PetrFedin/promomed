@@ -343,6 +343,24 @@ class CertifiedSyndicationNetworkTests(unittest.TestCase):
         )
         self.assertEqual(result["status"],"breached")
 
+    def test_revocation_does_not_erase_withdrawal_obligation_for_prior_delivery(self):
+        self._subscription(withdrawal_sla=3600)
+        package,delivery=self._package_delivery()
+        syndication_network.revoke_qualification(
+            self.c,"INST-SYND-001","Post-delivery revocation test","governance@demo.ru"
+        )
+        change_impact.analyze_source_change(
+            self.c,"ES01","source_retracted",
+            "Synthetic retraction after partner revocation","editor@demo.ru"
+        )
+        obligation=self.c.execute(
+            """SELECT status FROM syndication_delivery_obligations
+               WHERE delivery_id=? AND obligation_type='withdrawal'""",
+            (delivery["id"],),
+        ).fetchone()
+        self.assertIsNotNone(obligation)
+        self.assertEqual(obligation["status"],"pending")
+
     def test_revocation_stops_subscription_and_new_contributions(self):
         self._subscription()
         revoked=syndication_network.revoke_qualification(
