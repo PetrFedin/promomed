@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
-from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint
+from urllib.parse import urlparse
+from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
@@ -13,11 +13,10 @@ from app.programme_commands import handle_command as handle_programme_command
 from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command
-from app.evidence_checkpoint_commands import handle_command as handle_evidence_checkpoint_command
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
-from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection; from app.discovery_reads import serve as serve_discovery; from app.media_reads import serve as serve_media
+from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection; from app.discovery_reads import serve as serve_discovery; from app.media_reads import serve as serve_media, serve_public_post as serve_media_post; from app.product_quality_reads import read as read_product_quality
 ROOT=os.path.join(os.path.dirname(__file__),"public"); LOCK=threading.RLock()
 def conn(): return db.connect()
 def init():
@@ -209,42 +208,14 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
-  if p in ("/api/evidence-seal","/api/evidence-bundle"):
-   q=parse_qs(urlparse(self.path).query); kind=(q.get("artifact_kind") or [""])[0][:30]; ref=(q.get("artifact_ref") or [""])[0][:80]
-   if not kind or not ref:return self.out({"error":"artifact_required"},422)
-   c=conn()
-   try:
-    d=evidence_seal.build(c,artifact_kind=kind,artifact_ref=ref) if p=="/api/evidence-seal" else evidence_seal.portable_bundle(c,artifact_kind=kind,artifact_ref=ref)
-   finally:c.close()
-   return self.out({"data":d})
-  if p=="/api/evidence-checkpoint/public-key":
-   try:return self.out({"data":evidence_checkpoint.public_key_document()})
-   except ValueError as e:return self.out({"error":str(e)},503)
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
-  if p in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/change-impact","/api/evidence-monitor"): d=serve_media(self.path,a[0] if a else None); return self.out(d[0],d[1])
+  if p in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/change-impact","/api/evidence-monitor","/api/reviewer-authority","/api/evidence-seal","/api/evidence-bundle","/api/evidence-checkpoint/public-key"): d=serve_media(self.path,a[0] if a else None); return self.out(d[0],d[1])
   if p=="/api/product-quality-proof":
    c=conn()
-   proof={
-    "ok":True,"version":"v1.5","contract":"product-quality",
-    "counts":{
-     "products":c.execute("SELECT COUNT(*) n FROM product_catalog").fetchone()["n"],
-     "materials":c.execute("SELECT COUNT(*) n FROM content_catalog").fetchone()["n"],
-     "speakers":c.execute("SELECT COUNT(*) n FROM speakers").fetchone()["n"],
-     "partner_packages":c.execute("SELECT COUNT(*) n FROM partner_packages").fetchone()["n"],
-     "program_items":c.execute("SELECT COUNT(*) n FROM program_items").fetchone()["n"],
-     "session_speaker_links":c.execute("SELECT COUNT(*) n FROM session_speakers").fetchone()["n"]
-    },
-    "required_ids":{
-     "products":[r["id"] for r in c.execute("SELECT id FROM product_catalog ORDER BY id")],
-     "materials":[r["id"] for r in c.execute("SELECT id FROM content_catalog ORDER BY id")],
-     "packages":[r["id"] for r in c.execute("SELECT id FROM partner_packages ORDER BY id")]
-    },
-    "surfaces":["premium_home","topic_hubs","media_catalog","product_detail","speaker_profile","rich_session_detail","studio","partner_marketplace"],
-    "disclosure":"real Promomed product context is separated from demo partner content"
-   }
-   c.close(); return self.out(proof)
+   try:return self.out(read_product_quality(c))
+   finally:c.close()
   if p=="/api/continuity-proof":
    c=conn()
    proof={
@@ -372,10 +343,8 @@ class H(SimpleHTTPRequestHandler):
   p=urlparse(self.path).path
   try: data=body(self)
   except Exception: return self.out({"error":"bad_json"},400)
-  if p=="/api/evidence-checkpoint/verify":
-   c=conn()
-   try:return self.out({"data":evidence_checkpoint.verify(c,data.get("envelope") or {})})
-   finally:c.close()
+  public_media=serve_media_post(p,data)
+  if public_media:return self.out(public_media[0],public_media[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
    c=conn()
@@ -398,7 +367,6 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_evidence_checkpoint_command(c,p,role,email,data)
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
     if outcome is None: outcome=handle_investment_command(c,p,role,email,data)
     if outcome is None: outcome=handle_deal_command(c,p,role,email,data)
