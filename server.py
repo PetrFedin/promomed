@@ -178,7 +178,6 @@ def init():
    c.execute("INSERT OR IGNORE INTO attendee_profiles(email,intent,interests,networking,visibility,updated) VALUES(?, 'Понять полезное для себя','сон,наука,движение',1,'event_only',?)",(e,int(time.time())))
    c.execute("INSERT OR IGNORE INTO passport(email,updated) VALUES(?,?)",(e,int(time.time())))
   transcript_intelligence.seed_demo(c); evidence_graph.seed_demo(c); reviewer_authority.seed_demo(c); evidence_monitor.seed_demo(c); c.commit(); db.sync_sequences(c); c.close()
-
 class H(SimpleHTTPRequestHandler):
  def __init__(self,*a,**kw): super().__init__(*a,directory=ROOT,**kw)
  def cors(self):
