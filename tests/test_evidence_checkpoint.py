@@ -62,7 +62,7 @@ def _db():
     CREATE TABLE evidence_checkpoint_issuance(
       checkpoint_sha256 TEXT PRIMARY KEY,issuer_id TEXT NOT NULL,key_id TEXT NOT NULL,
       artifact_kind TEXT NOT NULL,artifact_ref TEXT NOT NULL,issued_at INTEGER NOT NULL,
-      seal_sha256 TEXT NOT NULL
+      seal_sha256 TEXT NOT NULL,payload_json TEXT NOT NULL,signature_b64 TEXT NOT NULL
     );
     """)
     seed_demo(c)
@@ -82,6 +82,8 @@ def test_checkpoint_tracks_current_seal_hold_and_revocation(monkeypatch):
     c=_db()
 
     envelope=evidence_checkpoint.issue(c,"content","CT01")
+    stored=evidence_checkpoint.checkpoint_document(c,envelope["checkpointSha256"])
+    assert stored==envelope
     valid=evidence_checkpoint.verify(c,envelope)
     assert valid["status"]=="VALID"
     assert valid["current"] is True
