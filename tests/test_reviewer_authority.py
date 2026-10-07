@@ -90,6 +90,17 @@ class MedicalReviewerAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,"reviewer_conflict_history_blocks_reassignment"):
             self.authority.assign_candidate(self.c,cid,"reviewer@demo.ru","editor@demo.ru")
 
+    def test_request_changes_allows_new_review_iteration(self):
+        cid=self._production_candidate("request-changes")
+        self._promote_demo_reviewer_to_verified()
+        first=self.authority.assign_candidate(self.c,cid,"reviewer@demo.ru","editor@demo.ru")
+        self.authority.declare_conflict(self.c,first,"reviewer@demo.ru","none","No conflict.")
+        self.authority.submit_decision(self.c,first,"reviewer@demo.ru","request_changes","Clarify evidence mapping.")
+        candidate=self.c.execute("SELECT status FROM evidence_admission_candidates WHERE id=?",(cid,)).fetchone()
+        self.assertEqual(candidate["status"],"pending_review")
+        second=self.authority.assign_candidate(self.c,cid,"reviewer@demo.ru","editor@demo.ru")
+        self.assertNotEqual(first,second)
+
     def test_editor_cannot_be_assigned_as_scientific_reviewer(self):
         cid=self._production_candidate("editor-blocked")
         with self.assertRaisesRegex(ValueError,"reviewer_identity_not_authorized"):
