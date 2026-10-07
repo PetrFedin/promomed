@@ -115,3 +115,13 @@ These refinements remain presentation-only and do not modify application authori
 - Passport stamps use compact rectangular surfaces on larger screens while phone retains the original stacked rhythm;
 - browser evidence now captures the unobscured home after closing evidence sheets;
 - desktop QA also captures a dedicated collapsed-rail screenshot for visual review.
+
+## 12. Today experience v2
+
+The Today surface shifts from duplicated topic navigation to action-first daily use:
+
+- hero quick rail: Continue / Events / Studio / My;
+- topic navigation remains in dedicated Topic Hubs below rather than duplicated in the hero;
+- personal continuation and Relationship 365 form one compact working zone on tablet/desktop;
+- desktop hero height is reduced to keep actionable content closer to the first viewport;
+- medical-personalisation boundaries remain visible next to continuation logic.
