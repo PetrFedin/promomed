@@ -2371,6 +2371,7 @@ Implemented:
 - explicit unconfigured review-validity boundary instead of invented expiry dates;
 - Reference Evidence Package bound to a current signed Evidence Checkpoint;
 - deterministic package SHA-256 and immutable historical retrieval;
+- public/offline portable package verifier that checks package hash, schema identity, embedded signed checkpoint, seal binding and authority boundary without Promomed DB/private-key access;
 - synthetic/non-clinical reference package for external integrators and diligence;
 - separate institutional organisation authority rather than overloading commercial partner records;
 - scoped institutional roles: publisher / consumer / contributor;
