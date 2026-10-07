@@ -65,6 +65,10 @@ def _sign(secret,timestamp,event_id,payload_sha256):
     return f"{SIGNATURE_VERSION}={digest}"
 
 
+def webhook_signature(secret,timestamp,event_id,payload_sha256):
+    return _sign(secret,timestamp,event_id,payload_sha256)
+
+
 def verify_signature(secret,timestamp,event_id,payload_sha256,signature):
     expected=_sign(secret,timestamp,event_id,payload_sha256)
     return hmac.compare_digest(expected,str(signature or ""))
