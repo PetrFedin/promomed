@@ -580,6 +580,21 @@ Current boundary:
 - pixel-diff thresholds may be added later only after the visual system stabilizes further.
 
 
+#### Cross-cutting Product Quality — Browser QA Runtime v2 — repository checkpoint 2026-10-07
+
+Responsive UI validation separates visual coverage from expensive repeated functional depth.
+
+Execution policy:
+
+- all seven supported QA viewports still execute the participant shell, Today / Media / Events / Community / My visual path and geometry/readability contracts;
+- iPhone 15 Pro and desktop 1440x900 additionally execute the deep participant messaging, investor, executive, security and evidence-governance journeys;
+- layout-only viewports stop after participant/account visual evidence is captured;
+- visual-evidence-manifest.json records deep_journey=true/false per device;
+- runtime optimization must not reduce screenshot inventory or responsive geometry coverage.
+
+Purpose: shorten UI iteration feedback without weakening mobile+desktop deep functional proof.
+
+
 ---
 
 ### Phase 3 — Search and semantic discovery
