@@ -14,6 +14,7 @@ from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command
 from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public
+from app.institutional_commands import handle_command as handle_institutional_command
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -387,6 +388,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_institutional_command(c,p,role,email,data)
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
     if outcome is None: outcome=handle_investment_command(c,p,role,email,data)
     if outcome is None: outcome=handle_deal_command(c,p,role,email,data)
