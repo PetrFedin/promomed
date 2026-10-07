@@ -343,6 +343,38 @@ class CertifiedSyndicationNetworkTests(unittest.TestCase):
         )
         self.assertEqual(result["status"],"breached")
 
+    def test_breached_obligation_can_still_record_late_ack_evidence(self):
+        self._subscription(withdrawal_sla=3600)
+        package,delivery=self._package_delivery()
+        change_impact.analyze_source_change(
+            self.c,"ES01","source_retracted",
+            "Synthetic overdue acknowledgement test","editor@demo.ru"
+        )
+        obligation=self.c.execute(
+            """SELECT id FROM syndication_delivery_obligations
+               WHERE delivery_id=? AND obligation_type='withdrawal'""",
+            (delivery["id"],),
+        ).fetchone()
+        self.c.execute(
+            "UPDATE syndication_delivery_obligations SET due_at=? WHERE id=?",
+            (int(time.time())-1,obligation["id"]),
+        )
+        syndication_network.mark_overdue_obligations(self.c)
+        marked=self.c.execute(
+            "SELECT status,acknowledged_at FROM syndication_delivery_obligations WHERE id=?",
+            (obligation["id"],),
+        ).fetchone()
+        self.assertEqual(marked["status"],"breached")
+        self.assertIsNone(marked["acknowledged_at"])
+
+        late=syndication_network.acknowledge_obligation(
+            self.c,obligation["id"],"INST-SYND-001",
+            "urn:test:late-withdrawal-ack",actor="participant@demo.ru"
+        )
+        self.assertEqual(late["status"],"breached")
+        self.assertIsNotNone(late["acknowledged_at"])
+        self.assertEqual(late["evidence_ref"],"urn:test:late-withdrawal-ack")
+
     def test_revocation_does_not_erase_withdrawal_obligation_for_prior_delivery(self):
         self._subscription(withdrawal_sla=3600)
         package,delivery=self._package_delivery()
