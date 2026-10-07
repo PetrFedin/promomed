@@ -124,6 +124,43 @@ class EvidenceInterchangeTests(unittest.TestCase):
         )
         self.assertFalse(document["payload"]["syndication"]["partnerMayRewriteClaims"])
 
+    def test_portable_package_verifier_needs_no_database_or_private_key(self):
+        package=self._package()
+        document=evidence_interchange.package_document(self.c,package["id"])
+        issuer=evidence_checkpoint.issuer_document(self.c)
+        status=evidence_checkpoint.status_list(self.c)
+
+        with patch.dict(os.environ,{},clear=False):
+            os.environ.pop("PROMOMED_EVIDENCE_SIGNING_PRIVATE_KEY_B64",None)
+            result=evidence_interchange.verify_package_portable(
+                {
+                    "packageSha256":document["packageSha256"],
+                    "payload":document["payload"],
+                },
+                issuer,
+                status,
+            )
+
+        self.assertEqual(result["status"],"VALID_PORTABLE_PACKAGE")
+        self.assertTrue(result["package_hash_valid"])
+        self.assertTrue(result["checkpoint_signature_valid"])
+        self.assertFalse(result["currentCanonicalStateVerified"])
+        self.assertFalse(result["medicalEfficacyCertified"])
+
+        tampered={
+            "packageSha256":document["packageSha256"],
+            "payload":{
+                **document["payload"],
+                "syndication":{
+                    **document["payload"]["syndication"],
+                    "partnerMayRewriteClaims":True,
+                },
+            },
+        }
+        bad=evidence_interchange.verify_package_portable(tampered,issuer,status)
+        self.assertEqual(bad["status"],"INVALID_PACKAGE_HASH")
+        self.assertFalse(bad["package_hash_valid"])
+
     def test_delivery_requires_explicit_institutional_role(self):
         package=self._package()
         self._organization("consumer")
