@@ -88,6 +88,7 @@ CREATE TABLE IF NOT EXISTS external_contributions(
   admitted_by TEXT,
   withdrawn_at BIGINT,
   withdrawal_reason TEXT,
+  supersedes_contribution_id TEXT,
   demo_only INTEGER NOT NULL DEFAULT 0
 );
 
