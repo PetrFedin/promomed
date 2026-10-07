@@ -580,6 +580,24 @@ Current boundary:
 - pixel-diff thresholds may be added later only after the visual system stabilizes further.
 
 
+#### Cross-cutting Product Experience — Interaction accessibility v2 — repository checkpoint 2026-10-07
+
+Participant and shared modal sheets now follow a focus/keyboard discipline suitable for repeated desktop and tablet use.
+
+Required behaviour:
+
+- invoking control is remembered before a sheet opens;
+- focus enters the sheet and Search focuses the query field;
+- Tab / Shift+Tab remain inside the active sheet;
+- Escape closes the active sheet;
+- focus returns to the invoking control after close;
+- background scrolling is disabled while the sheet is active;
+- dialog semantics and aria-hidden state are explicit;
+- responsive browser QA verifies focus entry, Escape close and restoration.
+
+Authority boundary: this affects interaction mechanics only and does not change evidence, consent, booking, account or persistence authority.
+
+
 ---
 
 ### Phase 3 — Search and semantic discovery

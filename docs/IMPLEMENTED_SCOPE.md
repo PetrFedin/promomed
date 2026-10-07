@@ -531,3 +531,18 @@ Implemented in repository scope:
 - existing overflow, navigation, touch-target and readability contracts remain mandatory.
 
 Boundary: no pixel-perfect visual diff is claimed yet.
+
+
+## Interaction accessibility v2 — modal focus and keyboard discipline
+
+Implemented in repository scope:
+
+- sheet focus entry and restoration;
+- Search query autofocus;
+- Tab / Shift+Tab focus trap;
+- Escape close contract;
+- background scroll lock;
+- explicit dialog/aria-hidden semantics;
+- browser QA for focus lifecycle.
+
+Boundary: no business or authority semantics changed.

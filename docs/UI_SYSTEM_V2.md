@@ -195,3 +195,19 @@ Required browser evidence:
 - geometry contracts remain authoritative for navigation placement, touch targets and page overflow.
 
 This is not a pixel-perfect golden-image gate yet. The first objective is complete, comparable and inspectable evidence without creating brittle diffs from harmless rendering variance.
+
+
+## 19. Interaction accessibility v2
+
+Modal sheet behaviour follows a predictable keyboard and focus contract:
+
+- opening a sheet records the invoking control;
+- Search focuses the discovery query immediately;
+- other sheets focus the first available interactive control;
+- Tab and Shift+Tab stay within the open sheet;
+- Escape closes only an active sheet;
+- closing restores focus to the invoking control when it still exists;
+- background page scrolling is locked while a sheet is open;
+- the overlay exposes dialog / modal semantics and aria-hidden state.
+
+This checkpoint changes interaction quality only; business and authority semantics are unchanged.
