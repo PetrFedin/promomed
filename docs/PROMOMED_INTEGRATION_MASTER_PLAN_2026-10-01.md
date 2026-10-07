@@ -2417,6 +2417,7 @@ Implemented in repository scope:
 - late acknowledgement is preserved as `breached`, not silently converted to success;
 - external contribution types: source recommendation, review input, disclosure record, programme material, correction notice and institutional metadata;
 - contribution payloads are deterministic SHA-256-bound and duplicate submissions are idempotent;
+- `request_changes` creates a new immutable contribution revision with explicit supersession lineage instead of overwriting the prior submission;
 - external submitter must have active contributor membership and the institution must remain qualified;
 - self-review is forbidden;
 - editorial and scientific reviewers must be distinct;
