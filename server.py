@@ -6,15 +6,9 @@ from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
 from app.demo import DEMO_STEPS, reset_demo, run_demo_step
-from app.community_commands import handle_command as handle_community_command
-from app.learning_commands import handle_command as handle_learning_command
-from app.participant_commands import handle_command as handle_participant_command
-from app.programme_commands import handle_command as handle_programme_command
-from app.operations_commands import handle_command as handle_operations_command
-from app.partner_commands import handle_command as handle_partner_command
-from app.editorial_commands import handle_command as handle_editorial_command
-from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public
-from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public
+from app.community_commands import handle_command as handle_community_command; from app.learning_commands import handle_command as handle_learning_command; from app.participant_commands import handle_command as handle_participant_command
+from app.programme_commands import handle_command as handle_programme_command; from app.operations_commands import handle_command as handle_operations_command; from app.partner_commands import handle_command as handle_partner_command
+from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -367,8 +361,7 @@ class H(SimpleHTTPRequestHandler):
   if public_outcome is not None:
    return self.out(public_outcome[0],public_outcome[1])
   institutional_public=handle_institutional_public(p,data)
-  if institutional_public is not None:
-   return self.out(institutional_public[0],institutional_public[1])
+  if institutional_public is not None: return self.out(institutional_public[0],institutional_public[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
    c=conn()
