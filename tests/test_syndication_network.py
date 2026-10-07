@@ -371,6 +371,10 @@ class CertifiedSyndicationNetworkTests(unittest.TestCase):
             "SELECT status FROM syndication_subscriptions WHERE organization_id='INST-SYND-001'"
         ).fetchone()
         self.assertEqual(subscription["status"],"revoked")
+        with self.assertRaisesRegex(ValueError,"qualification_revoked_reinstatement_required"):
+            syndication_network.start_qualification(
+                self.c,"INST-SYND-001","governance@demo.ru",demo_only=True
+            )
         with self.assertRaisesRegex(ValueError,"syndication_partner_not_qualified"):
             syndication_network.submit_contribution(
                 self.c,"INST-SYND-001","institutional_metadata","Blocked after revoke",
