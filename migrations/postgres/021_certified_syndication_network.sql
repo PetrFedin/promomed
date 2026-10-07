@@ -1,3 +1,17 @@
+CREATE TABLE IF NOT EXISTS institutional_memberships(
+  id TEXT PRIMARY KEY,
+  organization_id TEXT NOT NULL,
+  account_email TEXT NOT NULL,
+  member_role TEXT NOT NULL CHECK(member_role IN ('contributor','operator','administrator')),
+  status TEXT NOT NULL CHECK(status IN ('active','suspended','revoked','expired')),
+  effective_at BIGINT NOT NULL,
+  expires_at BIGINT,
+  verified_by TEXT NOT NULL,
+  verification_ref TEXT NOT NULL DEFAULT '',
+  demo_only INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(organization_id,account_email,member_role)
+);
+
 CREATE TABLE IF NOT EXISTS syndication_partner_qualifications(
   id TEXT PRIMARY KEY,
   organization_id TEXT NOT NULL,
@@ -101,6 +115,9 @@ CREATE TABLE IF NOT EXISTS external_contribution_admission_receipts(
   admitted_by TEXT NOT NULL,
   demo_only INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE INDEX IF NOT EXISTS idx_institutional_membership_account
+  ON institutional_memberships(account_email,status,organization_id);
 
 CREATE INDEX IF NOT EXISTS idx_syndication_qualification_org
   ON syndication_partner_qualifications(organization_id,status,valid_until);
