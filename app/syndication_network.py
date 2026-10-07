@@ -63,6 +63,67 @@ def _active_role(c,organization_id,role_scope,now=None):
     ).fetchone()
 
 
+def bind_member(
+    c,organization_id,account_email,member_role,verified_by,
+    verification_ref="",expires_at=None,demo_only=False,
+):
+    org=_organization(c,organization_id)
+    account_email=str(account_email or "").lower().strip()
+    account=c.execute(
+        "SELECT email,status FROM accounts WHERE email=?",(account_email,)
+    ).fetchone()
+    if not account or account["status"]!="active":
+        raise ValueError("institutional_member_account_required")
+    if member_role not in ("contributor","operator","administrator"):
+        raise ValueError("institutional_member_role_invalid")
+    if int(org["demo_only"])!=int(bool(demo_only)):
+        raise ValueError("institutional_member_demo_boundary_mismatch")
+    now=int(time.time())
+    if expires_at is not None and int(expires_at)<=now:
+        raise ValueError("institutional_member_expiry_invalid")
+    member_id="imember:"+hashlib.sha256(
+        f"{organization_id}|{account_email}|{member_role}".encode("utf-8")
+    ).hexdigest()[:24]
+    c.execute(
+        """INSERT INTO institutional_memberships(
+             id,organization_id,account_email,member_role,status,effective_at,
+             expires_at,verified_by,verification_ref,demo_only
+           ) VALUES(?,?,?,?, 'active',?,?,?,?,?)
+           ON CONFLICT(organization_id,account_email,member_role) DO UPDATE SET
+             status='active',
+             effective_at=excluded.effective_at,
+             expires_at=excluded.expires_at,
+             verified_by=excluded.verified_by,
+             verification_ref=excluded.verification_ref,
+             demo_only=excluded.demo_only""",
+        (
+            member_id,organization_id,account_email,member_role,now,expires_at,
+            verified_by,str(verification_ref or "")[:500],int(bool(demo_only)),
+        ),
+    )
+    return dict(c.execute(
+        "SELECT * FROM institutional_memberships WHERE id=?",(member_id,)
+    ).fetchone())
+
+
+def _active_member(c,organization_id,account_email,member_roles,now=None):
+    now=int(now or time.time())
+    member_roles=tuple(member_roles)
+    if not member_roles:
+        return None
+    placeholders=",".join("?" for _ in member_roles)
+    row=c.execute(
+        f"""SELECT * FROM institutional_memberships
+            WHERE organization_id=? AND account_email=? AND member_role IN ({placeholders})
+              AND status='active' AND effective_at<=?
+              AND (expires_at IS NULL OR expires_at>?)
+            ORDER BY CASE member_role WHEN 'administrator' THEN 1 WHEN 'operator' THEN 2 ELSE 3 END
+            LIMIT 1""",
+        (organization_id,str(account_email or "").lower(),*member_roles,now,now),
+    ).fetchone()
+    return dict(row) if row else None
+
+
 def _current_qualification(c,organization_id):
     return c.execute(
         """SELECT * FROM syndication_partner_qualifications
@@ -420,7 +481,7 @@ def create_delivery_obligations(c,package_id,obligation_type,now=None):
     return created
 
 
-def acknowledge_obligation(c,obligation_id,organization_id,evidence_ref):
+def acknowledge_obligation(c,obligation_id,organization_id,evidence_ref,actor=None):
     row=c.execute(
         """SELECT o.*,d.organization_id
            FROM syndication_delivery_obligations o
@@ -432,6 +493,8 @@ def acknowledge_obligation(c,obligation_id,organization_id,evidence_ref):
         raise ValueError("obligation_not_found")
     if row["organization_id"]!=organization_id:
         raise ValueError("obligation_organization_mismatch")
+    if actor and not _active_member(c,organization_id,actor,("operator","administrator")):
+        raise ValueError("institutional_operator_membership_required")
     if row["status"]=="acknowledged":
         return dict(row)
     if row["status"]!="pending":
@@ -469,6 +532,8 @@ def submit_contribution(c,organization_id,contribution_type,title,payload,submit
     _require_qualified(c,organization_id)
     if not _active_role(c,organization_id,"contributor"):
         raise ValueError("institutional_contributor_role_required")
+    if not _active_member(c,organization_id,submitted_by,("contributor","administrator")):
+        raise ValueError("institutional_contributor_membership_required")
     if contribution_type not in CONTRIBUTION_TYPES:
         raise ValueError("contribution_type_invalid")
     title=str(title or "").strip()
@@ -706,6 +771,14 @@ def network_snapshot(c,organization_id=None):
     return {
         "version":"certified-syndication-network-v1",
         "partners":[qualification_snapshot(c,oid) for oid in organizations],
+        "memberships":[
+            dict(r) for r in c.execute(
+                """SELECT id,organization_id,account_email,member_role,status,effective_at,
+                          expires_at,verified_by,verification_ref,demo_only
+                   FROM institutional_memberships
+                   ORDER BY organization_id,account_email,member_role"""
+            )
+        ],
         "subscriptions":[
             dict(r) for r in c.execute(
                 """SELECT id,organization_id,subscription_scope,scope_ref,status,
