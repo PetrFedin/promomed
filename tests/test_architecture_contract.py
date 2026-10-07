@@ -39,6 +39,7 @@ MODULES = {
     "partner_commands.py",
     "editorial_commands.py",
     "demo_commands.py",
+    "reviewer_authority.py",
 }
 
 

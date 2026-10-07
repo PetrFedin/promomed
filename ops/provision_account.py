@@ -21,8 +21,10 @@ ALLOWED_ROLES = {
     "editor",
     "moderator",
     "sales",
+    "reviewer",
+    "governance",
 }
-PRIVILEGED_ROLES = {"organizer", "editor", "moderator", "sales", "partner", "staff"}
+PRIVILEGED_ROLES = {"organizer", "editor", "moderator", "sales", "partner", "staff", "reviewer", "governance"}
 
 
 def fail(code, **extra):

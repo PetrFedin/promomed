@@ -15,6 +15,21 @@ class PersistenceContractTests(unittest.TestCase):
     def setUpClass(cls):
         server.init()
 
+    def test_postgres_script_splitter_preserves_dollar_quoted_function(self):
+        dq=chr(36)*2
+        script="CREATE FUNCTION f() RETURNS trigger AS "+dq+" BEGIN RAISE EXCEPTION 'x'; END; "+dq+" LANGUAGE plpgsql; CREATE TABLE t(id INTEGER);"
+        parts=db._split_postgres_script(script)
+        self.assertEqual(len(parts),2)
+        self.assertIn("RAISE EXCEPTION 'x'; END;",parts[0])
+        self.assertTrue(parts[1].startswith("CREATE TABLE t"))
+
+    def test_postgres_script_splitter_preserves_tagged_dollar_quote(self):
+        script="CREATE FUNCTION f2() RETURNS text AS $func$ SELECT 'a;b'; $func$ LANGUAGE sql; CREATE TABLE t2(id INTEGER);"
+        parts=db._split_postgres_script(script)
+        self.assertEqual(len(parts),2)
+        self.assertIn("SELECT 'a;b';",parts[0])
+        self.assertTrue(parts[1].startswith("CREATE TABLE t2"))
+
     def test_schema_migrations_are_clean(self):
         status = db.migration_status()
         self.assertTrue(status["schema_ready"], status)

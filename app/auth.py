@@ -22,6 +22,8 @@ DEMO_ACCOUNTS = (
     ("editor@demo.ru", "demo2027", "editor", "Редактор"),
     ("moderator@demo.ru", "demo2027", "moderator", "Модератор"),
     ("sales@demo.ru", "demo2027", "sales", "Demo Director"),
+    ("reviewer@demo.ru", "demo2027", "reviewer", "Medical Reviewer · DEMO"),
+    ("governance@demo.ru", "demo2027", "governance", "Medical Governance · DEMO"),
 )
 
 

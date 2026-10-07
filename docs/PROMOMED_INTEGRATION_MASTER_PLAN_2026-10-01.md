@@ -425,9 +425,61 @@ Production hardening before continuous monitoring:
 - NCBI registered `tool` / `email` and secret-stored API key if required by request volume;
 - durable polling worker state — IMPLEMENTED IN REPOSITORY (2026-10-06), including self-healing creation of missing jobs for pre-existing active watch targets; external production scheduler still required;
 - retry/backoff + dead-letter job state — IMPLEMENTED IN REPOSITORY (2026-10-06); operational alerting still required;
-- independent scientific/medical reviewer identity and authorization;
+- independent scientific/medical reviewer identity and authorization — IMPLEMENTED IN REPOSITORY AUTHORITY MODEL (2026-10-06); external credential verification/institutional onboarding remains required;
 - retention policy for raw provider payloads;
 - legal review for stored abstracts/full text.
+
+#### Phase 2.6 — Independent Medical / Scientific Reviewer Authority — repository checkpoint 2026-10-06
+
+Governance flow:
+
+`reviewer account -> credential/scope attestation -> candidate assignment -> conflict disclosure -> scientific decision -> authenticated decision digest -> append-only audit/hash chain -> separate governance admission`.
+
+Native entities:
+
+- `reviewer_profiles`;
+- `reviewer_scopes`;
+- `review_assignments`;
+- `review_conflict_disclosures`;
+- `review_decisions`;
+- `review_authority_events`.
+
+Production separation-of-duties rules:
+
+1. Editorial acceptance is required before scientific assignment. Editor may assign a scientific reviewer, but cannot satisfy the production scientific gate.
+2. Scientific reviewer must authenticate with the dedicated `reviewer` role and have an active authorized scope.
+3. Production reviewer credential state must be `verified`, independence must be explicitly attested, and expiry is fail-closed.
+4. Every assigned reviewer must disclose conflict state before a decision.
+5. `material` conflict causes recusal; `potential` conflict places the assignment on conflict hold. Either state blocks decision, and the conflicted reviewer cannot be reassigned to the same candidate.
+6. `request_changes` reopens the candidate for a new scientific review iteration; a completed non-conflicted assignment must not deadlock the workflow.
+7. Scientific decision is immutable after write and is bound to the exact evidence snapshot hash.
+8. Current decision attestation is an authenticated-session SHA-256 digest, **not a legal electronic signature**.
+9. Final production admission requires a separate authenticated `governance` actor who is neither the editorial reviewer nor the scientific reviewer.
+10. Reviewer decisions and authority events are DB-protected against update/delete and chained with previous-event hashes for tamper evidence.
+11. Demo reviewer credentials remain explicitly marked `demo_attested`; they do not prove independent medical review.
+12. Failed command outcomes are transactionally rolled back; no 4xx governance response may commit partial authority mutations.
+13. DB-level state constraints enforce reviewer credential, assignment, conflict and decision enums; direct invalid state injection must fail.
+14. PostgreSQL migration execution supports dollar-quoted PL/pgSQL blocks so immutable audit triggers are reproducible in the production backend.
+
+Repository acceptance:
+
+- production scientific review cannot use the editor shortcut;
+- reviewer must be assigned and in-scope;
+- conflict disclosure is mandatory;
+- material/potential conflict blocks a final scientific decision;
+- accepted scientific decision records snapshot hash + decision digest + rationale + reviewer identity;
+- governance admission is a distinct authorization step;
+- direct mutation of decision/audit records is rejected by the database;
+- authority-chain integrity is machine-checkable.
+
+Open production admission work:
+
+- institutional credential verification source/process;
+- reviewer organization/affiliation verification;
+- WebAuthn/QES or another approved signing mechanism if legally required;
+- reviewer SLA/escalation and reassignment policy;
+- governance operator onboarding and periodic access recertification.
+
 
 References:
 
