@@ -128,7 +128,9 @@ def _current_qualification(c,organization_id):
     return c.execute(
         """SELECT * FROM syndication_partner_qualifications
            WHERE organization_id=?
-           ORDER BY created_at DESC,id DESC LIMIT 1""",
+           ORDER BY CASE
+             WHEN status IN ('pending','qualified','requalification_due') THEN 0 ELSE 1
+           END,created_at DESC,id DESC LIMIT 1""",
         (organization_id,),
     ).fetchone()
 
