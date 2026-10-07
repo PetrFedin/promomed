@@ -213,6 +213,20 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn('/api/syndication/delivery/acknowledge',commands)
         self.assertIn("delivery_protocol.acknowledge_event",commands)
 
+    def test_partner_delivery_runtime_uses_postgres_portable_dml(self):
+        runtime=(APP/"delivery_protocol.py").read_text(encoding="utf-8")
+        self.assertNotIn("INSERT OR IGNORE",runtime)
+        self.assertNotIn("REPLACE INTO",runtime)
+        self.assertIn("ON CONFLICT(id) DO NOTHING",runtime)
+
+    def test_delivery_migration_observation_contract_matches_runtime(self):
+        sqlite=(ROOT/"migrations"/"sqlite"/"022_partner_delivery_protocol.sql").read_text(encoding="utf-8")
+        postgres=(ROOT/"migrations"/"postgres"/"022_partner_delivery_protocol.sql").read_text(encoding="utf-8")
+        for migration in (sqlite,postgres):
+            self.assertIn("'ack_missing'",migration)
+            self.assertIn("syndication_delivery_observations",migration)
+            self.assertIn("immutable_syndication_delivery_observation",migration)
+
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 405)
 
