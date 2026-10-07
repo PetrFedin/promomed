@@ -28,8 +28,7 @@ CREATE TABLE IF NOT EXISTS syndication_partner_qualifications(
   reason TEXT NOT NULL DEFAULT '',
   created_at BIGINT NOT NULL,
   created_by TEXT NOT NULL,
-  demo_only INTEGER NOT NULL DEFAULT 0,
-  UNIQUE(organization_id,qualification_version)
+  demo_only INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS syndication_conformance_checks(
