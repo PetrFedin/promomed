@@ -136,3 +136,13 @@ Media is treated as a daily knowledge workspace rather than a decorative feed:
 - learning programmes use a three-column grid where viewport allows it;
 - desktop density increases through layout, never by reducing readable text;
 - long-form rails remain touch-native on phone.
+
+## 14. Events experience v2
+
+Events prioritizes operational use before conference storytelling:
+
+- hero actions expose Programme / My schedule / Map;
+- My schedule action switches the canonical programme renderer into mine mode;
+- Venue Concierge now/next and Partner Appointments form one operational grid on tablet/desktop;
+- phone keeps the same controls in a vertical sequence;
+- conference narrative, ecosystem and curated moments remain below the operational layer.
