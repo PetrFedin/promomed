@@ -402,6 +402,12 @@ def verify_portable(envelope, issuer_doc, status_doc=None):
             }
 
         checkpoint_sha = str(envelope.get("checkpointSha256") or "")
+        if status_doc and str(status_doc.get("issuerId") or "") != issuer_id:
+            return {
+                "status": "STATUS_LIST_ISSUER_MISMATCH",
+                "signature_valid": True,
+                "revoked": False,
+            }
         revoked_rows = (status_doc or {}).get("revokedCheckpoints") or []
         revoked = next((r for r in revoked_rows if r.get("checkpointSha256") == checkpoint_sha), None)
         if revoked:
