@@ -1,5 +1,5 @@
 from app.commanding import custom, error
-from app import evidence_checkpoint
+from app import db, evidence_checkpoint
 
 ROUTES={"/api/evidence-checkpoint/issue","/api/evidence-checkpoint/revoke"}
 
@@ -28,3 +28,13 @@ def handle_command(c,route,role,email,data):
         return custom({"data":row})
     except ValueError as exc:
         return error(str(exc),422)
+
+
+def handle_public(route,data):
+    if route!="/api/evidence-checkpoint/verify":
+        return None
+    c=db.connect()
+    try:
+        return {"data":evidence_checkpoint.verify(c,data.get("envelope") or {})},200
+    finally:
+        c.close()
