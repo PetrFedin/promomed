@@ -73,7 +73,7 @@ class ExternalEvidenceAdmissionTests(unittest.TestCase):
         admitted=self.monitor.admit_candidate(self.c,cid,"editor@demo.ru")
         self.c.commit()
         claim=self.graph.snapshot(self.c,claim_id="CL01")["claims"][0]
-        self.assertEqual(claim["trust"]["status"],"DRAFT")
+        self.assertEqual(claim["trust"]["status"],"INCOMPLETE_EVIDENCE")
         self.assertTrue(self.impact.is_held(self.c,"content","CT01"))
         impact=self.impact.snapshot(self.c,admitted["change_event_id"])
         self.assertGreater(impact["summary"]["open_impacts"],0)
