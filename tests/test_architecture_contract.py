@@ -40,6 +40,8 @@ MODULES = {
     "editorial_commands.py",
     "demo_commands.py",
     "reviewer_authority.py",
+    "evidence_interchange.py",
+    "institutional_commands.py",
 }
 
 
@@ -95,6 +97,7 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("handle_operations_command", SERVER)
         self.assertIn("handle_partner_command", SERVER)
         self.assertIn("handle_editorial_command", SERVER)
+        self.assertIn("handle_institutional_command", SERVER)
         self.assertIn("handle_demo_command", SERVER)
 
     def test_http_layer_has_no_hardcoded_account_credentials(self):
