@@ -444,6 +444,8 @@ Repository/runtime scope:
 - tamper-evident previous-hash event chain;
 - final production admission restricted to a separate governance actor;
 - failed command outcomes roll back transactionally, preventing partial governance mutations from committing behind a 4xx response;
+- DB-level reviewer authority state constraints and relational references reject invalid credential/assignment/conflict/decision states;
+- PostgreSQL migration executor preserves dollar-quoted function bodies required by immutable audit triggers;
 - reviewer/governance projection and CI contract tests;
 - production reviewer attestation CLI requiring PostgreSQL production readiness.
 
