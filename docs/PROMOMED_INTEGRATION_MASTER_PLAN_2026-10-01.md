@@ -520,6 +520,28 @@ Open brand/product-design work:
 
 ---
 
+### Participant Everyday Experience v2 — repository checkpoint 2026-10-07
+
+Following UI System v2, the participant product is being optimized screen-by-screen for repeated everyday use rather than investor-demo density.
+
+Current direction:
+
+- Today: action-first hero; Continue / Events / Studio / My; personal continuation + Relationship 365 paired on larger screens;
+- Media: decorative pseudo-filters removed; Search / Studio / Catalog are real actions; editorial and learning content use scan-friendly grids;
+- Events: Programme / My schedule / Map are primary actions; Now/Next venue concierge and partner appointments form an operational surface; timetable geometry belongs to responsive CSS, not runtime inline JS;
+- Community: explainable matches, partner appointments and mutual double-opt-in meetings form compact working surfaces; no generic popularity/feed mechanics;
+- My: ticket/passport stay primary; takeaways + 1/7/30 and messages + participation settings pair on larger screens while phone remains sequential.
+
+Quality rule:
+
+- phone / landscape phone / tablet / desktop are independently verified;
+- wide internal content such as timetables must scroll inside an explicit viewport and may never expand the page;
+- responsive QA reports concrete DOM overflow offenders when a regression occurs.
+
+This layer changes interaction hierarchy and presentation only. Medical/evidence/reviewer/consent/account/persistence authority remains unchanged.
+
+---
+
 ### Phase 3 — Search and semantic discovery
 
 #### 3.1 Meilisearch
