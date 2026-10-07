@@ -51,7 +51,8 @@ CREATE TABLE IF NOT EXISTS evidence_exchange_deliveries(
   withdrawal_reason TEXT,
   receipt_sha256 TEXT NOT NULL UNIQUE,
   created_by TEXT NOT NULL,
-  demo_only BIGINT NOT NULL DEFAULT 0
+  demo_only BIGINT NOT NULL DEFAULT 0,
+  UNIQUE(package_id,organization_id,delivery_role)
 );
 
 CREATE INDEX IF NOT EXISTS idx_institutional_role_org
