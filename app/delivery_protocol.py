@@ -839,24 +839,30 @@ def acknowledge_event(c,event_id,organization_id,ack_payload,ack_timestamp,signa
         raise ValueError("delivery_ack_status_invalid")
     ack_timestamp=int(ack_timestamp)
     now=int(time.time())
-    if abs(now-ack_timestamp)>86400:
-        raise ValueError("delivery_ack_timestamp_out_of_range")
     ack_payload_json=_canonical(ack_payload)
     ack_sha=_sha_bytes(ack_payload_json.encode("utf-8"))
-    secret=_endpoint_secret(event["endpoint_id"],attempt["secret_version"])
-    if not verify_signature(secret,ack_timestamp,event_id,ack_sha,signature):
-        raise ValueError("delivery_ack_signature_invalid")
     existing=c.execute(
-        "SELECT id FROM syndication_delivery_acknowledgements WHERE event_id=?",
+        """SELECT id,ack_payload_sha256,ack_signature
+           FROM syndication_delivery_acknowledgements WHERE event_id=?""",
         (event_id,),
     ).fetchone()
     if existing:
+        if (
+            existing["ack_payload_sha256"]!=ack_sha
+            or existing["ack_signature"]!=str(signature or "")
+        ):
+            raise ValueError("delivery_ack_conflict")
         return {
             "eventId":event_id,
             "status":"acknowledged",
             "idempotentReplay":True,
             "lastAckedSequence":_advance_cursor(c,organization_id),
         }
+    if abs(now-ack_timestamp)>86400:
+        raise ValueError("delivery_ack_timestamp_out_of_range")
+    secret=_endpoint_secret(event["endpoint_id"],attempt["secret_version"])
+    if not verify_signature(secret,ack_timestamp,event_id,ack_sha,signature):
+        raise ValueError("delivery_ack_signature_invalid")
     received_at=now
     ack_id="ack:"+_sha({
         "eventId":event_id,
