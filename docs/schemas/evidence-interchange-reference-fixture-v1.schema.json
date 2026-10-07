@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:evidence-interchange-reference-fixture:v1",
+  "title": "Promomed Evidence Interchange Reference Fixture v1",
+  "type": "object",
+  "required": [
+    "schemaId",
+    "fixtureVersion",
+    "packageVersion",
+    "profileSchemaId",
+    "profileVersion",
+    "exampleType",
+    "artifact",
+    "source",
+    "claim",
+    "review",
+    "disclosure",
+    "approval",
+    "seal",
+    "checkpoint",
+    "syndication",
+    "lifecycle",
+    "truthBoundary",
+    "referencePackageSha256"
+  ],
+  "properties": {
+    "schemaId": {
+      "const": "urn:promomed:schema:evidence-interchange-reference-fixture:v1"
+    },
+    "fixtureVersion": {
+      "const": "promomed-evidence-interchange-reference-fixture-v1"
+    },
+    "packageVersion": {
+      "const": "promomed-reference-evidence-package-v1"
+    },
+    "profileSchemaId": {
+      "const": "urn:promomed:schema:evidence-governance-interchange:v1"
+    },
+    "profileVersion": {
+      "const": "promomed-evidence-governance-interchange-v1"
+    },
+    "exampleType": {
+      "const": "synthetic_non_clinical"
+    },
+    "artifact": {
+      "type": "object"
+    },
+    "source": {
+      "type": "object"
+    },
+    "claim": {
+      "type": "object"
+    },
+    "review": {
+      "type": "object"
+    },
+    "disclosure": {
+      "type": "object"
+    },
+    "approval": {
+      "type": "object"
+    },
+    "seal": {
+      "type": "object"
+    },
+    "checkpoint": {
+      "type": "object"
+    },
+    "syndication": {
+      "type": "object"
+    },
+    "lifecycle": {
+      "type": "array",
+      "minItems": 1
+    },
+    "truthBoundary": {
+      "type": "object"
+    },
+    "referencePackageSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}
