@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:partner-delivery-ack:v2",
+  "title": "Promomed Partner Delivery Acknowledgement v2",
+  "type": "object",
+  "required": [
+    "eventId",
+    "payloadSha256",
+    "status"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "pattern": "^delivery:[0-9a-f]{28}$"
+    },
+    "payloadSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "status": {
+      "const": "accepted"
+    }
+  },
+  "additionalProperties": false
+}
