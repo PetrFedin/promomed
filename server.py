@@ -13,6 +13,7 @@ from app.programme_commands import handle_command as handle_programme_command
 from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command
+from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -360,6 +361,9 @@ class H(SimpleHTTPRequestHandler):
   p=urlparse(self.path).path
   try: data=body(self)
   except Exception: return self.out({"error":"bad_json"},400)
+  public_outcome=handle_evidence_checkpoint_public(p,data)
+  if public_outcome is not None:
+   return self.out(public_outcome[0],public_outcome[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
    c=conn()
