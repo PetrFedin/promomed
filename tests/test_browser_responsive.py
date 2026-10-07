@@ -169,6 +169,7 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
         page.locator(f'#nav button[data-s="{screen_id}"]').click()
         page.wait_for_selector(f"#{screen_id}.on")
         assert_no_page_overflow(page, width, f"{name}/{screen_id}")
+        page.screenshot(path=str(OUT / f"{clean_name(name)}-{screen_id}.png"), full_page=True)
 
     # Account is the boundary: guest browsing remains open, personal data asks for login.
     page.locator('#nav button[data-s="me"]').click()

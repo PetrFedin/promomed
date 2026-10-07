@@ -518,27 +518,28 @@ Open brand/product-design work:
 - consolidated component extraction after the MVP CSS stabilizes;
 - visual regression baselines for the most important participant journeys.
 
----
+#### Cross-cutting Product Experience — Participant Everyday Experience v2 — repository checkpoint 2026-10-07
 
-### Participant Everyday Experience v2 — repository checkpoint 2026-10-07
+The participant shell is now refined screen-by-screen for repeated daily use while preserving the same medical, evidence, consent and business authorities.
 
-Following UI System v2, the participant product is being optimized screen-by-screen for repeated everyday use rather than investor-demo density.
+Implemented interaction hierarchy:
 
-Current direction:
+- Today -> action-first hero with Continue / Events / Studio / My; topic navigation is no longer duplicated in the hero;
+- Today -> personal continuation + Relationship 365 form one compact working zone on tablet/desktop;
+- Media -> decorative category controls are removed; visible controls perform real actions (Search / Studio / Catalog);
+- Media -> paired editorial/corporate/audio surfaces and learning programmes use scan-friendly multi-column grids on larger screens;
+- Events -> Programme / My schedule / Map are primary operational actions;
+- Events -> Venue Concierge now/next and Partner Appointments form one operational workspace on larger screens;
+- Community -> explainable matches and consented meeting states become compact work surfaces; double opt-in remains explicit;
+- My -> Takeaways + 1/7/30 and Messages + Participation settings form compact paired workspaces on tablet/desktop;
+- phone keeps the simple sequential rhythm; larger screens gain density through layout rather than smaller text;
+- responsive browser QA remains mandatory for iPhone, landscape phone, tablet and desktop paths.
 
-- Today: action-first hero; Continue / Events / Studio / My; personal continuation + Relationship 365 paired on larger screens;
-- Media: decorative pseudo-filters removed; Search / Studio / Catalog are real actions; editorial and learning content use scan-friendly grids;
-- Events: Programme / My schedule / Map are primary actions; Now/Next venue concierge and partner appointments form an operational surface; timetable geometry belongs to responsive CSS, not runtime inline JS;
-- Community: explainable matches, partner appointments and mutual double-opt-in meetings form compact working surfaces; no generic popularity/feed mechanics;
-- My: ticket/passport stay primary; takeaways + 1/7/30 and messages + participation settings pair on larger screens while phone remains sequential.
+Truth boundary:
 
-Quality rule:
-
-- phone / landscape phone / tablet / desktop are independently verified;
-- wide internal content such as timetables must scroll inside an explicit viewport and may never expand the page;
-- responsive QA reports concrete DOM overflow offenders when a regression occurs.
-
-This layer changes interaction hierarchy and presentation only. Medical/evidence/reviewer/consent/account/persistence authority remains unchanged.
+- these changes improve participant usability and visual hierarchy only;
+- no popularity ranking, health-risk scoring, diagnostic inference or hidden medical personalisation is introduced;
+- consent, reviewer authority, evidence admission and PostgreSQL authority are unchanged.
 
 ---
 
