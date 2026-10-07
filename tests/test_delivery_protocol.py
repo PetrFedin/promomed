@@ -496,6 +496,37 @@ class PartnerDeliveryProtocolTests(unittest.TestCase):
         self.assertFalse(evaluation["automaticSuspension"])
         self.assertFalse(evaluation["automaticRevocation"])
 
+    def test_runtime_snapshot_is_side_effect_free_before_explicit_reconcile(self):
+        self._subscribe()
+        _,delivery=self._package_and_delivery()
+        event_id=delivery["outboundEvent"]["id"]
+        self._dispatch_success(event_id)
+        old=int(time.time())-delivery_protocol.ACK_EXPECTATION_SECONDS-5
+        self.c.execute(
+            "UPDATE syndication_delivery_event_state SET delivered_at=? WHERE event_id=?",
+            (old,event_id),
+        )
+        before=self.c.execute(
+            """SELECT status FROM syndication_partner_qualifications
+               WHERE organization_id='INST-DELIVERY-001'
+               ORDER BY created_at DESC,id DESC LIMIT 1"""
+        ).fetchone()["status"]
+        snapshot=delivery_protocol.runtime_snapshot(self.c,"INST-DELIVERY-001")
+        after=self.c.execute(
+            """SELECT status FROM syndication_partner_qualifications
+               WHERE organization_id='INST-DELIVERY-001'
+               ORDER BY created_at DESC,id DESC LIMIT 1"""
+        ).fetchone()["status"]
+        missing=self.c.execute(
+            """SELECT COUNT(*) n FROM syndication_delivery_observations
+               WHERE organization_id='INST-DELIVERY-001'
+                 AND observation_type='ack_missing'"""
+        ).fetchone()["n"]
+        self.assertEqual(before,"qualified")
+        self.assertEqual(after,"qualified")
+        self.assertEqual(missing,0)
+        self.assertFalse(snapshot["requalification"][0]["qualificationStateChanged"])
+
     def test_three_missing_acknowledgements_trigger_requalification_only(self):
         self._subscribe()
         package,delivery=self._package_and_delivery()
