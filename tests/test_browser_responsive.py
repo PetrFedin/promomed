@@ -125,6 +125,8 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     assert_readable_text(page, f"{name}/home")
     assert_navigation_placement(page, width, height, f"{name}/home")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-home.png"), full_page=True)
+    page.keyboard.press("Escape")
+    expect(page.locator("#overlay")).not_to_have_class(re.compile(r"\bon\b"))
 
     for screen_id in ["media", "events", "community"]:
         page.locator(f'#nav button[data-s="{screen_id}"]').click()
