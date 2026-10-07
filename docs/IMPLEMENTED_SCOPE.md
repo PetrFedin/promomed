@@ -546,3 +546,13 @@ Implemented in repository scope:
 - browser QA for focus lifecycle.
 
 Boundary: no business or authority semantics changed.
+
+
+## Motion polish v1 — restrained application transitions
+
+Prepared in repository scope:
+
+- short main-screen entry transition;
+- short overlay and sheet entry transitions;
+- reduced-motion compatibility retained;
+- no authority or business logic changes.
