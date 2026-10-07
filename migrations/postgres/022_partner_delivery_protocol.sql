@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS syndication_delivery_attempts(
   event_id TEXT NOT NULL,
   endpoint_id TEXT NOT NULL,
   attempt_no BIGINT NOT NULL,
+  secret_version BIGINT NOT NULL,
   request_timestamp BIGINT NOT NULL,
   request_signature TEXT NOT NULL,
   sent_at BIGINT NOT NULL,
