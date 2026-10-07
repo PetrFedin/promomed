@@ -9,6 +9,7 @@ PROFILE_VERSION="promomed-evidence-governance-interchange-v1"
 PACKAGE_VERSION="promomed-reference-evidence-package-v1"
 PROFILE_SCHEMA_ID="urn:promomed:schema:evidence-governance-interchange:v1"
 PACKAGE_SCHEMA_ID="urn:promomed:schema:reference-evidence-package:v1"
+REFERENCE_FIXTURE_SCHEMA_ID="urn:promomed:schema:evidence-interchange-reference-fixture:v1"
 
 ORGANIZATION_TYPES={
     "medical_society",
@@ -557,7 +558,8 @@ def withdraw_artifact_packages(c,artifact_kind,artifact_ref,reason,actor):
 
 def reference_package():
     core={
-        "schemaId":PACKAGE_SCHEMA_ID,
+        "schemaId":REFERENCE_FIXTURE_SCHEMA_ID,
+        "fixtureVersion":"promomed-evidence-interchange-reference-fixture-v1",
         "packageVersion":PACKAGE_VERSION,
         "profileSchemaId":PROFILE_SCHEMA_ID,
         "profileVersion":PROFILE_VERSION,
