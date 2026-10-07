@@ -93,3 +93,25 @@ Implemented in branch feat/mvp-ux-ui-v2:
 This is a UI-system checkpoint, not a claim of a final Promomed brand identity.
 
 The current CSS-generated gradients, abstract hero graphics and demo editorial art direction are MVP product-design assets. Final brand photography, illustration licensing, production iconography and official Promomed brand approval remain separate creative/brand admission work.
+
+## 10. Polish layer
+
+Additional daily-use refinements implemented in the polish branch:
+
+- desktop navigation rail can collapse and expand without leaving the current screen;
+- collapsed preference is stored locally and restored on desktop;
+- tablet keeps the compact rail automatically and does not expose a redundant collapse control;
+- landscape phones remain on the thumb-first bottom-navigation shell even when their CSS width exceeds 768 px;
+- top actions and primary navigation use a coherent inline SVG icon language instead of prototype glyph characters;
+- editorial cover cards and hubs use CSS-native abstract art surfaces with no external image/licensing dependency;
+- reduced-motion users do not receive decorative hover motion.
+
+These refinements remain presentation-only and do not modify application authority.
+
+## 11. Visual evidence and account density
+
+- on tablet/desktop the account ticket switches to a compact two-column composition;
+- QR remains large enough for demo scanning but no longer dominates the whole working canvas;
+- Passport stamps use compact rectangular surfaces on larger screens while phone retains the original stacked rhythm;
+- browser evidence now captures the unobscured home after closing evidence sheets;
+- desktop QA also captures a dedicated collapsed-rail screenshot for visual review.

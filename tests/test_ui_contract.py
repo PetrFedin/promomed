@@ -17,7 +17,9 @@ class UIContractTests(unittest.TestCase):
         self.assertIn("else{role='participant';show('today');updateTag();await syncState(true)}", INDEX)
         self.assertNotIn("else if(!apiToken){openSheet('login')}", INDEX)
         self.assertNotIn("await switchRole(r);setInterval", INDEX)
-        self.assertIn("<b>⌂</b>Главная", INDEX)
+        self.assertIn('data-s="today"', INDEX)
+        self.assertIn('class="navIcon"', INDEX)
+        self.assertIn("Главная</button>", INDEX)
 
     def test_account_inbox_is_consent_first(self):
         self.assertIn('id="accountInbox"', INDEX)

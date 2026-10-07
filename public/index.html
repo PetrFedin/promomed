@@ -474,6 +474,42 @@ body{background:var(--canvas);color:var(--text)}
   .profilegrid,.streamgrid{gap:12px}
 }
 
+.icon svg,.navIcon svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.icon svg{width:19px;height:19px}
+.navIcon{display:grid!important;place-items:center}
+.navIcon svg{width:21px;height:21px}
+/* editorial art direction: CSS-native, license-free MVP graphics */
+.coverCard,.hubCard,.premiumHero,.editorialVisual,.studioStage{isolation:isolate}
+.coverCard{position:relative;overflow:hidden}
+.coverCard:before{content:'';position:absolute;width:190px;height:190px;right:-58px;top:-48px;border-radius:50%;border:1px solid rgba(255,255,255,.25);box-shadow:0 0 0 28px rgba(255,255,255,.035),0 0 0 58px rgba(255,255,255,.025);z-index:0}
+.coverCard:after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.09),transparent 38%,rgba(3,18,35,.18));z-index:0;pointer-events:none}
+.coverCard>*{position:relative;z-index:1}
+.coverCard.alt:before{width:155px;height:155px;right:-24px;top:22px;border-radius:38% 62% 58% 42% / 44% 40% 60% 56%;transform:rotate(18deg)}
+.coverCard.warm:before{width:170px;height:170px;right:-34px;top:-14px;border-radius:44% 56% 37% 63% / 57% 37% 63% 43%;transform:rotate(-14deg)}
+.hubCard{position:relative;overflow:hidden}
+.hubCard:after{content:'';position:absolute;width:120px;height:120px;border-radius:50%;right:-42px;top:-42px;border:1px solid rgba(255,255,255,.18);box-shadow:0 0 0 22px rgba(255,255,255,.025);pointer-events:none}
+.hubCard>*{position:relative;z-index:1}
+.premiumHero{background-image:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(160deg,#071b31 0%,#123d63 56%,#58a8b8 100%);background-size:32px 32px,32px 32px,100% 100%;background-position:center}
+.premiumHero:after{background:linear-gradient(180deg,rgba(7,27,49,.02) 30%,rgba(7,27,49,.94) 100%)}
+@media(prefers-reduced-motion:no-preference){
+ .coverCard:hover:before{transform:translate3d(-5px,5px,0) scale(1.025)}
+ .coverCard.alt:hover:before{transform:rotate(18deg) translate3d(-4px,4px,0) scale(1.02)}
+ .coverCard.warm:hover:before{transform:rotate(-14deg) translate3d(-4px,4px,0) scale(1.02)}
+ .coverCard:before{transition:transform .35s ease}
+}
+.nav .navCollapse{display:none!important}
+@media(min-width:1200px){
+ .nav .navCollapse{display:flex!important;margin-top:auto;border-top:1px solid var(--line)!important;border-radius:14px!important;color:#78889b!important;background:#f8fafc!important}
+ .navCollapse:hover{background:#f0f4f8!important;color:#294666!important}
+ body.navCollapsed .app{padding-left:118px}
+ body.navCollapsed .nav{width:82px}
+ body.navCollapsed .nav:before{content:'с.';font-size:18px;text-align:center;padding-left:0;padding-right:0}
+ body.navCollapsed .nav button[data-s]{font-size:0;justify-content:center;gap:0;padding-left:4px;padding-right:4px}
+ body.navCollapsed .nav button[data-s] b{font-size:20px;width:auto}
+ body.navCollapsed .navCollapse{font-size:0;justify-content:center;gap:0}
+ body.navCollapsed .navCollapse b{font-size:20px;width:auto;margin:0}
+ body.navCollapsed .app>.top,body.navCollapsed .app>.screen,body.navCollapsed .app>.footer{width:min(100%,1320px)}
+}
 /* landscape phones keep the thumb-first phone shell even when CSS width exceeds tablet breakpoint */
 @media(max-height:520px) and (orientation:landscape){
  .app{padding:10px 18px 78px;max-width:none}
@@ -486,6 +522,26 @@ body{background:var(--canvas);color:var(--text)}
  .nav button.on{background:var(--primary-soft);color:var(--primary);box-shadow:none}
  .overlay{align-items:flex-end}
  .sheet{width:min(640px,calc(100% - 20px));margin:0 auto 6px;border-radius:22px;max-height:calc(100dvh - 12px)}
+}
+/* account density: compact ticket and passport on larger working canvases */
+@media(min-width:768px) and (min-height:521px){
+ #me .ticket{display:grid;grid-template-columns:minmax(250px,.9fr) minmax(320px,1.35fr);align-items:stretch}
+ #me .tickethead{display:flex;flex-direction:column;justify-content:center;min-height:270px;padding:28px}
+ #me .tickethead h2{font-size:clamp(28px,3vw,38px);margin:12px 0}
+ #me .ticket>.center{display:grid;grid-template-columns:150px minmax(0,1fr);grid-template-rows:auto auto auto auto;column-gap:24px;align-content:center;align-items:center;text-align:left!important;padding:24px 28px!important}
+ #me .ticket>.center .pill{grid-column:1/-1;justify-self:start;margin-bottom:10px}
+ #me .ticket .qr{grid-column:1;grid-row:2/5;width:142px;height:142px;margin:0}
+ #me .ticket>.center>b{grid-column:2;grid-row:2;font-size:18px}
+ #me .ticket>.center>p{grid-column:2;grid-row:3;margin:6px 0}
+ #me .ticket>.center>.actions{grid-column:2;grid-row:4;justify-content:flex-start!important;margin-top:8px}
+ #me .passport{gap:10px}
+ #me .stamp{aspect-ratio:auto;min-height:108px;border-style:solid;background:rgba(255,255,255,.55)}
+ #me .stamp.done{background:linear-gradient(145deg,#0d6da8,#2454dc)}
+}
+@media(min-width:1200px){
+ #me .ticket{grid-template-columns:minmax(300px,.82fr) minmax(440px,1.18fr)}
+ #me .tickethead{min-height:250px}
+ #me .stamp{min-height:96px}
 }
 /* accessibility + predictable interaction states */
 a,button,[role="button"],.tap{ -webkit-tap-highlight-color:transparent }
@@ -504,7 +560,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
 
 
 </style></head><body>
-<main class="app"><header class="top"><div class="brand"><b>с.</b>СОСТОЯНИЕ</div><div class="topActions"><button class="icon" aria-label="Поиск" onclick="openSheet('search')">⌕</button><button class="icon" aria-label="Уведомления" onclick="openNotifications()">●</button><button class="icon" aria-label="Аккаунт и управление" onclick="openSheet('control')">•••</button></div></header>
+<main class="app"><header class="top"><div class="brand"><b>с.</b>СОСТОЯНИЕ</div><div class="topActions"><button class="icon" aria-label="Поиск" onclick="openSheet('search')"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg></button><button class="icon" aria-label="Уведомления" onclick="openNotifications()"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6.5 16.5h11l-1.3-2.1V10a4.2 4.2 0 0 0-8.4 0v4.4z"></path><path d="M10 19a2.2 2.2 0 0 0 4 0"></path></svg></button><button class="icon" aria-label="Аккаунт и управление" onclick="openSheet('control')"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"></circle><circle cx="12" cy="12" r="1.2"></circle><circle cx="19" cy="12" r="1.2"></circle></svg></button></div></header>
 
 <section id="today" class="screen on participant">
 <div class="premiumHero"><div class="heroKicker"><div class="ey" style="color:#9ee6ef">СОСТОЯНИЕ × ПРОМОМЕД · CONCEPT</div><span class="pill dark">365</span></div><h1>Знать больше.<br>Жить лучше.</h1><p class="small">Health media, эксперты, продукты, практики и главное событие года — в одном персональном пространстве.</p><div class="glass"><div class="ey" style="color:#9ee6ef">СЕГОДНЯ В ФОКУСЕ</div><b>Метаболическое здоровье без информационного шума</b><div class="tiny" style="color:#cfe0e8;margin-top:5px">12 мин · редакционный разбор · medical review</div></div><div class="heroRail"><button onclick="openHub('metabolic')">Метаболизм</button><button onclick="openHub('ageing')">Healthy ageing</button><button onclick="openHub('brain')">Мозг и энергия</button><button onclick="openHub('complex')">Сложные состояния</button></div></div>
@@ -749,7 +805,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
 </main>
 
 <div class="roleTag hidden" id="roleTag" onclick="openSheet('control')">Не авторизован · подключение…</div>
-<nav class="nav" id="nav" aria-label="Основная навигация"><button class="on" data-s="today"><b>⌂</b>Главная</button><button data-s="media"><b>▤</b>Медиа</button><button data-s="events"><b>◫</b>События</button><button data-s="community"><b>◎</b>Сообщество</button><button data-s="me"><b>○</b>Моё</button></nav>
+<nav class="nav" id="nav" aria-label="Основная навигация"><button class="on" data-s="today"><b class="navIcon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 10.5L12 4l8 6.5"></path><path d="M6.5 9.5V20h11V9.5"></path><path d="M10 20v-5.5h4V20"></path></svg></b>Главная</button><button data-s="media"><b class="navIcon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5.5h10.5A2.5 2.5 0 0 1 18 8v10.5H7.5A2.5 2.5 0 0 1 5 16z"></path><path d="M8 9h7M8 12h7M8 15h5"></path></svg></b>Медиа</button><button data-s="events"><b class="navIcon"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="4.5" y="6" width="15" height="13" rx="2"></rect><path d="M8 4v4M16 4v4M4.5 10h15"></path></svg></b>События</button><button data-s="community"><b class="navIcon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"></circle><circle cx="17" cy="10" r="2.3"></circle><path d="M3.5 19c.4-3.2 2.3-5 5.5-5s5.1 1.8 5.5 5M14 15.2c2.9-.7 5.7.5 6.5 3.8"></path></svg></b>Сообщество</button><button data-s="me"><b class="navIcon"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20c.5-4 2.8-6 6.5-6s6 2 6.5 6"></path></svg></b>Моё</button><button class="navCollapse" id="navCollapse" type="button" aria-label="Свернуть боковую навигацию" aria-expanded="true" onclick="toggleNavRail()"><b>⇤</b><span>Свернуть</span></button></nav>
 
 <div class="overlay" id="overlay" role="presentation" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Диалог"></div></div>
 <script>
@@ -779,7 +835,22 @@ productJourney:`<div class="ey blue">PRODUCT JOURNEY · DEMO</div><h2>От ин�
 gift:`<div class="ey blue">CURATED HEALTH KIT · DEMO</div><h2>Подарок должен продолжать маршрут</h2><p class="small muted">Eligibility → reserve → one-time code → staff confirm → received. Не лотерея и не стимул к покупке лекарства.</p><div class="card"><div class="ey green">ТРЕК · ВОССТАНОВЛЕНИЕ</div><h3>Набор «Вечер без перегруза»</h3><p class="small muted">Sleep mask / доступ к аудиопрактике / партнёрский wellness-сервис / редакционная памятка. Конкретные бренды появятся только после договорённостей.</p></div><div class="card"><div class="ey blue">ТРЕК · ДВИЖЕНИЕ</div><h3>Набор «Двигаться каждый день»</h3><p class="small muted">Полезный lifestyle-предмет / приглашение на партнёрскую практику / 30-дневный контент-маршрут.</p></div><div class="card center"><span class="pill green" id="giftState">ДОСТУПЕН</span><h3>Ваш demo health kit</h3><button class="btn" onclick="redeemGift(this)">Получить у стойки</button></div><div class="notice">Consumer-набор не содержит рецептурные лекарства и не обещает лечебный эффект. Категории подарков проходят legal / medical / partner review.</div>`
 };
 function show(id){if(id==='me'&&!apiToken){openSheet('login');return}if(id==='partnerDash')setTimeout(()=>loadInvestorProof('partner'),0);if(id==='investorProof')setTimeout(()=>loadInvestorProof(),0);if(id==='studio')setTimeout(()=>loadTranscriptIntelligence('P21'),0);if(id==='editor')setTimeout(()=>{loadEvidenceCoverage();loadChangeImpact();loadEvidenceMonitor()},0);document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('on',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.s===id));scrollTo(0,0)}
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.s));
+document.querySelectorAll('.nav button[data-s]').forEach(b=>b.onclick=()=>show(b.dataset.s));
+function applyNavRailPreference(){
+ const desktop=window.innerWidth>=1200,b=document.getElementById('navCollapse');
+ if(!desktop){document.body.classList.remove('navCollapsed');if(b)b.setAttribute('aria-expanded','true');return}
+ const collapsed=localStorage.getItem('sostoyanie_nav_collapsed')==='1';
+ document.body.classList.toggle('navCollapsed',collapsed);
+ if(b){b.setAttribute('aria-expanded',String(!collapsed));b.setAttribute('aria-label',collapsed?'Развернуть боковую навигацию':'Свернуть боковую навигацию');const icon=b.querySelector('b'),label=b.querySelector('span');if(icon)icon.textContent=collapsed?'⇥':'⇤';if(label)label.textContent=collapsed?'Развернуть':'Свернуть'}
+}
+function toggleNavRail(){
+ if(window.innerWidth<1200)return;
+ const next=!document.body.classList.contains('navCollapsed');
+ localStorage.setItem('sostoyanie_nav_collapsed',next?'1':'0');
+ applyNavRailPreference();
+}
+window.addEventListener('resize',applyNavRailPreference);
+applyNavRailPreference();
 function openSheet(k){document.getElementById('sheet').innerHTML='<div class="row"><span></span><button class="icon" aria-label="Закрыть" onclick="closeSheet()">×</button></div>'+(sheets[k]||'');document.getElementById('overlay').classList.add('on');if(k==='search')setTimeout(()=>initDiscoverySearch(),0)}
 let discoveryKind='',discoveryReplay=null,discoveryReview='',discoveryTimer=null;
 function initDiscoverySearch(){runDiscoverySearch()}
