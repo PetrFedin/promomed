@@ -42,6 +42,8 @@ MODULES = {
     "reviewer_authority.py",
     "evidence_interchange.py",
     "institutional_commands.py",
+    "syndication_network.py",
+    "syndication_commands.py",
 }
 
 
@@ -98,6 +100,7 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("handle_partner_command", SERVER)
         self.assertIn("handle_editorial_command", SERVER)
         self.assertIn("handle_institutional_command", SERVER)
+        self.assertIn("handle_syndication_command", SERVER)
         self.assertIn("handle_demo_command", SERVER)
 
     def test_http_layer_has_no_hardcoded_account_credentials(self):
@@ -170,6 +173,24 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertEqual(spec["openapi"], "3.1.0")
         self.assertIn("/api/evidence-interchange/verify-portable", spec["paths"])
         self.assertIn("/api/evidence-interchange/package/deliver", spec["paths"])
+
+    def test_certified_syndication_openapi_and_schemas_are_machine_readable(self):
+        import json
+        spec=json.loads((ROOT/"docs"/"openapi"/"certified-syndication-v1.openapi.json").read_text(encoding="utf-8"))
+        certification=json.loads((ROOT/"docs"/"schemas"/"syndication-certification-v1.schema.json").read_text(encoding="utf-8"))
+        receipt=json.loads((ROOT/"docs"/"schemas"/"external-contribution-admission-receipt-v1.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(spec["openapi"],"3.1.0")
+        self.assertIn("/api/syndication/qualification/finalize",spec["paths"])
+        self.assertIn("/api/external-contribution/revise",spec["paths"])
+        self.assertIn("/api/external-contribution/receipt/verify-portable",spec["paths"])
+        self.assertEqual(certification["$id"],"urn:promomed:schema:syndication-certification:v1")
+        self.assertEqual(receipt["$id"],"urn:promomed:schema:external-contribution-admission-receipt:v1")
+
+    def test_contribution_receipt_verification_is_public_before_auth(self):
+        self.assertIn("handle_syndication_public", SERVER)
+        public_idx=SERVER.index("syndication_public=handle_syndication_public(p,data)")
+        auth_idx=SERVER.index("a=auth(self)", SERVER.index(" def do_POST(self):"))
+        self.assertLess(public_idx,auth_idx)
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 405)

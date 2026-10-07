@@ -48,8 +48,11 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(statuses["evidence_claim"], "gated")
         self.assertEqual(statuses["medical_info"], "gated")
         self.assertEqual(statuses["institutional_evidence_network"], "ci_proven")
+        self.assertEqual(statuses["certified_syndication_network"], "ci_proven")
         self.assertEqual(proof["counts"]["institutional_organizations"], 0)
         self.assertEqual(proof["counts"]["evidence_exchange_packages"], 0)
+        self.assertEqual(proof["counts"]["qualified_syndication_partners"], 0)
+        self.assertEqual(proof["counts"]["external_contributions_admitted"], 0)
 
     def test_capital_milestones_are_dependency_gated(self):
         proof = self.investor.snapshot(self.c)
@@ -130,6 +133,17 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertIn("no external institution", text)
         self.assertNotIn("signed customer", text)
         self.assertNotIn("arr", text)
+
+    def test_certified_syndication_is_visible_without_partner_adoption_claim(self):
+        proof = self.investor.snapshot(self.c)
+        capabilities = {x["id"]: x for x in proof["capabilities"]}
+        network = capabilities["certified_syndication_network"]
+        self.assertEqual(network["status"], "ci_proven")
+        text = network["proof"].lower()
+        self.assertIn("no qualified production partner", text)
+        self.assertIn("no", text)
+        self.assertEqual(proof["counts"]["qualified_syndication_partners"], 0)
+        self.assertEqual(proof["counts"]["external_contributions_admitted"], 0)
 
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)

@@ -43,6 +43,8 @@ def snapshot(c):
         "institutional_organizations": _count(c, "institutional_organizations"),
         "evidence_exchange_packages": _count(c, "evidence_exchange_packages"),
         "evidence_exchange_deliveries": _count(c, "evidence_exchange_deliveries"),
+        "qualified_syndication_partners": _count(c, "syndication_partner_qualifications", "WHERE status='qualified' AND demo_only=0"),
+        "external_contributions_admitted": _count(c, "external_contributions", "WHERE status='admitted' AND demo_only=0"),
     }
 
     capabilities = [
@@ -110,6 +112,16 @@ def snapshot(c):
                 "Versioned interchange schema, signed-checkpoint binding, publisher/consumer roles, "
                 "immutable package delivery and withdrawal propagation are repository-contract proven. "
                 "No external institution or commercial adoption is claimed."
+            ),
+        },
+        {
+            "id": "certified_syndication_network",
+            "title": "Certified Syndication Partner Network",
+            "status": "ci_proven",
+            "proof": (
+                "Scope-specific conformance qualification, subscriptions, withdrawal/update SLA obligations, "
+                "external contribution review separation and signed admission receipts are repository-contract proven. "
+                "No qualified production partner or external contribution adoption is claimed."
             ),
         },
     ]
@@ -197,6 +209,14 @@ def snapshot(c):
             "detail": (
                 "Claim/source provenance, review state, Evidence Seal, signed checkpoints, public-key verification "
                 "and institutional package withdrawal propagation now form a machine-checkable distribution rail."
+            ),
+        },
+        {
+            "title": "Qualified institutional participation",
+            "status": "ci_proven",
+            "detail": (
+                "Partner conformance is scope-specific and revocable; subscriptions carry measurable update/withdrawal SLAs; "
+                "external contributors cannot self-review or mutate canonical claims and receive signed admission receipts only after review."
             ),
         },
     ]

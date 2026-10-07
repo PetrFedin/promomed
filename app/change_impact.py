@@ -1,6 +1,6 @@
 import time
 
-from app import evidence_graph
+from app import evidence_graph, syndication_network
 
 
 SEVERITY_ORDER={"low":1,"medium":2,"high":3,"critical":4}
@@ -114,6 +114,7 @@ def _withdraw_downstream_exchange(c,artifact_kind,artifact_ref,reason,now):
                WHERE package_id=? AND status IN ('delivered','acknowledged')""",
             (now,str(reason or "")[:500],row["id"]),
         )
+        syndication_network.create_delivery_obligations(c,row["id"],"withdrawal",now=now)
     return len(package_rows)
 
 

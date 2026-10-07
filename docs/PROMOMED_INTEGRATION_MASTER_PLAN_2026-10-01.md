@@ -2393,3 +2393,51 @@ Truth boundary:
 - no external institutional customer, contract, accreditation or revenue is claimed by this checkpoint.
 
 Commercial consequence: reviewed Promomed knowledge can now be packaged as a verifiable institutional distribution product instead of remaining usable only inside the СОСТОЯНИЕ application.
+
+
+### Certified Syndication Partner Network + External Contribution Admission v1 — repository checkpoint 2026-10-07
+
+Base authority: exact merged `main` after PR #39 — `be47c32be4d8972cff5e64e959a6a1df844fc2c8`.
+
+This checkpoint implements the next approved institutional-adoption contour:
+
+`partner qualification -> integration conformance -> package subscriptions -> correction/withdrawal SLA -> external contribution submission -> editorial review -> scientific review -> governance admission -> signed admission receipt -> requalification / suspension / revocation`.
+
+Implemented in repository scope:
+
+- repeatable partner qualification lifecycle: `pending / qualified / requalification_due / suspended / revoked / expired`;
+- required process conformance scopes: Evidence API Integration, Withdrawal Propagation, Disclosure Workflow;
+- optional certification scopes: Credential Verification and Education Completion Sync;
+- passed conformance requires evidence reference; required scopes cannot be waived;
+- public certification registry publishes only process/technical status and expiry, never medical-accreditation language;
+- verified institutional account membership binds authenticated account -> organisation -> contributor/operator/administrator role;
+- certified evidence subscriptions with exact update and withdrawal SLA seconds;
+- certified subscription matching fails closed when qualification becomes due, expired, suspended or revoked;
+- package supersession creates update obligations; package/source withdrawal creates withdrawal obligations;
+- late acknowledgement is preserved as `breached`, not silently converted to success;
+- external contribution types: source recommendation, review input, disclosure record, programme material, correction notice and institutional metadata;
+- contribution payloads are deterministic SHA-256-bound and duplicate submissions are idempotent;
+- `request_changes` creates a new immutable contribution revision with explicit supersession lineage instead of overwriting the prior submission;
+- external submitter must have active contributor membership and the institution must remain qualified;
+- self-review is forbidden;
+- editorial and scientific reviewers must be distinct;
+- scientific review reuses the existing Reviewer Authority and its credential/scope/expiry controls;
+- potential/material conflict cannot produce an accepted review;
+- governance admission requires both accepted reviews and separation of duties from submitter/reviewers;
+- admission issues a portable Ed25519 signed receipt containing payload/review digests;
+- signed receipt explicitly states `canonicalMutation=false`, `nextAuthority=domain_editorial_evidence_workflow` and `medicalEfficacyCertified=false`;
+- admission does not directly mutate canonical evidence claims or sources;
+- public/offline receipt verification requires no Promomed database or private key;
+- suspension pauses active subscriptions; revocation revokes subscriptions and blocks new certified operations;
+- SQLite/PostgreSQL migration `021_certified_syndication_network`;
+- OpenAPI 3.1 contract: `docs/openapi/certified-syndication-v1.openapi.json`;
+- detailed authority contract: `docs/CERTIFIED_SYNDICATION_NETWORK_V1.md`.
+
+Truth boundary:
+
+- partner certification proves technical/process integration only;
+- certification is not medical efficacy/safety certification, professional accreditation, regulator approval or commercial endorsement;
+- external contribution admission is intake-governance acceptance, not publication or scientific-truth approval;
+- no production partner, institutional adoption, paid subscription, contract, ARR/MRR or revenue is claimed by this checkpoint.
+
+Commercial consequence: Promomed can now model a governed network where institutions are technically qualified, receive versioned evidence under measurable correction/withdrawal obligations, and contribute material without obtaining the authority to self-publish into Promomed's canonical scientific layer.

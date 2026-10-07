@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:external-contribution-admission-receipt:v1",
+  "title": "Promomed External Contribution Admission Receipt v1",
+  "type": "object",
+  "required": [
+    "receiptSha256",
+    "envelope",
+    "admittedAt",
+    "admittedByRole"
+  ],
+  "properties": {
+    "receiptSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "envelope": {
+      "type": "object",
+      "required": [
+        "payload",
+        "signature",
+        "statementSha256"
+      ],
+      "properties": {
+        "payload": {
+          "type": "object",
+          "required": [
+            "statementVersion",
+            "statementType",
+            "issuerId",
+            "keyId",
+            "alg",
+            "issuedAt",
+            "body",
+            "medicalEfficacyCertified"
+          ],
+          "properties": {
+            "statementVersion": {
+              "const": "promomed-portable-statement-v1"
+            },
+            "statementType": {
+              "const": "promomed-external-contribution-admission-v1"
+            },
+            "issuerId": {
+              "type": "string"
+            },
+            "keyId": {
+              "type": "string"
+            },
+            "alg": {
+              "const": "Ed25519"
+            },
+            "issuedAt": {
+              "type": "integer"
+            },
+            "body": {
+              "type": "object",
+              "required": [
+                "contributionId",
+                "organizationId",
+                "contributionType",
+                "payloadSha256",
+                "editorialReviewDigest",
+                "scientificReviewDigest",
+                "admissionDecision",
+                "canonicalMutation",
+                "nextAuthority",
+                "medicalEfficacyCertified"
+              ]
+            },
+            "medicalEfficacyCertified": {
+              "const": false
+            }
+          }
+        },
+        "signature": {
+          "type": "string"
+        },
+        "statementSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "admittedAt": {
+      "type": "integer"
+    },
+    "admittedByRole": {
+      "const": "governance"
+    }
+  },
+  "additionalProperties": false
+}

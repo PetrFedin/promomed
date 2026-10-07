@@ -287,6 +287,72 @@ def checkpoint_document(c, checkpoint_sha256):
     }
 
 
+def sign_portable_statement(c, statement_type, body, actor="issuer_statement"):
+    statement_type=str(statement_type or "").strip()
+    if not statement_type:
+        raise ValueError("statement_type_required")
+    if not isinstance(body,dict):
+        raise ValueError("statement_body_invalid")
+    key=ensure_current_key_registered(c,actor=actor)
+    payload={
+        "statementVersion":"promomed-portable-statement-v1",
+        "statementType":statement_type,
+        "issuerId":key["issuer_id"],
+        "keyId":key["key_id"],
+        "alg":"Ed25519",
+        "issuedAt":int(time.time()),
+        "body":body,
+        "medicalEfficacyCertified":False,
+    }
+    signature=_private_key().sign(_canonical(payload))
+    envelope={"payload":payload,"signature":_b64u(signature)}
+    envelope["statementSha256"]=_sha(envelope)
+    return envelope
+
+
+def verify_portable_statement(envelope, issuer_doc):
+    try:
+        from cryptography.exceptions import InvalidSignature
+        payload=envelope["payload"]
+        if payload.get("statementVersion")!="promomed-portable-statement-v1":
+            return {"status":"INVALID_STATEMENT_VERSION","signature_valid":False}
+        issuer_id=str(payload.get("issuerId") or "")
+        key_id=str(payload.get("keyId") or "")
+        if str((issuer_doc or {}).get("issuerId") or "")!=issuer_id:
+            return {"status":"UNKNOWN_ISSUER_KEY","signature_valid":False}
+        key=next((k for k in ((issuer_doc or {}).get("keys") or []) if k.get("keyId")==key_id),None)
+        if not key:
+            return {"status":"UNKNOWN_ISSUER_KEY","signature_valid":False}
+        if payload.get("alg")!="Ed25519" or key.get("alg")!="Ed25519":
+            return {"status":"ALGORITHM_MISMATCH","signature_valid":False}
+        _public_key_from_b64(key.get("publicKeyB64")).verify(
+            _ub64u(envelope["signature"]),
+            _canonical(payload),
+        )
+        if _sha({"payload":payload,"signature":envelope["signature"]})!=str(envelope.get("statementSha256") or ""):
+            return {"status":"INVALID_STATEMENT_HASH","signature_valid":False}
+        issued_at=int(payload.get("issuedAt"))
+        valid_from=int(key.get("validFrom") or 0)
+        valid_until=key.get("validUntil")
+        if issued_at<valid_from or (valid_until is not None and issued_at>int(valid_until)):
+            return {"status":"KEY_NOT_VALID_AT_ISSUANCE","signature_valid":True}
+        if key.get("status")=="revoked":
+            return {"status":"ISSUER_KEY_REVOKED","signature_valid":True}
+        return {
+            "status":"VALID_PORTABLE_STATEMENT",
+            "signature_valid":True,
+            "statementType":payload.get("statementType"),
+            "statementSha256":envelope.get("statementSha256"),
+            "issuerId":issuer_id,
+            "keyId":key_id,
+            "medicalEfficacyCertified":False,
+        }
+    except InvalidSignature:
+        return {"status":"INVALID_SIGNATURE","signature_valid":False}
+    except (KeyError,TypeError,ValueError,ModuleNotFoundError):
+        return {"status":"INVALID_STATEMENT","signature_valid":False}
+
+
 def issue(c, artifact_kind, artifact_ref):
     seal = evidence_seal.build(c, artifact_kind=artifact_kind, artifact_ref=artifact_ref)
     if not seal.get("validForProcess"):

@@ -2,7 +2,7 @@ import hashlib
 import json
 import time
 
-from app import change_impact, evidence_checkpoint, evidence_graph, evidence_seal
+from app import change_impact, evidence_checkpoint, evidence_graph, evidence_seal, syndication_network
 
 
 PROFILE_VERSION="promomed-evidence-governance-interchange-v1"
@@ -339,6 +339,7 @@ def create_package(c,*,artifact_kind,artifact_ref,actor,checkpoint_sha256=None):
                WHERE package_id=? AND status IN ('delivered','acknowledged')""",
             (now,f"Superseded by {package_id}",prior["id"]),
         )
+        syndication_network.create_delivery_obligations(c,prior["id"],"update",now=now)
     c.execute(
         """INSERT INTO evidence_exchange_packages(
              id,artifact_kind,artifact_ref,profile_version,package_sha256,
@@ -598,6 +599,7 @@ def withdraw_artifact_packages(c,artifact_kind,artifact_ref,reason,actor):
                WHERE package_id=? AND status IN ('delivered','acknowledged')""",
             (now,str(reason or "Canonical authority withdrawal")[:500],row["id"]),
         )
+        syndication_network.create_delivery_obligations(c,row["id"],"withdrawal",now=now)
     return {
         "artifact":{"kind":artifact_kind,"ref":artifact_ref},
         "withdrawnPackages":[r["id"] for r in package_rows],
