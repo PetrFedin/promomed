@@ -165,7 +165,7 @@ def snapshot(c):
             "evidence": (
                 "Machine-readable evidence packages can be bound to signed checkpoints, delivered to scoped "
                 "institutional publisher/consumer roles and withdrawn when source authority changes. "
-                "Commercial contracts and external adoption are not claimed."
+                "No external institution, commercial contract or external adoption is claimed."
             ),
         },
     ]
