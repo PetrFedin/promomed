@@ -305,14 +305,14 @@ def create_package(c,*,artifact_kind,artifact_ref,actor,checkpoint_sha256=None):
         }
 
     prior=c.execute(
-        """SELECT id FROM evidence_exchange_packages
-           WHERE artifact_kind=? AND artifact_ref=? AND state='active'
+        """SELECT id,state FROM evidence_exchange_packages
+           WHERE artifact_kind=? AND artifact_ref=?
            ORDER BY created_at DESC,id DESC LIMIT 1""",
         (artifact_kind,artifact_ref),
     ).fetchone()
     now=int(time.time())
     package_id="pkg:"+package_sha[:24]
-    if prior:
+    if prior and prior["state"]=="active":
         c.execute(
             "UPDATE evidence_exchange_packages SET state='superseded' WHERE id=?",
             (prior["id"],),
