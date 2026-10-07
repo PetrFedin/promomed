@@ -360,9 +360,9 @@ class H(SimpleHTTPRequestHandler):
   public_outcome=handle_evidence_checkpoint_public(p,data)
   if public_outcome is not None:
    return self.out(public_outcome[0],public_outcome[1])
-  institutional_public=handle_institutional_public(p,data)
+  institutional_public=handle_institutional_public(p,data); syndication_public=handle_syndication_public(p,data)
   if institutional_public is not None: return self.out(institutional_public[0],institutional_public[1])
-  syndication_public=handle_syndication_public(p,data)
+ 
   if syndication_public is not None: return self.out(syndication_public[0],syndication_public[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
