@@ -12,12 +12,8 @@ from app.participant_commands import handle_command as handle_participant_comman
 from app.programme_commands import handle_command as handle_programme_command
 from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
-from app.editorial_commands import handle_command as handle_editorial_command
-from app.evidence_checkpoint_commands import handle_command as handle_evidence_checkpoint_command
-from app.evidence_trust_reads import serve_get as serve_evidence_trust_get, serve_public_post as serve_evidence_trust_post
-from app.demo_commands import handle_command as handle_demo_command
-from app.investment_commands import handle_command as handle_investment_command
-from app.deal_commands import handle_command as handle_deal_command
+from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_command as handle_evidence_checkpoint_command; from app.evidence_trust_reads import serve_get as serve_evidence_trust_get, serve_public_post as serve_evidence_trust_post
+from app.demo_commands import handle_command as handle_demo_command; from app.investment_commands import handle_command as handle_investment_command; from app.deal_commands import handle_command as handle_deal_command
 from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection; from app.discovery_reads import serve as serve_discovery; from app.media_reads import serve as serve_media
 ROOT=os.path.join(os.path.dirname(__file__),"public"); LOCK=threading.RLock()
 def conn(): return db.connect()
@@ -210,7 +206,7 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
-  d=serve_evidence_trust_get(p,self.path)
+  d=serve_evidence_trust_get(p,self.path); 
   if d is not None:return self.out(d[0],d[1])
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
@@ -364,7 +360,7 @@ class H(SimpleHTTPRequestHandler):
   p=urlparse(self.path).path
   try: data=body(self)
   except Exception: return self.out({"error":"bad_json"},400)
-  d=serve_evidence_trust_post(p,data)
+  d=serve_evidence_trust_post(p,data); 
   if d is not None:return self.out(d[0],d[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
@@ -387,8 +383,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_programme_command(c,p,role,email,data)
     if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_evidence_checkpoint_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_editorial_command(c,p,role,email,data); outcome=outcome if outcome is not None else handle_evidence_checkpoint_command(c,p,role,email,data)
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
     if outcome is None: outcome=handle_investment_command(c,p,role,email,data)
     if outcome is None: outcome=handle_deal_command(c,p,role,email,data)
