@@ -97,6 +97,26 @@ def _related_targets(c,claim):
     return sorted(targets)
 
 
+def _withdraw_downstream_exchange(c,artifact_kind,artifact_ref,reason,now):
+    try:
+        package_rows=list(c.execute(
+            """SELECT id FROM evidence_exchange_packages
+               WHERE artifact_kind=? AND artifact_ref=? AND state='active'""",
+            (artifact_kind,artifact_ref),
+        ))
+    except Exception:
+        return 0
+    for row in package_rows:
+        c.execute("UPDATE evidence_exchange_packages SET state='withdrawn' WHERE id=?",(row["id"],))
+        c.execute(
+            """UPDATE evidence_exchange_deliveries
+               SET status='withdrawn',withdrawn_at=?,withdrawal_reason=?
+               WHERE package_id=? AND status IN ('delivered','acknowledged')""",
+            (now,str(reason or "")[:500],row["id"]),
+        )
+    return len(package_rows)
+
+
 def analyze_source_change(c,source_id,event_type,summary,actor):
     source=c.execute("SELECT id,status FROM evidence_sources WHERE id=?",(source_id,)).fetchone()
     if not source:
@@ -150,11 +170,13 @@ def analyze_source_change(c,source_id,event_type,summary,actor):
 
     for kind,ref,sev,claim_id in hold_artifacts:
         hid=f"hold:{event_id}:{kind}:{ref}"
+        reason=f"{event_type} affects claim {claim_id}"
         c.execute(
             "INSERT OR IGNORE INTO publication_holds(id,event_id,artifact_kind,artifact_ref,reason,status,placed_at,placed_by,demo_only) "
             "VALUES(?,?,?,?,?,'active',?,?,1)",
-            (hid,event_id,kind,ref,f"{event_type} affects claim {claim_id}",now,"Change Impact Engine"),
+            (hid,event_id,kind,ref,reason,now,"Change Impact Engine"),
         )
+        _withdraw_downstream_exchange(c,kind,ref,reason,now)
 
     case_id=f"review:{event_id}"
     deadline=now+SLA_SECONDS[max_severity]
