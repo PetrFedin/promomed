@@ -475,3 +475,12 @@ Implemented in repository scope:
 - responsive QA contract updated for phone/tablet/desktop navigation placement.
 
 Truth boundary: this is the MVP product-design system, not final Promomed brand approval or licensed production artwork. See docs/UI_SYSTEM_V2.md.
+
+
+### UI v2 polish continuation
+
+- collapsible desktop rail preference;
+- automatic compact tablet rail;
+- explicit landscape-phone exception;
+- coherent inline SVG navigation/action iconography;
+- CSS-native editorial art direction without external media dependency.
