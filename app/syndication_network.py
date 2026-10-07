@@ -858,12 +858,17 @@ def admit_contribution(c,contribution_id,actor):
            SET status='admitted',admitted_at=?,admitted_by=? WHERE id=?""",
         (now,actor,contribution_id),
     )
+    from app import delivery_protocol
+    outbound=delivery_protocol.enqueue_contribution_admission(
+        c,contribution_id,actor=actor
+    )
     return {
         "contributionId":contribution_id,
         "status":"admitted",
         "receiptId":receipt_id,
         "receipt":envelope,
         "canonicalMutation":False,
+        "outboundEvent":outbound,
     }
 
 
