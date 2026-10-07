@@ -2496,7 +2496,10 @@ Implemented repository scope:
 - external contribution admission -> signed contribution-admission event;
 - accepted acknowledgement automatically becomes SLA evidence for bound update/withdrawal obligation;
 - late acknowledgement remains evidence of execution but does not erase SLA breach;
-- append-only behaviour observations for delivery success/retry/terminal failure/ack/SLA/dead-event;
+- append-only behaviour observations for delivery success/retry/terminal failure/ack/missing-ack/SLA/dead-event;
+- delivered events have an explicit 24-hour acknowledgement expectation; three missing acknowledgements within the 30-day window can trigger requalification;
+- queued business events may route through a newly active endpoint without changing event identity; endpoint + secret version are fixed per attempt;
+- runtime GET projection is side-effect free; reconciliation/worker owns state transitions;
 - continuous-requalification rule may move `qualified -> requalification_due` based on observed delivery failures/SLA evidence;
 - system may recommend suspension review but cannot automatically suspend or revoke partner authority;
 - stateless durable worker: `ops/run_partner_delivery_worker.py`;
