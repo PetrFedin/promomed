@@ -524,3 +524,149 @@ def verify_bundle_portable(bundle,current_status_statement=None,current_issuer_d
             "bundleHashValid":False,
             "currentPromomedStateVerified":False,
         }
+
+
+def record_cross_organization_verification(
+    c,bundle_id,verifier_organization_id,actor,
+    current_status_statement=None,current_issuer_document=None,now=None,
+):
+    now=int(now or time.time())
+    bundle_row=bundle_document(c,bundle_id)
+    verifier=_organization(c,verifier_organization_id)
+    account=c.execute(
+        "SELECT role,status FROM accounts WHERE email=?",
+        (str(actor or "").lower(),),
+    ).fetchone()
+    governance=bool(
+        account and account["role"]=="governance" and account["status"]=="active"
+    )
+    member=syndication_network._active_member(
+        c,verifier_organization_id,actor,("operator","administrator"),now=now
+    )
+    if not governance and not member:
+        raise ValueError("trust_verifier_membership_required")
+
+    result=verify_bundle_portable(
+        bundle_row["bundle"],
+        current_status_statement=current_status_statement,
+        current_issuer_document=current_issuer_document,
+        now=now,
+    )
+    mapping={
+        "VALID_TRUST_BUNDLE":"valid_bundle",
+        "EXPIRED_SNAPSHOT":"expired_snapshot",
+        "REVOKED_SNAPSHOT":"revoked_snapshot",
+        "UNKNOWN_ISSUER_KEY":"unknown_issuer",
+        "REVOKED_ISSUER_KEY":"revoked_issuer_key",
+        "INVALID_SIGNATURE":"invalid_signature",
+    }
+    verification_status=mapping.get(result.get("status"),"invalid_bundle")
+    digest_core={
+        "bundleId":bundle_id,
+        "bundleSha256":bundle_row["bundleSha256"],
+        "snapshotSha256":bundle_row["bundle"]["snapshot"]["snapshotSha256"],
+        "verifierOrganizationId":verifier_organization_id,
+        "verificationStatus":verification_status,
+    }
+    digest=_sha(digest_core)
+    existing=c.execute(
+        """SELECT id,verification_status,verified_at
+           FROM institutional_trust_verifications
+           WHERE verification_digest=?""",
+        (digest,),
+    ).fetchone()
+    if existing:
+        return {
+            "id":existing["id"],
+            "verificationStatus":existing["verification_status"],
+            "verifiedAt":existing["verified_at"],
+            "idempotentReplay":True,
+        }
+
+    verification_id="trust-verification:"+digest[:24]
+    c.execute(
+        """INSERT INTO institutional_trust_verifications(
+             id,bundle_id,verifier_organization_id,verification_status,
+             snapshot_sha256,bundle_sha256,verification_digest,details_json,
+             verified_at,verified_by,demo_only
+           ) VALUES(?,?,?,?,?,?,?,?,?,?,?)""",
+        (
+            verification_id,bundle_id,verifier_organization_id,verification_status,
+            bundle_row["bundle"]["snapshot"]["snapshotSha256"],
+            bundle_row["bundleSha256"],digest,_canonical(result),now,actor,
+            int(bool(bundle_row["demoOnly"] or verifier["demo_only"])),
+        ),
+    )
+    return {
+        "id":verification_id,
+        "verificationStatus":verification_status,
+        "verifiedAt":now,
+        "result":result,
+        "idempotentReplay":False,
+        "authorityBoundary":{
+            "changesPartnerQualification":False,
+            "changesCanonicalEvidence":False,
+            "changesIssuerState":False,
+            "externalEndorsementInferred":False,
+        },
+    }
+
+
+def trust_snapshot(c,organization_id=None):
+    where=""
+    params=()
+    if organization_id:
+        _organization(c,organization_id)
+        where="WHERE s.organization_id=?"
+        params=(organization_id,)
+    snapshots=[
+        {
+            "id":r["id"],
+            "organizationId":r["organization_id"],
+            "snapshotSha256":r["snapshot_sha256"],
+            "issuedAt":r["issued_at"],
+            "validUntil":r["valid_until"],
+            "status":r["status"],
+            "supersedesSnapshotId":r["supersedes_snapshot_id"],
+            "demoOnly":bool(r["demo_only"]),
+        }
+        for r in c.execute(
+            f"""SELECT s.id,s.organization_id,s.snapshot_sha256,s.issued_at,
+                       s.valid_until,s.supersedes_snapshot_id,s.demo_only,st.status
+                FROM institutional_status_snapshots s
+                JOIN institutional_status_snapshot_state st ON st.snapshot_id=s.id
+                {where}
+                ORDER BY s.issued_at DESC,s.id DESC""",
+            params,
+        )
+    ]
+    verification_where=""
+    verification_params=()
+    if organization_id:
+        verification_where="""WHERE bundle_id IN (
+            SELECT b.id FROM institutional_trust_bundles b
+            JOIN institutional_status_snapshots s ON s.id=b.snapshot_id
+            WHERE s.organization_id=?
+        )"""
+        verification_params=(organization_id,)
+    verifications=[
+        dict(r) for r in c.execute(
+            f"""SELECT id,bundle_id,verifier_organization_id,verification_status,
+                       snapshot_sha256,bundle_sha256,verified_at,demo_only
+                FROM institutional_trust_verifications
+                {verification_where}
+                ORDER BY verified_at DESC,id DESC LIMIT 100""",
+            verification_params,
+        )
+    ]
+    return {
+        "version":BUNDLE_VERSION,
+        "snapshots":snapshots,
+        "verifications":verifications,
+        "truthBoundary":{
+            "cryptographicProcessVerificationOnly":True,
+            "medicalEfficacyCertified":False,
+            "professionalAccreditation":False,
+            "externalAdoptionInferred":False,
+        },
+    }
