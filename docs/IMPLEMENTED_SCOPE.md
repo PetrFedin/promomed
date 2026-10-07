@@ -517,3 +517,17 @@ Implemented in repository scope:
 - browser QA asserts that successful participant loading states resolve.
 
 Authority boundary: state presentation does not change evidence, reviewer, consent, booking, account or persistence authority.
+
+
+## Visual Evidence v1 — participant UI regression evidence
+
+Implemented in repository scope:
+
+- complete screenshot inventory for Today / Media / Events / Community / My across all browser QA viewports;
+- dedicated desktop collapsed-rail screenshot;
+- machine-readable visual-evidence-manifest.json;
+- QA fails if expected evidence files are missing;
+- manifest records viewport and responsive shell mode;
+- existing overflow, navigation, touch-target and readability contracts remain mandatory.
+
+Boundary: no pixel-perfect visual diff is claimed yet.

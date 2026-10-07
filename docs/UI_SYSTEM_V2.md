@@ -179,3 +179,19 @@ Participant-facing asynchronous surfaces use calm, consistent states:
 - error states preserve context and do not navigate the participant away from the current surface;
 - participant action failures use non-blocking toasts instead of browser alerts; organizer/admin alert behaviour is outside this checkpoint;
 - operator/investor loading states are intentionally outside this participant-state checkpoint.
+
+## 18. Visual Evidence v1
+
+Every participant-facing UI change must leave a comparable evidence package.
+
+Required browser evidence:
+
+- Today / Media / Events / Community / My screenshots for every supported QA viewport;
+- dedicated collapsed-navigation screenshot on desktop;
+- machine-readable visual-evidence-manifest.json;
+- manifest includes viewport, shell mode and expected screenshot filenames;
+- browser QA fails when an expected screenshot is missing;
+- home evidence must be captured without an overlay obscuring the surface;
+- geometry contracts remain authoritative for navigation placement, touch targets and page overflow.
+
+This is not a pixel-perfect golden-image gate yet. The first objective is complete, comparable and inspectable evidence without creating brittle diffs from harmless rendering variance.

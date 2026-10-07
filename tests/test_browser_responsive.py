@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from pathlib import Path
@@ -17,6 +18,37 @@ VIEWPORTS = [
     ("desktop", 1440, 900, False, False),
     ("desktop-wide", 1728, 1117, False, False),
 ]
+
+
+VISUAL_SURFACES = ["home", "media", "events", "community", "account"]
+
+
+def visual_shell(width: int, height: int) -> str:
+    if height <= 520:
+        return "phone-landscape"
+    if width < 768:
+        return "phone"
+    if width < 1200:
+        return "tablet-rail"
+    return "desktop-rail"
+
+
+def expected_visual_evidence():
+    rows=[]
+    for name,width,height,is_mobile,has_touch in VIEWPORTS:
+        prefix=clean_name(name)
+        files=[f"{prefix}-{surface}.png" for surface in VISUAL_SURFACES]
+        if width >= 1200:
+            files.append(f"{prefix}-home-collapsed.png")
+        rows.append({
+            "device":name,
+            "viewport":{"width":width,"height":height},
+            "is_mobile":is_mobile,
+            "has_touch":has_touch,
+            "shell":visual_shell(width,height),
+            "screenshots":files,
+        })
+    return rows
 
 
 def clean_name(value: str) -> str:
@@ -449,6 +481,7 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
 
 
 def main():
+    evidence=expected_visual_evidence()
     with sync_playwright() as p:
         browser = p.chromium.launch()
         try:
@@ -456,6 +489,28 @@ def main():
                 run_device(browser, *args)
         finally:
             browser.close()
+    missing=[]
+    for device in evidence:
+        for file_name in device["screenshots"]:
+            if not (OUT / file_name).exists():
+                missing.append(file_name)
+    assert not missing, f"visual evidence incomplete: {missing}"
+    manifest={
+        "schema":"promomed.visual-evidence.v1",
+        "surfaces":VISUAL_SURFACES,
+        "devices":evidence,
+        "rules":{
+            "unobscured_home":True,
+            "desktop_collapsed_rail":True,
+            "no_horizontal_overflow":True,
+            "touch_target_min_px":44,
+            "participant_text_min_px":11,
+        },
+    }
+    (OUT / "visual-evidence-manifest.json").write_text(
+        json.dumps(manifest,ensure_ascii=False,indent=2),
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":
