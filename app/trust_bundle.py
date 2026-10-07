@@ -390,3 +390,137 @@ def bundle_document(c,bundle_id):
         "createdAt":row["created_at"],
         "demoOnly":bool(row["demo_only"]),
     }
+
+
+def _verify_status_statement(statement,issuer_doc,organization_id,snapshot_sha,now):
+    verification=evidence_checkpoint.verify_portable_statement(statement,issuer_doc)
+    if verification.get("status")!="VALID_PORTABLE_STATEMENT":
+        return {"status":verification.get("status"),"valid":False}
+    if verification.get("statementType")!=STATUS_STATEMENT_TYPE:
+        return {"status":"WRONG_STATUS_STATEMENT_TYPE","valid":False}
+    body=(statement.get("payload") or {}).get("body") or {}
+    if body.get("organizationId")!=organization_id:
+        return {"status":"STATUS_ORGANIZATION_MISMATCH","valid":False}
+    try:
+        if int(body.get("validUntil") or 0)<int(now):
+            return {"status":"STATUS_STATEMENT_EXPIRED","valid":False}
+    except (TypeError,ValueError):
+        return {"status":"INVALID_STATUS_STATEMENT","valid":False}
+    record=next(
+        (x for x in (body.get("snapshots") or []) if x.get("snapshotSha256")==snapshot_sha),
+        None,
+    )
+    if not record:
+        return {"status":"SNAPSHOT_STATUS_UNKNOWN","valid":False}
+    return {
+        "status":"VALID_STATUS_STATEMENT",
+        "valid":True,
+        "snapshotStatus":record.get("status"),
+        "revokedAt":record.get("revokedAt"),
+        "revocationReason":record.get("revocationReason"),
+        "statusGeneratedAt":body.get("generatedAt"),
+        "statusValidUntil":body.get("validUntil"),
+    }
+
+
+def verify_bundle_portable(bundle,current_status_statement=None,current_issuer_document=None,now=None):
+    now=int(now or time.time())
+    try:
+        if bundle.get("schemaId")!=BUNDLE_SCHEMA_ID or bundle.get("bundleVersion")!=BUNDLE_VERSION:
+            return {"status":"INVALID_BUNDLE_SCHEMA","bundleHashValid":False}
+        expected=_sha({k:v for k,v in bundle.items() if k!="bundleSha256"})
+        if expected!=str(bundle.get("bundleSha256") or ""):
+            return {"status":"INVALID_BUNDLE_HASH","bundleHashValid":False}
+
+        snapshot=bundle["snapshot"]
+        envelope=snapshot["envelope"]
+        snapshot_sha=str(snapshot.get("snapshotSha256") or "")
+        if snapshot_sha!=str(envelope.get("statementSha256") or ""):
+            return {"status":"SNAPSHOT_HASH_MISMATCH","bundleHashValid":True}
+
+        issuer_doc=current_issuer_document or bundle.get("issuerDocument") or {}
+        verification=evidence_checkpoint.verify_portable_statement(envelope,issuer_doc)
+        if verification.get("status")!="VALID_PORTABLE_STATEMENT":
+            status=verification.get("status") or "INVALID_SIGNATURE"
+            if status=="ISSUER_KEY_REVOKED":
+                status="REVOKED_ISSUER_KEY"
+            return {
+                "status":status,
+                "bundleHashValid":True,
+                "snapshotSignatureValid":bool(verification.get("signature_valid")),
+                "currentPromomedStateVerified":False,
+            }
+        if verification.get("statementType")!=SNAPSHOT_STATEMENT_TYPE:
+            return {
+                "status":"WRONG_SNAPSHOT_STATEMENT_TYPE",
+                "bundleHashValid":True,
+                "snapshotSignatureValid":True,
+                "currentPromomedStateVerified":False,
+            }
+
+        body=(envelope.get("payload") or {}).get("body") or {}
+        if body.get("snapshotVersion")!=SNAPSHOT_VERSION:
+            return {
+                "status":"INVALID_SNAPSHOT_VERSION",
+                "bundleHashValid":True,
+                "snapshotSignatureValid":True,
+                "currentPromomedStateVerified":False,
+            }
+        organization_id=body.get("organizationId")
+        try:
+            if int(body.get("validUntil") or 0)<now:
+                return {
+                    "status":"EXPIRED_SNAPSHOT",
+                    "bundleHashValid":True,
+                    "snapshotSignatureValid":True,
+                    "snapshotExpired":True,
+                    "currentPromomedStateVerified":False,
+                }
+        except (TypeError,ValueError):
+            return {"status":"INVALID_SNAPSHOT","bundleHashValid":True}
+
+        status_statement=current_status_statement or bundle.get("snapshotStatusAtPackaging") or {}
+        status_result=_verify_status_statement(
+            status_statement,issuer_doc,organization_id,snapshot_sha,now
+        )
+        if not status_result.get("valid"):
+            return {
+                "status":status_result.get("status"),
+                "bundleHashValid":True,
+                "snapshotSignatureValid":True,
+                "currentPromomedStateVerified":False,
+            }
+        is_fresh_external=bool(current_status_statement and current_issuer_document)
+        if status_result.get("snapshotStatus")=="revoked":
+            return {
+                "status":"REVOKED_SNAPSHOT",
+                "bundleHashValid":True,
+                "snapshotSignatureValid":True,
+                "snapshotExpired":False,
+                "revocation":{
+                    "revokedAt":status_result.get("revokedAt"),
+                    "reason":status_result.get("revocationReason"),
+                },
+                "currentPromomedStateVerified":is_fresh_external,
+            }
+        return {
+            "status":"VALID_TRUST_BUNDLE",
+            "bundleHashValid":True,
+            "snapshotSignatureValid":True,
+            "snapshotExpired":False,
+            "snapshotStatus":status_result.get("snapshotStatus"),
+            "snapshotSha256":snapshot_sha,
+            "organizationId":organization_id,
+            "issuerId":verification.get("issuerId"),
+            "keyId":verification.get("keyId"),
+            "statusGeneratedAt":status_result.get("statusGeneratedAt"),
+            "statusValidUntil":status_result.get("statusValidUntil"),
+            "currentPromomedStateVerified":is_fresh_external,
+            "medicalEfficacyCertified":False,
+        }
+    except (KeyError,TypeError,ValueError):
+        return {
+            "status":"INVALID_TRUST_BUNDLE",
+            "bundleHashValid":False,
+            "currentPromomedStateVerified":False,
+        }
