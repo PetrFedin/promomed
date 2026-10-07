@@ -188,6 +188,17 @@ class CertifiedSyndicationNetworkTests(unittest.TestCase):
         self.assertTrue(qualified["truthBoundary"]["technicalProcessCertificationOnly"])
         self.assertFalse(qualified["truthBoundary"]["medicalEfficacyCertified"])
 
+    def test_public_certification_is_process_only_and_privacy_minimised(self):
+        self._qualify()
+        public=syndication_network.public_certification(self.c,"INST-SYND-001")
+        self.assertEqual(public["qualificationStatus"],"qualified")
+        self.assertTrue(public["truthBoundary"]["technicalProcessCertificationOnly"])
+        self.assertFalse(public["truthBoundary"]["medicalEfficacyCertified"])
+        text=str(public)
+        self.assertNotIn("checkedBy",text)
+        self.assertNotIn("evidenceRef",text)
+        self.assertNotIn("governance@demo.ru",text)
+
     def test_requalification_due_blocks_certified_subscription_matching(self):
         self._subscription()
         q=self.c.execute(
@@ -252,6 +263,8 @@ class CertifiedSyndicationNetworkTests(unittest.TestCase):
         self.assertFalse(admitted["canonicalMutation"])
 
         document=syndication_network.contribution_receipt(self.c,contribution["id"])
+        self.assertEqual(document["admittedByRole"],"governance")
+        self.assertNotIn("admittedBy",document)
         issuer=evidence_checkpoint.issuer_document(self.c)
         with patch.dict(os.environ,{},clear=False):
             os.environ.pop("PROMOMED_EVIDENCE_SIGNING_PRIVATE_KEY_B64",None)
