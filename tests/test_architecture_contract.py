@@ -193,6 +193,17 @@ class ArchitectureContractTests(unittest.TestCase):
         auth_idx=SERVER.index("a=auth(self)", SERVER.index(" def do_POST(self):"))
         self.assertLess(public_idx,auth_idx)
 
+    def test_partner_delivery_openapi_and_schemas_are_machine_readable(self):
+        import json
+        spec=json.loads((ROOT/"docs"/"openapi"/"partner-delivery-v2.openapi.json").read_text(encoding="utf-8"))
+        event=json.loads((ROOT/"docs"/"schemas"/"partner-delivery-event-v2.schema.json").read_text(encoding="utf-8"))
+        ack=json.loads((ROOT/"docs"/"schemas"/"partner-delivery-ack-v2.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(spec["openapi"],"3.1.0")
+        self.assertIn("/api/syndication/delivery/acknowledge",spec["paths"])
+        self.assertIn("/api/syndication/endpoint/verify",spec["paths"])
+        self.assertEqual(event["$id"],"urn:promomed:schema:partner-delivery-event:v2")
+        self.assertEqual(ack["$id"],"urn:promomed:schema:partner-delivery-ack:v2")
+
     def test_partner_delivery_ack_is_public_before_auth(self):
         self.assertIn("handle_syndication_public", SERVER)
         public_idx=SERVER.index("syndication_public=handle_syndication_public(p,data)")
