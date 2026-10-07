@@ -612,6 +612,67 @@ def submit_contribution(c,organization_id,contribution_type,title,payload,submit
     return {"id":contribution_id,"status":"submitted","payloadSha256":digest,"idempotentReplay":False}
 
 
+def revise_contribution(c,contribution_id,title,payload,submitted_by):
+    prior=c.execute(
+        "SELECT * FROM external_contributions WHERE id=?",(contribution_id,)
+    ).fetchone()
+    if not prior:
+        raise ValueError("contribution_not_found")
+    if prior["status"]!="changes_requested":
+        raise ValueError("contribution_revision_not_allowed")
+    if str(prior["submitted_by"] or "").lower()!=str(submitted_by or "").lower():
+        raise ValueError("contribution_submitter_mismatch")
+    _require_qualified(c,prior["organization_id"])
+    if not _active_role(c,prior["organization_id"],"contributor"):
+        raise ValueError("institutional_contributor_role_required")
+    if not _active_member(
+        c,prior["organization_id"],submitted_by,("contributor","administrator")
+    ):
+        raise ValueError("institutional_contributor_membership_required")
+    title=str(title or prior["title"]).strip()
+    if not isinstance(payload,dict) or not payload:
+        raise ValueError("contribution_payload_required")
+    body={
+        "contributionVersion":CONTRIBUTION_VERSION,
+        "organizationId":prior["organization_id"],
+        "contributionType":prior["contribution_type"],
+        "title":title[:240],
+        "payload":payload,
+        "supersedesContributionId":contribution_id,
+    }
+    digest=_sha(body)
+    existing=c.execute(
+        "SELECT id,status FROM external_contributions WHERE payload_sha256=?",
+        (digest,),
+    ).fetchone()
+    if existing:
+        return {
+            "id":existing["id"],
+            "status":existing["status"],
+            "supersedesContributionId":contribution_id,
+            "idempotentReplay":True,
+        }
+    now=int(time.time())
+    new_id="contrib:"+digest[:24]
+    c.execute(
+        """INSERT INTO external_contributions(
+             id,organization_id,contribution_type,title,payload_json,payload_sha256,
+             status,submitted_by,submitted_at,supersedes_contribution_id,demo_only
+           ) VALUES(?,?,?,?,?,?,'submitted',?,?,?,?,?)""",
+        (
+            new_id,prior["organization_id"],prior["contribution_type"],title[:240],
+            _canonical(body),digest,submitted_by,now,contribution_id,int(prior["demo_only"]),
+        ),
+    )
+    return {
+        "id":new_id,
+        "status":"submitted",
+        "payloadSha256":digest,
+        "supersedesContributionId":contribution_id,
+        "idempotentReplay":False,
+    }
+
+
 def review_contribution(c,contribution_id,review_role,reviewer,decision,rationale,conflict_state="none"):
     if review_role not in REVIEW_ROLES:
         raise ValueError("contribution_review_role_invalid")
@@ -848,6 +909,7 @@ def network_snapshot(c,organization_id=None):
                 "submittedAt":r["submitted_at"],
                 "admittedAt":r["admitted_at"],
                 "admittedBy":r["admitted_by"],
+                "supersedesContributionId":r["supersedes_contribution_id"],
                 "demoOnly":bool(r["demo_only"]),
             }
             for r in c.execute(
