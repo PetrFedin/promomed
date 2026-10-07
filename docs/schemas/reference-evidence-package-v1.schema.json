@@ -4,6 +4,7 @@
   "title": "Promomed Reference Evidence Package v1",
   "type": "object",
   "required": [
+    "schemaId",
     "packageVersion",
     "profile",
     "checkpoint",
@@ -43,6 +44,9 @@
         "withdrawalPropagationRequired",
         "allowedUse"
       ]
+    },
+    "schemaId": {
+      "const": "urn:promomed:schema:reference-evidence-package:v1"
     }
   },
   "additionalProperties": false
