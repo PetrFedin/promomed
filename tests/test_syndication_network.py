@@ -261,6 +261,38 @@ class CertifiedSyndicationNetworkTests(unittest.TestCase):
         self.assertFalse(verified["canonicalMutation"])
         self.assertFalse(verified["medicalEfficacyCertified"])
 
+    def test_request_changes_creates_new_immutable_contribution_revision(self):
+        self._qualify()
+        original=syndication_network.submit_contribution(
+            self.c,"INST-SYND-001","programme_material","Synthetic programme material",
+            {"version":1,"body":"draft"},"participant@demo.ru"
+        )
+        review=syndication_network.review_contribution(
+            self.c,original["id"],"editorial","editor@demo.ru",
+            "request_changes","Add source attribution.","none"
+        )
+        self.assertEqual(review["status"],"changes_requested")
+
+        revised=syndication_network.revise_contribution(
+            self.c,original["id"],"Synthetic programme material",
+            {"version":2,"body":"draft","source_ref":"urn:test:source"},
+            "participant@demo.ru"
+        )
+        self.assertNotEqual(revised["id"],original["id"])
+        self.assertEqual(revised["supersedesContributionId"],original["id"])
+        old=self.c.execute(
+            "SELECT status,payload_sha256 FROM external_contributions WHERE id=?",
+            (original["id"],),
+        ).fetchone()
+        new=self.c.execute(
+            "SELECT status,supersedes_contribution_id,payload_sha256 FROM external_contributions WHERE id=?",
+            (revised["id"],),
+        ).fetchone()
+        self.assertEqual(old["status"],"changes_requested")
+        self.assertEqual(new["status"],"submitted")
+        self.assertEqual(new["supersedes_contribution_id"],original["id"])
+        self.assertNotEqual(old["payload_sha256"],new["payload_sha256"])
+
     def test_conflict_and_separation_of_duties_block_admission(self):
         self._qualify()
         contribution=syndication_network.submit_contribution(
