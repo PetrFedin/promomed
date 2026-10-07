@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:syndication-certification:v1",
+  "title": "Promomed Certified Syndication Partner Status v1",
+  "type": "object",
+  "required": [
+    "registryVersion",
+    "organizationId",
+    "organizationName",
+    "qualificationStatus",
+    "certifications",
+    "truthBoundary"
+  ],
+  "properties": {
+    "registryVersion": {
+      "const": "promomed-certified-syndication-registry-v1"
+    },
+    "organizationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "organizationName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "qualificationStatus": {
+      "enum": [
+        "not_qualified",
+        "pending",
+        "qualified",
+        "requalification_due",
+        "suspended",
+        "revoked",
+        "expired"
+      ]
+    },
+    "qualificationVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "effectiveAt": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "validUntil": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "nextRequalificationAt": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "scope",
+          "status",
+          "label"
+        ],
+        "properties": {
+          "scope": {
+            "type": "string"
+          },
+          "status": {
+            "const": "passed"
+          },
+          "expiresAt": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "truthBoundary": {
+      "type": "object",
+      "required": [
+        "technicalProcessCertificationOnly",
+        "medicalEfficacyCertified",
+        "medicalSafetyCertified",
+        "professionalAccreditation",
+        "commercialEndorsement"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
