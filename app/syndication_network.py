@@ -421,6 +421,9 @@ def create_subscription(
 
 def matching_subscription(c,organization_id,artifact_kind,artifact_ref,topic=None,now=None):
     now=int(now or time.time())
+    qualification=refresh_qualification_state(c,organization_id,now=now)
+    if not qualification or qualification["status"]!="qualified":
+        return None
     rows=list(c.execute(
         """SELECT * FROM syndication_subscriptions
            WHERE organization_id=? AND status='active' AND effective_at<=?
