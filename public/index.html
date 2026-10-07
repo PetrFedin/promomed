@@ -523,6 +523,26 @@ body{background:var(--canvas);color:var(--text)}
  .overlay{align-items:flex-end}
  .sheet{width:min(640px,calc(100% - 20px));margin:0 auto 6px;border-radius:22px;max-height:calc(100dvh - 12px)}
 }
+/* account density: compact ticket and passport on larger working canvases */
+@media(min-width:768px) and (min-height:521px){
+ #me .ticket{display:grid;grid-template-columns:minmax(250px,.9fr) minmax(320px,1.35fr);align-items:stretch}
+ #me .tickethead{display:flex;flex-direction:column;justify-content:center;min-height:270px;padding:28px}
+ #me .tickethead h2{font-size:clamp(28px,3vw,38px);margin:12px 0}
+ #me .ticket>.center{display:grid;grid-template-columns:150px minmax(0,1fr);grid-template-rows:auto auto auto auto;column-gap:24px;align-content:center;align-items:center;text-align:left!important;padding:24px 28px!important}
+ #me .ticket>.center .pill{grid-column:1/-1;justify-self:start;margin-bottom:10px}
+ #me .ticket .qr{grid-column:1;grid-row:2/5;width:142px;height:142px;margin:0}
+ #me .ticket>.center>b{grid-column:2;grid-row:2;font-size:18px}
+ #me .ticket>.center>p{grid-column:2;grid-row:3;margin:6px 0}
+ #me .ticket>.center>.actions{grid-column:2;grid-row:4;justify-content:flex-start!important;margin-top:8px}
+ #me .passport{gap:10px}
+ #me .stamp{aspect-ratio:auto;min-height:108px;border-style:solid;background:rgba(255,255,255,.55)}
+ #me .stamp.done{background:linear-gradient(145deg,#0d6da8,#2454dc)}
+}
+@media(min-width:1200px){
+ #me .ticket{grid-template-columns:minmax(300px,.82fr) minmax(440px,1.18fr)}
+ #me .tickethead{min-height:250px}
+ #me .stamp{min-height:96px}
+}
 /* accessibility + predictable interaction states */
 a,button,[role="button"],.tap{ -webkit-tap-highlight-color:transparent }
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
