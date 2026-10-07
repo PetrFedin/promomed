@@ -487,3 +487,19 @@ Truth boundary: this is the MVP product-design system, not final Promomed brand 
 - compact two-column account ticket on tablet/desktop;
 - reduced passport-card vertical footprint on larger screens;
 - unobscured home screenshots plus collapsed-rail visual evidence.
+
+## Participant Everyday Experience v2 — screen-level daily-use refinement
+
+Implemented in repository scope:
+
+- Today action-first hero and compact personal journey workspace;
+- Media real utility actions instead of decorative filters;
+- Media scan-friendly 2/3-column layouts on tablet/desktop;
+- Events operational-first Programme / My schedule / Map hierarchy;
+- Events now/next + partner appointment workspace;
+- Community compact explainable-match and mutual-meeting workspaces with double opt-in preserved;
+- My paired Takeaways / 1-7-30 and Messages / Participation settings workspaces;
+- mobile remains sequential and thumb-first;
+- tablet/desktop gain density through layout rather than smaller typography.
+
+Authority boundary: participant-experience refinements do not change evidence, medical review, consent, account, capital or persistence semantics.
