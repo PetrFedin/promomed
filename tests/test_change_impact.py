@@ -38,6 +38,7 @@ class KnowledgeChangeImpactTests(unittest.TestCase):
         self.assertGreater(d["summary"]["active_holds"],0)
         claim=self.graph.snapshot(self.c,claim_id="CL01")["claims"][0]
         self.assertFalse(claim["trust"]["trusted"])
+        self.assertTrue(claim["trust"]["has_invalidated_citation"])
         self.assertEqual(claim["trust"]["status"],"INCOMPLETE_EVIDENCE")
         source=self.c.execute("SELECT status FROM evidence_sources WHERE id='ES01'").fetchone()
         self.assertEqual(source["status"],"source_retracted_demo")
