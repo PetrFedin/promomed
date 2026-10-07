@@ -7,7 +7,7 @@
     "receiptSha256",
     "envelope",
     "admittedAt",
-    "admittedBy"
+    "admittedByRole"
   ],
   "properties": {
     "receiptSha256": {
@@ -86,8 +86,8 @@
     "admittedAt": {
       "type": "integer"
     },
-    "admittedBy": {
-      "type": "string"
+    "admittedByRole": {
+      "const": "governance"
     }
   },
   "additionalProperties": false
