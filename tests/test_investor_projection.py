@@ -49,10 +49,14 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(statuses["medical_info"], "gated")
         self.assertEqual(statuses["institutional_evidence_network"], "ci_proven")
         self.assertEqual(statuses["certified_syndication_network"], "ci_proven")
+        self.assertEqual(statuses["partner_delivery_protocol"], "ci_proven")
         self.assertEqual(proof["counts"]["institutional_organizations"], 0)
         self.assertEqual(proof["counts"]["evidence_exchange_packages"], 0)
         self.assertEqual(proof["counts"]["qualified_syndication_partners"], 0)
         self.assertEqual(proof["counts"]["external_contributions_admitted"], 0)
+        self.assertEqual(proof["counts"]["production_webhook_endpoints"], 0)
+        self.assertEqual(proof["counts"]["production_delivery_events"], 0)
+        self.assertEqual(proof["counts"]["production_delivery_acks"], 0)
 
     def test_capital_milestones_are_dependency_gated(self):
         proof = self.investor.snapshot(self.c)
@@ -144,6 +148,18 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertIn("no", text)
         self.assertEqual(proof["counts"]["qualified_syndication_partners"], 0)
         self.assertEqual(proof["counts"]["external_contributions_admitted"], 0)
+
+    def test_partner_delivery_protocol_is_visible_without_production_traffic_claim(self):
+        proof = self.investor.snapshot(self.c)
+        capabilities = {x["id"]: x for x in proof["capabilities"]}
+        delivery = capabilities["partner_delivery_protocol"]
+        self.assertEqual(delivery["status"], "ci_proven")
+        text = delivery["proof"].lower()
+        self.assertIn("no production endpoint", text)
+        self.assertIn("no production", text)
+        self.assertEqual(proof["counts"]["production_webhook_endpoints"], 0)
+        self.assertEqual(proof["counts"]["production_delivery_events"], 0)
+        self.assertEqual(proof["counts"]["production_delivery_acks"], 0)
 
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
