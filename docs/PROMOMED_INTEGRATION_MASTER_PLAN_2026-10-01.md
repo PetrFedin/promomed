@@ -2229,3 +2229,121 @@ Compounding value:
 **Sequencing:** Evidence Governance Standard -> interchange profile -> reference package -> partner certification -> external contribution -> enterprise knowledge distribution.
 
 **Moat:** Promomed becomes a governed scientific-content rail whose accumulated review and correction history is more defensible than a content library alone.
+
+
+## 2026-10-07 — Evidence Trust Runtime vNext
+
+This layer upgrades Evidence Seal / signed checkpoint into interoperable scientific-content infrastructure. It must never imply efficacy certification.
+
+### Standards baseline
+
+- W3C Verifiable Credentials Data Model 2.0: https://www.w3.org/TR/vc-data-model-2.0/
+- W3C Bitstring Status List v1.0: https://www.w3.org/TR/vc-bitstring-status-list/
+- OpenID4VCI 1.0 Final: https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0-final.html
+- OpenID4VP 1.0 Final: https://openid.net/specs/openid-4-verifiable-presentations-1_0-final.html
+- OpenID Federation 1.0 Final: https://openid.net/specs/openid-federation-1_0-final.html
+
+### Evidence Issuer Key Lifecycle — P0
+
+Create persistent key metadata:
+
+`PROVISIONED -> ACTIVE -> VERIFY_ONLY -> RETIRED / COMPROMISED`.
+
+Rules:
+
+- no default production signing key;
+- historical checkpoints remain verifiable after normal rotation;
+- compromised-key scope is explicit;
+- current verification always checks both signature and current Evidence Seal / publication hold;
+- key events are audited independently from editorial events.
+
+### Signed Evidence Status Feed — P0
+
+Publish machine-readable current status for exported checkpoints/seals:
+
+- current;
+- superseded;
+- withdrawn;
+- publication-held;
+- revoked;
+- expired.
+
+A downstream partner must be able to refresh status without receiving reviewer identities or patient data.
+
+### Withdrawal Propagation SLA — P0
+
+For syndicated content, persist downstream delivery state:
+
+`source correction/retraction -> admission -> impact -> hold -> partner notification -> partner ACK -> remediation -> release`.
+
+Add:
+
+- signed webhook/event envelope;
+- retry/outbox;
+- partner acknowledgement;
+- overdue escalation;
+- proof that all licensed downstream copies were notified.
+
+This is a sellable enterprise feature, not only compliance plumbing.
+
+### Reviewer / Institution Credentials — P1
+
+Use VC/OpenID protocols only for scoped factual roles:
+
+- Reviewer for programme/topic X;
+- Institutional Contributor;
+- Education Faculty;
+- Syndication Integration Partner.
+
+A reviewer credential proves identity/role/scope, not that every opinion is correct.
+
+### Institutional Federation — P1
+
+Allow universities, societies and corporate knowledge programmes to establish scoped trust relationships for:
+
+- reviewer affiliation;
+- contributor admission;
+- education completion;
+- evidence-feed consumption.
+
+External institutions never gain self-approval authority over Promomed editorial truth.
+
+### AI Evidence Retrieval Gateway — P1
+
+Create an enterprise retrieval surface for copilots/agents:
+
+request -> admitted claim/source graph -> freshness/hold filter -> citation package -> signed retrieval receipt.
+
+Required:
+
+- no answer from held/retracted evidence;
+- claim-level citations and exact locators;
+- evidence as-of timestamp;
+- model/provider separated from evidence authority;
+- deterministic retrieval receipt hash;
+- tenant/API scopes;
+- no patient-specific diagnosis/treatment generation.
+
+Potential product: licensed Evidence RAG / MCP-compatible knowledge gateway for corporate learning, media and professional education systems.
+
+### Commercial products
+
+- Evidence Verification API;
+- signed evidence/status feed;
+- withdrawal propagation service;
+- enterprise retrieval gateway;
+- reviewer/institution credential service;
+- certified syndication gateway;
+- federation onboarding.
+
+### Acceptance gate
+
+- normal key rotation preserves verification;
+- correction/retraction makes old checkpoint non-current automatically;
+- downstream withdrawal propagation reaches ACK state;
+- status service contains no protected/private review data;
+- AI retrieval excludes active publication holds;
+- every generated answer package identifies evidence as-of and source locators;
+- no wording converts process verification into medical efficacy certification.
+
+**Economic effect:** Promomed can charge not only for events/content, but for governed knowledge distribution, verification, correction propagation and AI-safe evidence access.
