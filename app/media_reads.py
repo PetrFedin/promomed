@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange
+from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network
 
 
 PUBLIC_EVIDENCE_ROUTES=(
@@ -25,6 +25,8 @@ def serve(raw_path, role):
         "/api/evidence-interchange/package",
         "/api/evidence-interchange/reference",
         "/api/institutional-network",
+        "/api/syndication-network",
+        "/api/external-contribution/receipt",
         *PUBLIC_EVIDENCE_ROUTES,
     ):
         return None
@@ -64,6 +66,21 @@ def serve(raw_path, role):
                 return {"data":evidence_interchange.package_document(c,package_id)},200
             except ValueError as exc:
                 return {"error":str(exc)},404 if str(exc)=="evidence_package_not_found" else 422
+
+        if parsed.path=="/api/external-contribution/receipt":
+            contribution_id=(q.get("contribution_id") or [""])[0][:120]
+            if not contribution_id:
+                return {"error":"contribution_id_required"},422
+            try:
+                return {"data":syndication_network.contribution_receipt(c,contribution_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
+
+        if parsed.path=="/api/syndication-network":
+            if role not in ("governance","editor","sales","reviewer"):
+                return {"error":"forbidden"},403
+            organization_id=(q.get("organization_id") or [""])[0][:100] or None
+            return {"data":syndication_network.network_snapshot(c,organization_id)},200
 
         if parsed.path=="/api/institutional-network":
             if role not in ("governance","editor","sales"):
