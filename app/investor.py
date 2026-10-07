@@ -45,6 +45,9 @@ def snapshot(c):
         "evidence_exchange_deliveries": _count(c, "evidence_exchange_deliveries"),
         "qualified_syndication_partners": _count(c, "syndication_partner_qualifications", "WHERE status='qualified' AND demo_only=0"),
         "external_contributions_admitted": _count(c, "external_contributions", "WHERE status='admitted' AND demo_only=0"),
+        "production_webhook_endpoints": _count(c, "syndication_delivery_endpoints", "WHERE status='active' AND demo_only=0"),
+        "production_delivery_events": _count(c, "syndication_delivery_events", "WHERE demo_only=0"),
+        "production_delivery_acks": _count(c, "syndication_delivery_acknowledgements", "WHERE demo_only=0"),
     }
 
     capabilities = [
@@ -122,6 +125,16 @@ def snapshot(c):
                 "Scope-specific conformance qualification, subscriptions, withdrawal/update SLA obligations, "
                 "external contribution review separation and signed admission receipts are repository-contract proven. "
                 "No qualified production partner or external contribution adoption is claimed."
+            ),
+        },
+        {
+            "id": "partner_delivery_protocol",
+            "title": "Partner Delivery Protocol v2",
+            "status": "ci_proven",
+            "proof": (
+                "Signed webhook events, endpoint verification, retry/backoff, append-only delivery attempts, "
+                "partner-signed acknowledgements, contiguous cursors and behaviour-driven requalification are repository-contract proven. "
+                "No production endpoint, external delivery traffic or production SLA achievement is claimed."
             ),
         },
     ]
@@ -217,6 +230,14 @@ def snapshot(c):
             "detail": (
                 "Partner conformance is scope-specific and revocable; subscriptions carry measurable update/withdrawal SLAs; "
                 "external contributors cannot self-review or mutate canonical claims and receive signed admission receipts only after review."
+            ),
+        },
+        {
+            "title": "Observed partner delivery behaviour",
+            "status": "ci_proven",
+            "detail": (
+                "Immutable delivery events, signed attempts, acknowledgement evidence, cursor continuity and SLA observations "
+                "can feed requalification decisions without granting the automation authority to suspend or revoke a partner."
             ),
         },
     ]
