@@ -371,6 +371,45 @@ def qualification_snapshot(c,organization_id):
     }
 
 
+def public_certification(c,organization_id):
+    snapshot=qualification_snapshot(c,organization_id)
+    qualification=snapshot.get("qualification")
+    certifications=[
+        {
+            "scope":x["scope"],
+            "status":x["status"],
+            "expiresAt":x["expiresAt"],
+            "label":{
+                "evidence_api_integration":"Evidence API Integrated",
+                "withdrawal_propagation":"Withdrawal Propagation Verified",
+                "disclosure_workflow":"Disclosure Workflow Integrated",
+                "credential_verification":"Credential Verification Integrated",
+                "education_completion_sync":"Education Completion Sync Integrated",
+            }.get(x["scope"],x["scope"]),
+        }
+        for x in snapshot.get("certifications") or []
+        if x.get("status")=="passed"
+    ]
+    return {
+        "registryVersion":"promomed-certified-syndication-registry-v1",
+        "organizationId":snapshot["organizationId"],
+        "organizationName":snapshot["organizationName"],
+        "qualificationStatus":qualification.get("status") if qualification else "not_qualified",
+        "qualificationVersion":qualification.get("qualification_version") if qualification else None,
+        "effectiveAt":qualification.get("effective_at") if qualification else None,
+        "validUntil":qualification.get("valid_until") if qualification else None,
+        "nextRequalificationAt":qualification.get("next_requalification_at") if qualification else None,
+        "certifications":certifications,
+        "truthBoundary":{
+            "technicalProcessCertificationOnly":True,
+            "medicalEfficacyCertified":False,
+            "medicalSafetyCertified":False,
+            "professionalAccreditation":False,
+            "commercialEndorsement":False,
+        },
+    }
+
+
 def create_subscription(
     c,organization_id,subscription_scope,scope_ref,actor,
     update_sla_seconds=86400,withdrawal_sla_seconds=14400,expires_at=None,
