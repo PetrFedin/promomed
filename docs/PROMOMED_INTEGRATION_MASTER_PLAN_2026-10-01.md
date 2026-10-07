@@ -2323,3 +2323,34 @@ Compounding value:
 **Sequencing:** Evidence Governance Standard -> interchange profile -> reference package -> partner certification -> external contribution -> enterprise knowledge distribution.
 
 **Moat:** Promomed becomes a governed scientific-content rail whose accumulated review and correction history is more defensible than a content library alone.
+
+
+### External Verification Interoperability v1 — repository checkpoint 2026-10-07
+
+This checkpoint implements the next defensibility step from the Evidence Governance Seal / Scientific Evidence Distribution Network roadmap.
+
+Implemented in repository scope:
+
+- persistent issuer public-key registry with `active / retired / revoked` lifecycle;
+- explicit key activation and rotation with `rotated_from_key_id` lineage;
+- key-ID collision fail-closed semantics;
+- persistent checkpoint issuance registry binding checkpoint -> issuer -> key -> artifact -> seal hash;
+- public issuer document and public checkpoint status list;
+- external Ed25519 verification using public key material only, with no access to issuer private key;
+- routine key rotation preserves historical signature verification within the recorded key-validity interval;
+- issuer-key revocation and individual checkpoint revocation are distinct states;
+- portable verification reports `currentCanonicalStateVerified=false` instead of pretending offline verification proves current Promomed state;
+- canonical verification additionally checks publication hold + current Evidence Seal hash;
+- public verification POST routes are reachable before account authentication;
+- evidence read routing is now delegated to the evidence/media bounded context instead of a stale fixed route allow-list in `server.py`;
+- offline verifier: `ops/verify_evidence_checkpoint.py`;
+- SQLite/PostgreSQL migration `019_evidence_issuer_registry`;
+- detailed contract: `docs/EXTERNAL_VERIFICATION_INTEROP_V1.md`.
+
+Truth boundary:
+
+- this verifies evidence-governance provenance and checkpoint integrity, not medical efficacy, safety, diagnosis, treatment or regulatory approval;
+- issuer/status documents must still arrive through a trusted channel in v1; they are not yet independently signed trust-anchor documents;
+- DID/JWKS/VC-compatible publication, signed status snapshots and institutional cross-signing remain future interoperability work, not current claims.
+
+Commercial consequence: a partner, university, professional society or enterprise knowledge platform can verify an exported Promomed evidence checkpoint without receiving Promomed's signing secret. This is a prerequisite for partner certification, governed syndication and institutional adoption.
