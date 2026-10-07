@@ -484,3 +484,6 @@ Truth boundary: this is the MVP product-design system, not final Promomed brand 
 - explicit landscape-phone exception;
 - coherent inline SVG navigation/action iconography;
 - CSS-native editorial art direction without external media dependency.
+- compact two-column account ticket on tablet/desktop;
+- reduced passport-card vertical footprint on larger screens;
+- unobscured home screenshots plus collapsed-rail visual evidence.
