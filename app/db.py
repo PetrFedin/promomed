@@ -179,14 +179,55 @@ def _migration_files():
     return sorted(p for p in root.glob("*.sql") if p.is_file())
 
 
+def _split_postgres_script(sql_text):
+    statements=[]
+    buf=[]
+    quote=None
+    dollar_tag=None
+    i=0
+    while i < len(sql_text):
+        if dollar_tag is not None:
+            if sql_text.startswith(dollar_tag,i):
+                buf.append(dollar_tag)
+                i+=len(dollar_tag)
+                dollar_tag=None
+                continue
+            buf.append(sql_text[i]); i+=1; continue
+        ch=sql_text[i]
+        if quote is not None:
+            buf.append(ch)
+            if ch==quote:
+                if i+1 < len(sql_text) and sql_text[i+1]==quote:
+                    buf.append(sql_text[i+1]); i+=2; continue
+                quote=None
+            i+=1; continue
+        if ch in ("'", '"'):
+            quote=ch; buf.append(ch); i+=1; continue
+        if ch=="$":
+            m=re.match(r"\$[A-Za-z_][A-Za-z0-9_]*\$|\$\$",sql_text[i:])
+            if m:
+                dollar_tag=m.group(0)
+                buf.append(dollar_tag)
+                i+=len(dollar_tag)
+                continue
+        if ch==";":
+            statement="".join(buf).strip()
+            if statement: statements.append(statement)
+            buf=[]; i+=1; continue
+        buf.append(ch); i+=1
+    tail="".join(buf).strip()
+    if tail: statements.append(tail)
+    if quote is not None or dollar_tag is not None:
+        raise RuntimeError("Unterminated PostgreSQL migration quote")
+    return statements
+
+
 def _execute_script(conn, sql_text):
     if backend_name() == "sqlite":
         conn.executescript(sql_text)
         return
-    for statement in sql_text.split(";"):
-        statement = statement.strip()
-        if statement:
-            conn.execute(statement)
+    for statement in _split_postgres_script(sql_text):
+        conn.execute(statement)
 
 
 def _ensure_migration_table(conn):
