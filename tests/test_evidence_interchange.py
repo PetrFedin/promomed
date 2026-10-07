@@ -221,6 +221,10 @@ class EvidenceInterchangeTests(unittest.TestCase):
         one=evidence_interchange.reference_package()
         two=evidence_interchange.reference_package()
         self.assertEqual(one["referencePackageSha256"],two["referencePackageSha256"])
+        self.assertEqual(
+            one["schemaId"],
+            "urn:promomed:schema:evidence-interchange-reference-fixture:v1",
+        )
         self.assertEqual(one["exampleType"],"synthetic_non_clinical")
         self.assertFalse(one["truthBoundary"]["medicalAdvice"])
         self.assertFalse(one["truthBoundary"]["medicalEfficacyCertified"])
