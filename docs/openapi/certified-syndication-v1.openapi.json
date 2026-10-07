@@ -1,0 +1,454 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Promomed Certified Syndication Network API",
+    "version": "1.0.0",
+    "description": "Technical/process partner qualification, governed evidence subscriptions, SLA acknowledgements and external contribution admission. No medical efficacy/safety certification."
+  },
+  "paths": {
+    "/api/syndication/certification": {
+      "get": {
+        "summary": "Read public process-only partner certification status",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certification status"
+          },
+          "404": {
+            "description": "Organisation not found"
+          }
+        }
+      }
+    },
+    "/api/syndication-network": {
+      "get": {
+        "summary": "Read governed syndication network snapshot",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Network snapshot"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/institution/member": {
+      "post": {
+        "summary": "Bind an authenticated account to an institutional organisation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "organization_id",
+                  "account_email",
+                  "member_role"
+                ],
+                "properties": {
+                  "organization_id": {
+                    "type": "string"
+                  },
+                  "account_email": {
+                    "type": "string"
+                  },
+                  "member_role": {
+                    "enum": [
+                      "contributor",
+                      "operator",
+                      "administrator"
+                    ]
+                  },
+                  "verification_ref": {
+                    "type": "string"
+                  },
+                  "expires_at": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "demo_only": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Membership bound"
+          },
+          "403": {
+            "description": "Governance required"
+          }
+        }
+      }
+    },
+    "/api/syndication/qualification/start": {
+      "post": {
+        "summary": "Start partner qualification cycle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "organization_id"
+                ],
+                "properties": {
+                  "organization_id": {
+                    "type": "string"
+                  },
+                  "validity_seconds": {
+                    "type": "integer"
+                  },
+                  "demo_only": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Qualification started"
+          }
+        }
+      }
+    },
+    "/api/syndication/qualification/conformance": {
+      "post": {
+        "summary": "Record scope-specific integration conformance",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "qualification_id",
+                  "scope_key",
+                  "status"
+                ],
+                "properties": {
+                  "qualification_id": {
+                    "type": "string"
+                  },
+                  "scope_key": {
+                    "enum": [
+                      "evidence_api_integration",
+                      "withdrawal_propagation",
+                      "disclosure_workflow",
+                      "credential_verification",
+                      "education_completion_sync"
+                    ]
+                  },
+                  "status": {
+                    "enum": [
+                      "passed",
+                      "failed",
+                      "waived"
+                    ]
+                  },
+                  "evidence_ref": {
+                    "type": "string"
+                  },
+                  "details": {
+                    "type": "string"
+                  },
+                  "expires_at": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Conformance recorded"
+          }
+        }
+      }
+    },
+    "/api/syndication/qualification/finalize": {
+      "post": {
+        "summary": "Qualify partner after mandatory conformance",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Qualification finalized"
+          }
+        }
+      }
+    },
+    "/api/syndication/qualification/suspend": {
+      "post": {
+        "summary": "Suspend qualification and pause subscriptions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Qualification suspended"
+          }
+        }
+      }
+    },
+    "/api/syndication/qualification/revoke": {
+      "post": {
+        "summary": "Revoke qualification and subscriptions",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Qualification revoked"
+          }
+        }
+      }
+    },
+    "/api/syndication/subscription": {
+      "post": {
+        "summary": "Create qualified evidence subscription with update/withdrawal SLA",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Subscription created"
+          }
+        }
+      }
+    },
+    "/api/syndication/obligation/acknowledge": {
+      "post": {
+        "summary": "Acknowledge update/withdrawal obligation as verified institutional operator",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Obligation acknowledged or breached"
+          }
+        }
+      }
+    },
+    "/api/external-contribution/submit": {
+      "post": {
+        "summary": "Submit external contribution from verified institutional member",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "organization_id",
+                  "contribution_type",
+                  "title",
+                  "payload"
+                ],
+                "properties": {
+                  "organization_id": {
+                    "type": "string"
+                  },
+                  "contribution_type": {
+                    "enum": [
+                      "source_recommendation",
+                      "review_input",
+                      "disclosure_record",
+                      "programme_material",
+                      "correction_notice",
+                      "institutional_metadata"
+                    ]
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contribution submitted"
+          },
+          "409": {
+            "description": "Qualification/membership/admission boundary failure"
+          }
+        }
+      }
+    },
+    "/api/external-contribution/review": {
+      "post": {
+        "summary": "Record editorial or scientific review",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review recorded"
+          }
+        }
+      }
+    },
+    "/api/external-contribution/admit": {
+      "post": {
+        "summary": "Governance admission after independent editorial and scientific acceptance",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Signed admission receipt issued"
+          }
+        }
+      }
+    },
+    "/api/external-contribution/receipt": {
+      "get": {
+        "summary": "Retrieve signed contribution admission receipt",
+        "parameters": [
+          {
+            "name": "contribution_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admission receipt"
+          },
+          "404": {
+            "description": "Receipt not found"
+          }
+        }
+      }
+    },
+    "/api/external-contribution/receipt/verify-portable": {
+      "post": {
+        "summary": "Verify admission receipt with public issuer material only",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "receipt",
+                  "issuer_document"
+                ],
+                "properties": {
+                  "receipt": {
+                    "type": "object"
+                  },
+                  "issuer_document": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Portable verification result"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "SyndicationCertification": {
+        "$ref": "../schemas/syndication-certification-v1.schema.json"
+      },
+      "ContributionAdmissionReceipt": {
+        "$ref": "../schemas/external-contribution-admission-receipt-v1.schema.json"
+      }
+    }
+  }
+}
