@@ -268,3 +268,125 @@ def revoke_snapshot(c,snapshot_id,reason,actor,now=None):
         demo_only=bool(row["demo_only"]),now=now,
     )
     return snapshot_document(c,snapshot_id)
+
+
+def signed_status_statement(c,organization_id,actor,validity_seconds=DEFAULT_STATUS_VALIDITY,now=None):
+    now=int(now or time.time())
+    validity_seconds=int(validity_seconds)
+    if validity_seconds<300 or validity_seconds>7*86400:
+        raise ValueError("snapshot_status_validity_invalid")
+    _organization(c,organization_id)
+    rows=list(c.execute(
+        """SELECT s.id,s.snapshot_sha256,s.issued_at,s.valid_until,
+                  st.status,st.revoked_at,st.revocation_reason
+           FROM institutional_status_snapshots s
+           JOIN institutional_status_snapshot_state st ON st.snapshot_id=s.id
+           WHERE s.organization_id=?
+           ORDER BY s.issued_at,s.id""",
+        (organization_id,),
+    ))
+    body={
+        "statusVersion":"promomed-institutional-snapshot-status-v1",
+        "organizationId":organization_id,
+        "generatedAt":now,
+        "validUntil":now+validity_seconds,
+        "snapshots":[
+            {
+                "snapshotId":r["id"],
+                "snapshotSha256":r["snapshot_sha256"],
+                "issuedAt":r["issued_at"],
+                "validUntil":r["valid_until"],
+                "status":r["status"],
+                "revokedAt":r["revoked_at"],
+                "revocationReason":r["revocation_reason"],
+            }
+            for r in rows
+        ],
+        "medicalEfficacyCertified":False,
+    }
+    return evidence_checkpoint.sign_portable_statement(
+        c,STATUS_STATEMENT_TYPE,body,actor=actor
+    )
+
+
+def create_trust_bundle(c,snapshot_id,actor,now=None):
+    now=int(now or time.time())
+    snapshot=snapshot_document(c,snapshot_id)
+    existing=c.execute(
+        """SELECT id,bundle_sha256,bundle_json FROM institutional_trust_bundles
+           WHERE snapshot_id=?""",
+        (snapshot_id,),
+    ).fetchone()
+    if existing:
+        return {
+            "id":existing["id"],
+            "bundleSha256":existing["bundle_sha256"],
+            "bundle":json.loads(existing["bundle_json"]),
+            "idempotentReplay":True,
+        }
+    issuer_id=(snapshot["envelope"].get("payload") or {}).get("issuerId")
+    issuer_doc=evidence_checkpoint.issuer_document(c,issuer_id)
+    issuer_status=evidence_checkpoint.status_list(c,issuer_id)
+    status_statement=signed_status_statement(
+        c,snapshot["organizationId"],actor,now=now
+    )
+    payload={
+        "schemaId":BUNDLE_SCHEMA_ID,
+        "bundleVersion":BUNDLE_VERSION,
+        "createdAt":now,
+        "snapshot":{
+            "snapshotId":snapshot["id"],
+            "snapshotSha256":snapshot["snapshotSha256"],
+            "envelope":snapshot["envelope"],
+        },
+        "issuerDocument":issuer_doc,
+        "issuerStatusAtPackaging":issuer_status,
+        "snapshotStatusAtPackaging":status_statement,
+        "truthBoundary":{
+            "processAndIntegrationStatusOnly":True,
+            "medicalEfficacyCertified":False,
+            "medicalSafetyCertified":False,
+            "professionalAccreditation":False,
+            "commercialEndorsement":False,
+            "currentPromomedStateRequiresFreshStatusMaterial":True,
+        },
+    }
+    bundle_sha=_sha(payload)
+    bundle={**payload,"bundleSha256":bundle_sha}
+    bundle_id="trust:"+bundle_sha[:24]
+    c.execute(
+        """INSERT INTO institutional_trust_bundles(
+             id,snapshot_id,bundle_version,bundle_sha256,bundle_json,
+             created_at,created_by,demo_only
+           ) VALUES(?,?,?,?,?,?,?,?)""",
+        (
+            bundle_id,snapshot_id,BUNDLE_VERSION,bundle_sha,_canonical(bundle),
+            now,actor,int(snapshot["demoOnly"]),
+        ),
+    )
+    return {
+        "id":bundle_id,
+        "bundleSha256":bundle_sha,
+        "bundle":bundle,
+        "idempotentReplay":False,
+    }
+
+
+def bundle_document(c,bundle_id):
+    row=c.execute(
+        """SELECT id,snapshot_id,bundle_version,bundle_sha256,bundle_json,
+                  created_at,demo_only
+           FROM institutional_trust_bundles WHERE id=?""",
+        (bundle_id,),
+    ).fetchone()
+    if not row:
+        raise ValueError("trust_bundle_not_found")
+    return {
+        "id":row["id"],
+        "snapshotId":row["snapshot_id"],
+        "bundleVersion":row["bundle_version"],
+        "bundleSha256":row["bundle_sha256"],
+        "bundle":json.loads(row["bundle_json"]),
+        "createdAt":row["created_at"],
+        "demoOnly":bool(row["demo_only"]),
+    }
