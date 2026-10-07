@@ -22,7 +22,9 @@ CREATE TABLE IF NOT EXISTS evidence_checkpoint_issuance(
   artifact_kind TEXT NOT NULL,
   artifact_ref TEXT NOT NULL,
   issued_at INTEGER NOT NULL,
-  seal_sha256 TEXT NOT NULL
+  seal_sha256 TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  signature_b64 TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_evidence_issuer_keys_status
