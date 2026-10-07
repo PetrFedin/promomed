@@ -74,9 +74,11 @@ An institutional organisation may optionally reference an existing commercial pa
 
 Supported scoped roles:
 
-- `publisher`
-- `consumer`
-- `contributor`
+- `publisher` — active package delivery role;
+- `consumer` — active package delivery role;
+- `contributor` — reserved scope for the later External Contribution Admission phase.
+
+There is no contributor submission/self-publish endpoint in v1. Contributor status therefore does not currently permit evidence submission or approval.
 
 Bindings contain organisation, scope, active state, effective/expiry time, governance verifier and source verification reference.
 
