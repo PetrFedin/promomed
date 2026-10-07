@@ -16,6 +16,14 @@ def _contains(haystack, needle):
     return needle in _norm(haystack)
 
 
+def _approved_takeaway_text(c,item_id,start_sec,end_sec):
+    rows=c.execute(
+        "SELECT title,body FROM generated_takeaways WHERE item_id=? AND status IN ('approved','approved_demo') AND segment_start_sec < ? AND segment_end_sec > ? ORDER BY segment_start_sec,id",
+        (item_id,end_sec,start_sec),
+    )
+    return " ".join(" ".join((str(x["title"] or ""),str(x["body"] or ""))) for x in rows)
+
+
 def _index(c):
     rows=[]
 
@@ -55,10 +63,11 @@ def _index(c):
 
     try:
         for x in c.execute("SELECT t.id,t.item_id,t.studio_id,t.start_sec,t.end_sec,t.text,t.review_status,s.name speaker_name,p.track,p.title event_title FROM transcript_segments t LEFT JOIN speakers s ON s.id=t.speaker_id LEFT JOIN program_items p ON p.id=t.item_id WHERE t.review_status IN ('reviewed','reviewed_demo')"):
+            takeaway_text=_approved_takeaway_text(c,x["item_id"],x["start_sec"],x["end_sec"])
             rows.append({
                 "kind":"transcript","ref":x["id"],"title":x["text"],"subtitle":f"{x['speaker_name'] or 'Speaker'} · {x['start_sec']}–{x['end_sec']} sec","topic":x["track"] or "",
                 "content_type":"transcript_segment","expert":x["speaker_name"] or "","event":x["item_id"],"replay":True,"review_status":x["review_status"],
-                "partner":"","offset_sec":x["start_sec"],"search_text":" ".join(map(str,[x["text"],x["speaker_name"],x["track"],x["event_title"]])),
+                "partner":"","offset_sec":x["start_sec"],"search_text":" ".join(map(str,[x["text"],x["speaker_name"],x["track"],x["event_title"],takeaway_text])),
             })
         for x in c.execute("SELECT g.id,g.item_id,g.studio_id,g.title,g.body,g.segment_start_sec,g.segment_end_sec,g.status,p.track,p.title event_title FROM generated_takeaways g LEFT JOIN program_items p ON p.id=g.item_id WHERE g.status IN ('approved','approved_demo')"):
             rows.append({
