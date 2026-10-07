@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network
+from app import db, delivery_protocol, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network
 
 
 PUBLIC_EVIDENCE_ROUTES=(
@@ -26,6 +26,7 @@ def serve(raw_path, role):
         "/api/evidence-interchange/reference",
         "/api/institutional-network",
         "/api/syndication-network",
+        "/api/syndication/delivery-runtime",
         "/api/syndication/certification",
         "/api/external-contribution/receipt",
         *PUBLIC_EVIDENCE_ROUTES,
@@ -67,6 +68,15 @@ def serve(raw_path, role):
                 return {"data":evidence_interchange.package_document(c,package_id)},200
             except ValueError as exc:
                 return {"error":str(exc)},404 if str(exc)=="evidence_package_not_found" else 422
+
+        if parsed.path=="/api/syndication/delivery-runtime":
+            if role not in ("governance","editor","sales"):
+                return {"error":"forbidden"},403
+            organization_id=(q.get("organization_id") or [""])[0][:100] or None
+            try:
+                return {"data":delivery_protocol.runtime_snapshot(c,organization_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
 
         if parsed.path=="/api/syndication/certification":
             organization_id=(q.get("organization_id") or [""])[0][:100]

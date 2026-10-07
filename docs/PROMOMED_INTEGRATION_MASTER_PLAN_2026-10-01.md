@@ -2469,3 +2469,52 @@ Acceptance boundaries:
 - no outbound webhook integration, production endpoint, external partner traffic, uptime or delivery success is claimed until real endpoints exist.
 
 Commercial consequence: certification evolves from questionnaire/conformance proof into an operationally observed integration standard with measurable production behaviour and auditable delivery quality.
+
+
+### Partner Delivery Protocol v2 — repository checkpoint 2026-10-07
+
+Base authority: synchronized `main` after PR #40 merge + master-plan sync — `6acd73b3f37eeecf6e82e2001db69418e9ca9eee`.
+
+Implemented repository scope:
+
+- governance-approved HTTPS endpoint registry with explicit `pending_verification / active / suspended / revoked` lifecycle;
+- one-time endpoint secret issuance and explicit rotation; read projections never expose secret/hash/challenge;
+- endpoint challenge verification through signed webhook round-trip;
+- application-level rejection of loopback/private/link-local/reserved resolved targets in default outbound transport;
+- deterministic immutable business-event identity;
+- per-organisation monotonically increasing delivery sequence;
+- separate mutable event state so retry does not rewrite event payload;
+- signed webhook headers with payload SHA-256, timestamp, event ID, sequence and secret version;
+- append-only attempt ledger with HTTP/transport classification and bounded retry/backoff;
+- secret version captured per attempt so acknowledgement survives routine post-delivery secret rotation;
+- partner-signed acknowledgement without Promomed user-session impersonation;
+- acknowledgement binding to exact event ID + payload digest;
+- contiguous per-partner acknowledgement cursor; out-of-order ack cannot skip an unresolved sequence;
+- automatic package-delivery event from Evidence Distribution Network;
+- package supersession -> update obligation -> signed update event;
+- manual or Change Impact withdrawal -> withdrawal obligation -> signed withdrawal event;
+- external contribution admission -> signed contribution-admission event;
+- accepted acknowledgement automatically becomes SLA evidence for bound update/withdrawal obligation;
+- late acknowledgement remains evidence of execution but does not erase SLA breach;
+- append-only behaviour observations for delivery success/retry/terminal failure/ack/missing-ack/SLA/dead-event;
+- delivered events have an explicit 24-hour acknowledgement expectation; three missing acknowledgements within the 30-day window can trigger requalification;
+- queued business events may route through a newly active endpoint without changing event identity; endpoint + secret version are fixed per attempt;
+- runtime GET projection is side-effect free; reconciliation/worker owns state transitions;
+- continuous-requalification rule may move `qualified -> requalification_due` based on observed delivery failures/SLA evidence;
+- system may recommend suspension review but cannot automatically suspend or revoke partner authority;
+- stateless durable worker: `ops/run_partner_delivery_worker.py`;
+- SQLite/PostgreSQL migration `022_partner_delivery_protocol`;
+- JSON Schemas for outbound event and acknowledgement;
+- OpenAPI 3.1 contract: `docs/openapi/partner-delivery-v2.openapi.json`;
+- detailed protocol: `docs/PARTNER_DELIVERY_PROTOCOL_V2.md`.
+
+Truth boundary:
+
+- repository code/CI can prove protocol mechanics only;
+- no real production endpoint, outbound webhook traffic, uptime, SLA achievement or behaviour-based production requalification is claimed until non-demo evidence exists;
+- endpoint DNS/IP validation is application-level hardening, not a substitute for production controlled egress/DNS policy;
+- delivery-quality observations do not measure medical efficacy, clinical quality or commercial outcomes.
+
+Commercial consequence: partner certification can now compound operational evidence over time — delivery history, correction responsiveness, acknowledgement continuity and requalification evidence — rather than remaining a static integration badge.
+
+**Next institutional layer after green merge:** Signed Status Snapshots + Partner Trust Bundle + Cross-Organisation Verification.

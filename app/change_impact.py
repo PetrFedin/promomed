@@ -1,6 +1,6 @@
 import time
 
-from app import evidence_graph, syndication_network
+from app import delivery_protocol, evidence_graph, syndication_network
 
 
 SEVERITY_ORDER={"low":1,"medium":2,"high":3,"critical":4}
@@ -114,7 +114,9 @@ def _withdraw_downstream_exchange(c,artifact_kind,artifact_ref,reason,now):
                WHERE package_id=? AND status IN ('delivered','acknowledged')""",
             (now,str(reason or "")[:500],row["id"]),
         )
-        syndication_network.create_delivery_obligations(c,row["id"],"withdrawal",now=now)
+        obligation_ids=syndication_network.create_delivery_obligations(c,row["id"],"withdrawal",now=now)
+        for obligation_id in obligation_ids:
+            delivery_protocol.enqueue_obligation(c,obligation_id,actor="Change Impact Engine")
     return len(package_rows)
 
 

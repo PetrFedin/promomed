@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:partner-delivery-event:v2",
+  "title": "Promomed Partner Delivery Event v2",
+  "type": "object",
+  "required": [
+    "protocolVersion",
+    "eventId",
+    "organizationId",
+    "sequence",
+    "eventType",
+    "subject",
+    "obligationId",
+    "createdAt",
+    "data"
+  ],
+  "properties": {
+    "protocolVersion": {
+      "const": "promomed-partner-delivery-v2"
+    },
+    "eventId": {
+      "type": "string",
+      "pattern": "^delivery:[0-9a-f]{28}$"
+    },
+    "organizationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "eventType": {
+      "enum": [
+        "package_delivery",
+        "package_update",
+        "package_withdrawal",
+        "contribution_admission",
+        "qualification_status"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "obligationId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "createdAt": {
+      "type": "integer"
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,231 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Promomed Partner Delivery Protocol v2",
+    "version": "2.0.0",
+    "description": "Signed webhook delivery, endpoint lifecycle, retry/idempotency, cursor acknowledgement and continuous requalification evidence for qualified institutional partners."
+  },
+  "paths": {
+    "/api/syndication/endpoint/register": {
+      "post": {
+        "summary": "Register governance-approved HTTPS endpoint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Endpoint registered; secret returned once"
+          },
+          "409": {
+            "description": "Registration boundary failure"
+          }
+        }
+      }
+    },
+    "/api/syndication/endpoint/verify": {
+      "post": {
+        "summary": "Verify endpoint by signed challenge round-trip",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Endpoint activated"
+          },
+          "409": {
+            "description": "Verification failure"
+          }
+        }
+      }
+    },
+    "/api/syndication/endpoint/rotate-secret": {
+      "post": {
+        "summary": "Rotate endpoint signing secret",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New secret returned once"
+          }
+        }
+      }
+    },
+    "/api/syndication/endpoint/suspend": {
+      "post": {
+        "summary": "Suspend endpoint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Endpoint suspended"
+          }
+        }
+      }
+    },
+    "/api/syndication/endpoint/revoke": {
+      "post": {
+        "summary": "Revoke endpoint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Endpoint revoked"
+          }
+        }
+      }
+    },
+    "/api/syndication/delivery/event/create": {
+      "post": {
+        "summary": "Create deterministic immutable delivery event",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Event queued"
+          }
+        }
+      }
+    },
+    "/api/syndication/delivery/event/dispatch": {
+      "post": {
+        "summary": "Dispatch one due event",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attempt result"
+          }
+        }
+      }
+    },
+    "/api/syndication/delivery/reconcile": {
+      "post": {
+        "summary": "Reconcile SLA evidence and continuous requalification",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reconciliation result"
+          }
+        }
+      }
+    },
+    "/api/syndication/delivery/acknowledge": {
+      "post": {
+        "summary": "Partner-signed acknowledgement; no Promomed user session required",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "organization_id",
+                  "ack",
+                  "timestamp",
+                  "signature"
+                ],
+                "properties": {
+                  "event_id": {
+                    "type": "string"
+                  },
+                  "organization_id": {
+                    "type": "string"
+                  },
+                  "ack": {
+                    "$ref": "../schemas/partner-delivery-ack-v2.schema.json"
+                  },
+                  "timestamp": {
+                    "type": "integer"
+                  },
+                  "signature": {
+                    "type": "string",
+                    "pattern": "^v1=[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Acknowledgement accepted"
+          },
+          "409": {
+            "description": "Signature/binding/state failure"
+          }
+        }
+      }
+    },
+    "/api/syndication/delivery-runtime": {
+      "get": {
+        "summary": "Read internal delivery observability and behaviour scorecards",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery runtime snapshot"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "DeliveryEvent": {
+        "$ref": "../schemas/partner-delivery-event-v2.schema.json"
+      },
+      "DeliveryAcknowledgement": {
+        "$ref": "../schemas/partner-delivery-ack-v2.schema.json"
+      }
+    }
+  }
+}

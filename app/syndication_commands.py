@@ -1,5 +1,5 @@
 from app.commanding import custom, error
-from app import syndication_network
+from app import delivery_protocol, syndication_network
 
 
 ROUTES={
@@ -11,6 +11,14 @@ ROUTES={
     "/api/institution/member",
     "/api/syndication/subscription",
     "/api/syndication/obligation/acknowledge",
+    "/api/syndication/endpoint/register",
+    "/api/syndication/endpoint/verify",
+    "/api/syndication/endpoint/rotate-secret",
+    "/api/syndication/endpoint/suspend",
+    "/api/syndication/endpoint/revoke",
+    "/api/syndication/delivery/event/create",
+    "/api/syndication/delivery/event/dispatch",
+    "/api/syndication/delivery/reconcile",
     "/api/external-contribution/submit",
     "/api/external-contribution/revise",
     "/api/external-contribution/review",
@@ -77,6 +85,76 @@ def handle_command(c,route,role,email,data):
         denied=_governance_only(role)
         if denied:
             return denied
+
+        if route=="/api/syndication/endpoint/register":
+            result=delivery_protocol.register_endpoint(
+                c,
+                str(data.get("organization_id") or "")[:100],
+                str(data.get("endpoint_url") or "")[:1000],
+                email,
+                bool(data.get("demo_only",False)),
+            )
+            return custom({"data":result},201 if not result.get("idempotentReplay") else 200)
+
+        if route=="/api/syndication/endpoint/verify":
+            result=delivery_protocol.verify_endpoint(
+                c,
+                str(data.get("endpoint_id") or "")[:120],
+                email,
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/endpoint/rotate-secret":
+            result=delivery_protocol.rotate_endpoint_secret(
+                c,
+                str(data.get("endpoint_id") or "")[:120],
+                email,
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/endpoint/suspend":
+            result=delivery_protocol.suspend_endpoint(
+                c,
+                str(data.get("endpoint_id") or "")[:120],
+                email,
+                str(data.get("reason") or "")[:500],
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/endpoint/revoke":
+            result=delivery_protocol.revoke_endpoint(
+                c,
+                str(data.get("endpoint_id") or "")[:120],
+                email,
+                str(data.get("reason") or "")[:500],
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/delivery/event/create":
+            result=delivery_protocol.create_event(
+                c,
+                str(data.get("organization_id") or "")[:100],
+                str(data.get("event_type") or "")[:80],
+                str(data.get("subject_kind") or "")[:80],
+                str(data.get("subject_ref") or "")[:180],
+                data.get("payload") or {},
+                email,
+                obligation_id=(str(data.get("obligation_id") or "")[:160] or None),
+                demo_only=bool(data.get("demo_only",False)),
+            )
+            return custom({"data":result},201 if not result.get("idempotentReplay") else 200)
+
+        if route=="/api/syndication/delivery/event/dispatch":
+            result=delivery_protocol.dispatch_event(
+                c,
+                str(data.get("event_id") or "")[:160],
+                actor=email,
+            )
+            return custom({"data":result})
+
+        if route=="/api/syndication/delivery/reconcile":
+            result=delivery_protocol.reconcile_sla(c)
+            return custom({"data":result})
 
         if route=="/api/institution/member":
             result=syndication_network.bind_member(
@@ -165,6 +243,26 @@ def handle_command(c,route,role,email,data):
 
 
 def handle_public(route,data):
+    if route=="/api/syndication/delivery/acknowledge":
+        from app import db
+        c=db.connect()
+        try:
+            result=delivery_protocol.acknowledge_event(
+                c,
+                str(data.get("event_id") or "")[:160],
+                str(data.get("organization_id") or "")[:100],
+                data.get("ack") or {},
+                int(data.get("timestamp") or 0),
+                str(data.get("signature") or "")[:200],
+            )
+            c.commit()
+            return {"data":result},200
+        except ValueError as exc:
+            c.rollback()
+            return {"error":str(exc)},409
+        finally:
+            c.close()
+
     if route!="/api/external-contribution/receipt/verify-portable":
         return None
     result=syndication_network.verify_contribution_receipt(
