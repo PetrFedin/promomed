@@ -225,7 +225,13 @@ class ArchitectureContractTests(unittest.TestCase):
         for migration in (sqlite,postgres):
             self.assertIn("'ack_missing'",migration)
             self.assertIn("syndication_delivery_observations",migration)
-            self.assertIn("immutable_syndication_delivery_observation",migration)
+            self.assertIn("syndication_delivery_observations_no_update",migration)
+        self.assertIn("immutable_syndication_delivery_observation",sqlite)
+        self.assertIn("promomed_block_syndication_delivery_audit_mutation",postgres)
+        self.assertIn(
+            "FOR EACH ROW EXECUTE FUNCTION promomed_block_syndication_delivery_audit_mutation()",
+            postgres,
+        )
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 405)
