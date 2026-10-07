@@ -249,6 +249,8 @@ Receipt retrieval:
 
 `GET /api/external-contribution/receipt?contribution_id=...`
 
+The public receipt does not expose the governance actor's account identity. It exposes only `admittedByRole=governance`; individual actor identity remains in internal audit authority.
+
 ## 11. Suspension and revocation
 
 Suspension:
