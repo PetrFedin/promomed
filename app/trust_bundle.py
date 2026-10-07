@@ -139,6 +139,13 @@ def issue_snapshot(c,organization_id,actor,validity_seconds=DEFAULT_SNAPSHOT_VAL
            ORDER BY s.issued_at DESC,s.id DESC LIMIT 1""",
         (organization_id,),
     ).fetchone()
+    latest=c.execute(
+        """SELECT id FROM institutional_status_snapshots
+           WHERE organization_id=?
+           ORDER BY issued_at DESC,id DESC LIMIT 1""",
+        (organization_id,),
+    ).fetchone()
+    prior_id=latest["id"] if latest else None
     if current:
         existing=json.loads(current["envelope_json"])
         body=(existing.get("payload") or {}).get("body") or {}
@@ -188,7 +195,7 @@ def issue_snapshot(c,organization_id,actor,validity_seconds=DEFAULT_SNAPSHOT_VAL
         (
             snapshot_id,organization_id,SNAPSHOT_VERSION,snapshot_sha,
             _canonical(envelope),now,now+validity_seconds,
-            current["id"] if current else None,actor,int(org["demo_only"]),
+            prior_id,actor,int(org["demo_only"]),
         ),
     )
     c.execute(
