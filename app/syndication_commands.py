@@ -1,5 +1,5 @@
 from app.commanding import custom, error
-from app import syndication_network
+from app import delivery_protocol, syndication_network
 
 
 ROUTES={
@@ -11,6 +11,14 @@ ROUTES={
     "/api/institution/member",
     "/api/syndication/subscription",
     "/api/syndication/obligation/acknowledge",
+    "/api/syndication/endpoint/register",
+    "/api/syndication/endpoint/verify",
+    "/api/syndication/endpoint/rotate-secret",
+    "/api/syndication/endpoint/suspend",
+    "/api/syndication/endpoint/revoke",
+    "/api/syndication/delivery/event/create",
+    "/api/syndication/delivery/event/dispatch",
+    "/api/syndication/delivery/reconcile",
     "/api/external-contribution/submit",
     "/api/external-contribution/revise",
     "/api/external-contribution/review",
