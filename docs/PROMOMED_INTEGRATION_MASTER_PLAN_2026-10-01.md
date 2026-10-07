@@ -2518,3 +2518,69 @@ Truth boundary:
 Commercial consequence: partner certification can now compound operational evidence over time — delivery history, correction responsiveness, acknowledgement continuity and requalification evidence — rather than remaining a static integration badge.
 
 **Next institutional layer after green merge:** Signed Status Snapshots + Partner Trust Bundle + Cross-Organisation Verification.
+
+
+### Partner Delivery Protocol v2 — merged authority checkpoint 2026-10-07
+
+Merged repository authority:
+
+- PR #41 Partner Delivery Protocol v2 -> `main` merge `86b53e73129a639620c8da3c9d967bae459cbd73`;
+- PR #42 PostgreSQL portability hardening -> `main` merge `a60aa6423c63cfa25b479c0fa590499115631c0d`.
+
+Verified gates on the portability hotfix:
+
+- UI / architecture contract: PASS;
+- SQLite persistence authority: PASS;
+- PostgreSQL persistence authority: PASS;
+- responsive browser QA: PASS.
+
+The delivery protocol checkpoint is therefore merged with PostgreSQL-portable idempotent observation writes and a permanent architecture regression forbidding SQLite-only runtime DML in the delivery authority.
+
+### Signed Status Snapshots + Partner Trust Bundle + Cross-Organisation Verification — next institutional layer
+
+Implementation sequence:
+
+`institutional current state -> deterministic status projection -> signed status snapshot -> snapshot registry -> partner trust bundle -> embedded issuer/status material -> independent offline verification -> cross-organisation verifier receipt -> supersession/revocation visibility`.
+
+Required snapshot content:
+
+- institutional organisation identity;
+- current syndication qualification state and validity window;
+- public process-certification scopes;
+- endpoint protocol version and active/suspended/revoked state without endpoint secret material;
+- delivery cursor checkpoint;
+- recent SLA/behaviour summary over an explicit observation window;
+- requalification/suspension-review state;
+- snapshot issue/expiry times;
+- deterministic payload SHA-256;
+- Promomed issuer/key identity and Ed25519 signature.
+
+Partner Trust Bundle requirements:
+
+- status snapshot plus issuer document plus key/status material required for offline verification;
+- no database access and no signing private key required by verifier;
+- bundle must carry explicit schema/version identifiers;
+- all hashes and signatures are recomputed by the external verifier;
+- bundle must state that process/integration status is not medical efficacy, clinical safety, professional accreditation or commercial endorsement;
+- historical bundles remain verifiable after routine issuer-key rotation when the key was valid at issuance;
+- revoked issuer key / revoked snapshot / expired snapshot must be distinguishable states;
+- current Promomed state is not inferred from an old offline bundle unless a current signed status snapshot is supplied.
+
+Cross-organisation verification requirements:
+
+- a verifier organisation may record a verification receipt over an exact trust-bundle hash;
+- verifier identity is source-attributed and does not become Promomed scientific authority;
+- verification receipt records result, verifier organisation, verified-at time and bundle/snapshot hashes;
+- verifier cannot change the partner's qualification state, canonical evidence, claims or Promomed issuer state;
+- duplicate verification of the same bundle/result is idempotent;
+- no external verifier, accreditation, consortium participation or adoption is claimed until real non-demo evidence exists.
+
+Lifecycle requirements:
+
+- a new status snapshot supersedes the prior current snapshot for the same organisation while historical snapshots remain immutable;
+- qualification suspension/revocation/requalification state must be visible in the next snapshot;
+- trust bundle must not silently hide a revoked/expired status;
+- snapshot revocation is separate from partner qualification revocation and from issuer-key revocation;
+- external verification is evidence of cryptographic/process verification only, not endorsement.
+
+Commercial consequence: Promomed can distribute not only evidence packages but also independently verifiable institutional trust state, enabling enterprise due diligence, partner onboarding, procurement checks and federated knowledge-network integrations without exposing internal database authority.
