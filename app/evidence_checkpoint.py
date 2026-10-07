@@ -4,10 +4,6 @@ import json
 import os
 import time
 
-from cryptography.exceptions import InvalidSignature
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
-
 from app import change_impact, evidence_seal
 
 
@@ -34,6 +30,10 @@ def _ub64u(value):
 
 
 def _private_key():
+    try:
+        from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError("cryptography_required_for_evidence_checkpoint") from exc
     raw=os.environ.get("PROMOMED_EVIDENCE_SIGNING_PRIVATE_KEY_B64","").strip()
     if not raw:
         raise ValueError("evidence_checkpoint_issuer_not_configured")
@@ -44,6 +44,7 @@ def _private_key():
 
 
 def public_key_document():
+    from cryptography.hazmat.primitives import serialization
     public=_private_key().public_key().public_bytes(
         encoding=serialization.Encoding.Raw,
         format=serialization.PublicFormat.Raw,
@@ -82,6 +83,7 @@ def issue(c,artifact_kind,artifact_ref):
 
 def _verify_signature(envelope):
     try:
+        from cryptography.exceptions import InvalidSignature
         payload=envelope["payload"]
         if payload.get("checkpointVersion")!=CHECKPOINT_VERSION:
             return False,"checkpoint_version_mismatch"
@@ -95,7 +97,7 @@ def _verify_signature(envelope):
         return True,None
     except InvalidSignature:
         return False,"invalid_signature"
-    except (KeyError,TypeError,ValueError):
+    except (KeyError,TypeError,ValueError,ModuleNotFoundError):
         return False,"invalid_signature"
 
 
@@ -121,7 +123,7 @@ def revoke(c,checkpoint_sha256,artifact_kind,artifact_ref,reason,actor):
 def verify(c,envelope):
     try:
         _private_key()
-    except ValueError:
+    except (ValueError,ModuleNotFoundError):
         return {"status":"ISSUER_NOT_CONFIGURED","signature_valid":False,"current":False,"revoked":False}
 
     valid,reason=_verify_signature(envelope)
