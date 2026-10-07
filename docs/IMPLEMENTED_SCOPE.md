@@ -436,6 +436,7 @@ Repository/runtime scope:
 - authorized expertise scopes;
 - editorial acceptance required before scientific assignment;
 - explicit reviewer assignment per evidence candidate;
+- request-changes review iteration reopens the candidate without allowing conflict-history bypass;
 - mandatory conflict disclosure, automatic recusal on material conflict, conflict hold on potential conflict, and same-candidate reassignment block for the conflicted reviewer;
 - production scientific review blocked from the editor shortcut;
 - scientific decisions bound to the exact provider snapshot SHA-256;
