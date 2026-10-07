@@ -61,7 +61,10 @@ Public GET surfaces:
 
 - `/api/evidence-checkpoint/public-key` — current active key convenience document;
 - `/api/evidence-checkpoint/issuer` — issuer document including active/retired/revoked public keys;
-- `/api/evidence-checkpoint/status-list` — key lifecycle plus revoked checkpoint list.
+- `/api/evidence-checkpoint/status-list` — key lifecycle plus revoked checkpoint list;
+- `/api/evidence-checkpoint/checkpoint?sha256=...` — the immutable signed envelope originally issued for that checkpoint.
+
+Issued envelopes are persisted with their canonical payload and signature so they remain retrievable after routine signing-key rotation. Historical retrieval never requires loading an old private key.
 
 The issuer/status documents contain no private signing material.
 
