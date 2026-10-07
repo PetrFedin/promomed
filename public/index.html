@@ -647,6 +647,15 @@ body{background:var(--canvas);color:var(--text)}
 /* Interaction accessibility v2: modal focus and scroll discipline */
 body.sheetOpen{overflow:hidden}
 .sheet:focus{outline:none}
+/* Motion polish v1: restrained application transitions */
+@media(prefers-reduced-motion:no-preference){
+ .screen.on{animation:screenEnter .18s cubic-bezier(.2,.7,.2,1)}
+ .overlay.on{animation:overlayEnter .14s ease-out}
+ .overlay.on .sheet{animation:sheetEnter .18s cubic-bezier(.2,.75,.25,1)}
+ @keyframes screenEnter{from{opacity:.72;transform:translateY(4px)}to{opacity:1;transform:none}}
+ @keyframes overlayEnter{from{background:#0e203700}to{background:#0e2037cc}}
+ @keyframes sheetEnter{from{opacity:.84;transform:translateY(8px)}to{opacity:1;transform:none}}
+}
 /* accessibility + predictable interaction states */
 a,button,[role="button"],.tap{ -webkit-tap-highlight-color:transparent }
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
