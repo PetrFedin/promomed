@@ -451,14 +451,15 @@ Production separation-of-duties rules:
 3. Production reviewer credential state must be `verified`, independence must be explicitly attested, and expiry is fail-closed.
 4. Every assigned reviewer must disclose conflict state before a decision.
 5. `material` conflict causes recusal; `potential` conflict places the assignment on conflict hold. Either state blocks decision, and the conflicted reviewer cannot be reassigned to the same candidate.
-6. Scientific decision is immutable after write and is bound to the exact evidence snapshot hash.
-7. Current decision attestation is an authenticated-session SHA-256 digest, **not a legal electronic signature**.
-8. Final production admission requires a separate authenticated `governance` actor who is neither the editorial reviewer nor the scientific reviewer.
-9. Reviewer decisions and authority events are DB-protected against update/delete and chained with previous-event hashes for tamper evidence.
-10. Demo reviewer credentials remain explicitly marked `demo_attested`; they do not prove independent medical review.
-11. Failed command outcomes are transactionally rolled back; no 4xx governance response may commit partial authority mutations.
-12. DB-level state constraints enforce reviewer credential, assignment, conflict and decision enums; direct invalid state injection must fail.
-13. PostgreSQL migration execution supports dollar-quoted PL/pgSQL blocks so immutable audit triggers are reproducible in the production backend.
+6. `request_changes` reopens the candidate for a new scientific review iteration; a completed non-conflicted assignment must not deadlock the workflow.
+7. Scientific decision is immutable after write and is bound to the exact evidence snapshot hash.
+8. Current decision attestation is an authenticated-session SHA-256 digest, **not a legal electronic signature**.
+9. Final production admission requires a separate authenticated `governance` actor who is neither the editorial reviewer nor the scientific reviewer.
+10. Reviewer decisions and authority events are DB-protected against update/delete and chained with previous-event hashes for tamper evidence.
+11. Demo reviewer credentials remain explicitly marked `demo_attested`; they do not prove independent medical review.
+12. Failed command outcomes are transactionally rolled back; no 4xx governance response may commit partial authority mutations.
+13. DB-level state constraints enforce reviewer credential, assignment, conflict and decision enums; direct invalid state injection must fail.
+14. PostgreSQL migration execution supports dollar-quoted PL/pgSQL blocks so immutable audit triggers are reproducible in the production backend.
 
 Repository acceptance:
 
