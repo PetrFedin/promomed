@@ -48,10 +48,10 @@ def assert_touch_targets(page, label: str):
 
 
 def assert_readable_text(page, label: str):
-    sizes = page.locator("#today.on .small, #today.on .tiny").evaluate_all(
+    sizes = page.locator(".screen.on .small, .screen.on .tiny, .sheet .small, .sheet .tiny").evaluate_all(
         """els => els.filter(e => {
             const s=getComputedStyle(e); const r=e.getBoundingClientRect();
-            return s.display !== 'none' && r.width > 0 && r.height > 0;
+            return s.display !== 'none' && s.visibility !== 'hidden' && r.width > 0 && r.height > 0;
           }).slice(0,30).map(e => parseFloat(getComputedStyle(e).fontSize))"""
     )
     assert sizes, f"{label}: no readable sample text"
