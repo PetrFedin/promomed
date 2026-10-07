@@ -46,6 +46,7 @@ def expected_visual_evidence():
             "is_mobile":is_mobile,
             "has_touch":has_touch,
             "shell":visual_shell(width,height),
+            "deep_journey":name in {"iphone-15-pro","desktop"},
             "screenshots":files,
         })
     return rows
@@ -219,6 +220,14 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     expect(page.locator("#accountInbox")).to_be_visible()
     assert_no_page_overflow(page, width, f"{name}/account")
     page.screenshot(path=str(OUT / f"{clean_name(name)}-account.png"), full_page=True)
+
+    # Visual/layout matrix runs on every viewport. Deep authority/product journeys run on
+    # one canonical modern phone and one desktop to avoid repeating the same expensive
+    # functional scenario seven times without adding responsive evidence.
+    if name not in {"iphone-15-pro", "desktop"}:
+        assert not errors, f"{name}: page errors: {errors}"
+        context.close()
+        return
 
     # Organizer conversation is always available to an authenticated participant.
     page.get_by_role("button", name="Написать организатору", exact=True).click()
