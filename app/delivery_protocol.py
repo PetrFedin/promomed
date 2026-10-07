@@ -69,6 +69,13 @@ def webhook_signature(secret,timestamp,event_id,payload_sha256):
     return _sign(secret,timestamp,event_id,payload_sha256)
 
 
+def acknowledgement_signature(secret,timestamp,event_id,ack_payload):
+    if not isinstance(ack_payload,dict):
+        raise ValueError("delivery_ack_payload_invalid")
+    ack_sha=_sha_bytes(_canonical(ack_payload).encode("utf-8"))
+    return _sign(secret,timestamp,event_id,ack_sha)
+
+
 def verify_signature(secret,timestamp,event_id,payload_sha256,signature):
     expected=_sign(secret,timestamp,event_id,payload_sha256)
     return hmac.compare_digest(expected,str(signature or ""))
