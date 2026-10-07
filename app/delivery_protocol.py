@@ -17,6 +17,7 @@ from app import syndication_network
 PROTOCOL_VERSION="promomed-partner-delivery-v2"
 SIGNATURE_VERSION="v1"
 MAX_ATTEMPTS=8
+ACK_EXPECTATION_SECONDS=86400
 RETRY_DELAYS=(60,300,900,3600,10800,21600,21600,21600)
 EVENT_TYPES={
     "package_delivery",
@@ -616,7 +617,7 @@ def dispatch_event(c,event_id,actor="delivery_worker",transport=None,now=None):
     event=_event_row(c,event_id)
     if not event:
         raise ValueError("delivery_event_not_found")
-    if event["status"] in ("acknowledged","dead","cancelled"):
+    if event["status"] in ("delivered","acknowledged","dead","cancelled"):
         return {
             "eventId":event_id,
             "status":event["status"],
@@ -918,6 +919,25 @@ def acknowledge_event(c,event_id,organization_id,ack_payload,ack_timestamp,signa
 def reconcile_sla(c,now=None):
     now=int(now or time.time())
     syndication_network.mark_overdue_obligations(c,now=now)
+    missing_ack_rows=list(c.execute(
+        """SELECT e.id,e.organization_id,e.sequence_no,e.demo_only,s.delivered_at
+           FROM syndication_delivery_events e
+           JOIN syndication_delivery_event_state s ON s.event_id=e.id
+           WHERE s.status='delivered' AND s.delivered_at IS NOT NULL
+             AND s.delivered_at<=?""",
+        (now-ACK_EXPECTATION_SECONDS,),
+    ))
+    for item in missing_ack_rows:
+        _record_observation(
+            c,item["organization_id"],item["id"],"ack_missing","warning",
+            {
+                "sequence":item["sequence_no"],
+                "deliveredAt":item["delivered_at"],
+                "expectedWithinSeconds":ACK_EXPECTATION_SECONDS,
+            },
+            stable_key=f"ack-missing|{item['id']}",
+            demo_only=bool(item["demo_only"]),
+        )
     rows=list(c.execute(
         """SELECT o.id obligation_id,o.obligation_type,o.due_at,o.acknowledged_at,
                   d.organization_id,e.id event_id,e.demo_only
@@ -943,7 +963,12 @@ def reconcile_sla(c,now=None):
         )
         observations+=1
     evaluations=[evaluate_requalification(c,org,now=now) for org in sorted(organizations)]
-    return {"breachedObligations":len(rows),"observationsProcessed":observations,"evaluations":evaluations}
+    return {
+        "breachedObligations":len(rows),
+        "missingAcknowledgements":len(missing_ack_rows),
+        "observationsProcessed":observations+len(missing_ack_rows),
+        "evaluations":evaluations,
+    }
 
 
 def behavior_scorecard(c,organization_id,now=None,window_seconds=30*86400):
@@ -1020,6 +1045,7 @@ def evaluate_requalification(c,organization_id,now=None):
     sla_breaches=int(obs.get("sla_breach",0))
     dead_events=int(obs.get("dead_event",0))
     retryable=int(score["retryableFailures"])
+    missing_ack=int(obs.get("ack_missing",0))
     critical_withdrawal=False
     for row in c.execute(
         """SELECT details_json FROM syndication_delivery_observations
@@ -1033,13 +1059,17 @@ def evaluate_requalification(c,organization_id,now=None):
                 break
         except Exception:
             pass
-    requalification=(sla_breaches>=2 or dead_events>=2 or retryable>=10 or critical_withdrawal)
+    requalification=(
+        sla_breaches>=2 or dead_events>=2 or retryable>=10
+        or missing_ack>=3 or critical_withdrawal
+    )
     suspension_review=(critical_withdrawal or dead_events>=3)
     changed=False
     if requalification and q and q["status"]=="qualified":
         reason=(
             "Observed delivery behaviour requires requalification: "
-            f"sla_breaches={sla_breaches}, dead_events={dead_events}, retryable_failures={retryable}."
+            f"sla_breaches={sla_breaches}, dead_events={dead_events}, "
+            f"retryable_failures={retryable}, missing_acknowledgements={missing_ack}."
         )
         c.execute(
             """UPDATE syndication_partner_qualifications
@@ -1059,6 +1089,7 @@ def evaluate_requalification(c,organization_id,now=None):
             "slaBreaches":sla_breaches,
             "deadEvents":dead_events,
             "retryableFailures":retryable,
+            "missingAcknowledgements":missing_ack,
             "withdrawalSlaBreach":critical_withdrawal,
         },
         "ruleVersion":"promomed-delivery-behaviour-requalification-v1",
