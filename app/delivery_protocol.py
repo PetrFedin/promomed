@@ -1037,10 +1037,14 @@ def behavior_scorecard(c,organization_id,now=None,window_seconds=30*86400):
             "updatedAt":cursor["updated_at"] if cursor else None,
         },
         "truthBoundary":{
-            "productionTrafficObserved":bool(events and not any(bool(r["demo_only"]) for r in c.execute(
-                "SELECT demo_only FROM syndication_delivery_events WHERE organization_id=? AND created_at>=?",
+            "productionTrafficObserved":bool(c.execute(
+                """SELECT 1 FROM syndication_delivery_attempts a
+                   JOIN syndication_delivery_events e ON e.id=a.event_id
+                   WHERE e.organization_id=? AND e.demo_only=0
+                     AND a.transport_status='success' AND a.completed_at>=?
+                   LIMIT 1""",
                 (organization_id,since),
-            ))),
+            ).fetchone()),
             "medicalEfficacyMeasured":False,
             "commercialOutcomeMeasured":False,
         },
@@ -1172,15 +1176,29 @@ def runtime_snapshot(c,organization_id=None):
     production_endpoint=any(
         not x["demoOnly"] and x["status"]=="active" for x in endpoint_docs
     )
-    production_success=bool(c.execute(
-        """SELECT 1 FROM syndication_delivery_attempts a
-           JOIN syndication_delivery_events e ON e.id=a.event_id
-           WHERE e.demo_only=0 AND a.transport_status='success' LIMIT 1"""
-    ).fetchone())
-    production_ack=bool(c.execute(
-        """SELECT 1 FROM syndication_delivery_acknowledgements
-           WHERE demo_only=0 LIMIT 1"""
-    ).fetchone())
+    if organization_id:
+        production_success=bool(c.execute(
+            """SELECT 1 FROM syndication_delivery_attempts a
+               JOIN syndication_delivery_events e ON e.id=a.event_id
+               WHERE e.organization_id=? AND e.demo_only=0
+                 AND a.transport_status='success' LIMIT 1""",
+            (organization_id,),
+        ).fetchone())
+        production_ack=bool(c.execute(
+            """SELECT 1 FROM syndication_delivery_acknowledgements
+               WHERE organization_id=? AND demo_only=0 LIMIT 1""",
+            (organization_id,),
+        ).fetchone())
+    else:
+        production_success=bool(c.execute(
+            """SELECT 1 FROM syndication_delivery_attempts a
+               JOIN syndication_delivery_events e ON e.id=a.event_id
+               WHERE e.demo_only=0 AND a.transport_status='success' LIMIT 1"""
+        ).fetchone())
+        production_ack=bool(c.execute(
+            """SELECT 1 FROM syndication_delivery_acknowledgements
+               WHERE demo_only=0 LIMIT 1"""
+        ).fetchone())
     return {
         "version":PROTOCOL_VERSION,
         "endpoints":endpoint_docs,
