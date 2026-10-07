@@ -146,3 +146,13 @@ Events prioritizes operational use before conference storytelling:
 - Venue Concierge now/next and Partner Appointments form one operational grid on tablet/desktop;
 - phone keeps the same controls in a vertical sequence;
 - conference narrative, ecosystem and curated moments remain below the operational layer.
+
+## 15. Community experience v2
+
+Community remains consent-first and avoids generic social-feed mechanics:
+
+- explainable matches form a compact two-card workspace on tablet/desktop;
+- partner appointments and mutual meetings form a second working grid;
+- double opt-in semantics remain explicit beside mutual meeting state;
+- promotional 30-day / gift / partner discovery layers stay below networking utility;
+- no new public follower counts, popularity ranking or health-risk inference is introduced.
