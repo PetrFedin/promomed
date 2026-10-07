@@ -1,0 +1,95 @@
+# СОСТОЯНИЕ — Participant UI System v2
+
+**Checkpoint:** 2026-10-07  
+**Scope:** participant-facing MVP shell and shared interaction primitives.  
+**Goal:** make the application comfortable for repeated daily use on phone, tablet and desktop without changing business authority or medical-governance semantics.
+
+## 1. Responsive shell
+
+### Phone — below 768 px
+
+- thumb-first bottom navigation;
+- navigation remains inside horizontal safe margins rather than spanning edge-to-edge;
+- sticky translucent top bar for search, notifications and account access;
+- single-column content is the default;
+- modal sheets enter from the bottom and respect safe-area insets;
+- horizontally scrollable editorial rails remain touch-native.
+
+### Tablet — 768–1199 px
+
+- compact fixed left navigation rail;
+- content moves into a centered working canvas;
+- navigation never consumes full content width;
+- modal surfaces use centered sheets rather than phone-style full-width sheets;
+- multi-column grids are used only where cards remain readable.
+
+### Desktop / monitor — 1200 px and above
+
+- expanded fixed left navigation rail with icon + label;
+- working canvas is centered independently of the rail;
+- denser card spacing and wider editorial / operational layouts;
+- sticky header stays available without occupying a separate full-width toolbar;
+- dialogs remain visually connected to the working canvas.
+
+## 2. Core visual tokens
+
+Use semantic tokens rather than ad-hoc colors: canvas, surfaces, text, secondary text, line, primary, success, warning, danger, elevation and radius.
+
+## 3. Interaction quality
+
+- minimum primary touch target: 44 × 44 px;
+- primary actions must not become full-width on tablet/desktop unless task context requires it;
+- hover is additive, never required for understanding;
+- active state is visible in navigation and segmented controls;
+- focus-visible state must remain obvious for keyboard users;
+- disabled actions remain legible.
+
+## 4. Typography and density
+
+- supporting text must not render below 11 px in tested participant surfaces;
+- tablet/desktop increase information density through grid structure, not by shrinking text;
+- labels and status pills may be compact but must wrap safely where required;
+- long governance / evidence text must never overflow cards.
+
+## 5. Cards and surfaces
+
+- everyday cards use restrained borders and low elevation;
+- interactive cards gain stronger border/elevation only on hover-capable devices;
+- premium/editorial surfaces may use gradients and large-format graphics;
+- operational/governance surfaces remain calmer and more data-dense;
+- status color never replaces status text.
+
+## 6. Everyday-use hierarchy
+
+1. Today / current state.
+2. Media / knowledge.
+3. Events / programme.
+4. Community / relationships.
+5. My / saved, progress, account and wallet.
+
+Investor, corporate and governance surfaces remain role/presentation layers and must not dominate ordinary participant navigation.
+
+## 7. Accessibility
+
+Required: keyboard-visible focus, reduced-motion support, safe-area support, viewport-contained sheets, readable text contract, touch target contract, no horizontal page overflow, and responsive navigation placement.
+
+## 8. Current repository implementation
+
+Implemented in branch feat/mvp-ux-ui-v2:
+
+- semantic visual token layer;
+- phone bottom navigation refinement;
+- tablet compact left rail;
+- desktop expanded left rail;
+- sticky translucent header;
+- calmer card/elevation system;
+- form focus state;
+- hover/pressed interaction states;
+- viewport-safe modal behavior;
+- responsive QA updated to validate the new shell.
+
+## 9. Truth boundary
+
+This is a UI-system checkpoint, not a claim of a final Promomed brand identity.
+
+The current CSS-generated gradients, abstract hero graphics and demo editorial art direction are MVP product-design assets. Final brand photography, illustration licensing, production iconography and official Promomed brand approval remain separate creative/brand admission work.

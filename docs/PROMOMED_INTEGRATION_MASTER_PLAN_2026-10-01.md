@@ -491,6 +491,35 @@ References:
 
 ---
 
+### Cross-cutting Product Experience — Participant UI System v2 — repository checkpoint 2026-10-07
+
+Daily-use UX rules are governed by docs/UI_SYSTEM_V2.md.
+
+Implemented shell direction:
+
+- phone -> safe-area bottom navigation;
+- tablet -> compact left navigation rail;
+- desktop/monitor -> expanded left navigation rail;
+- centered responsive working canvas;
+- sticky lightweight top actions;
+- semantic visual tokens;
+- minimum 44 px interaction targets;
+- readable supporting text contract;
+- keyboard focus, reduced-motion and viewport-safe sheet behavior;
+- responsive browser QA validates navigation placement instead of assuming one mobile layout for every device.
+
+This checkpoint changes presentation hierarchy only. It does not change evidence, medical review, consent, capital, account or business authority.
+
+Open brand/product-design work:
+
+- official Promomed / СОСТОЯНИЕ brand approval;
+- production icon set;
+- licensed photography / illustration art direction;
+- consolidated component extraction after the MVP CSS stabilizes;
+- visual regression baselines for the most important participant journeys.
+
+---
+
 ### Phase 3 — Search and semantic discovery
 
 #### 3.1 Meilisearch
