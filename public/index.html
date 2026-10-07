@@ -644,6 +644,9 @@ body{background:var(--canvas);color:var(--text)}
 .appToast.ok{border-color:#cde9dc;background:var(--success-soft)}
 .appToast button{background:transparent;color:inherit;font-size:18px;line-height:1;padding:0 0 0 6px}
 @media(max-width:600px){.toastHost{left:14px;right:14px;bottom:calc(88px + env(safe-area-inset-bottom));width:auto}}
+/* Interaction accessibility v2: modal focus and scroll discipline */
+body.sheetOpen{overflow:hidden}
+.sheet:focus{outline:none}
 /* accessibility + predictable interaction states */
 a,button,[role="button"],.tap{ -webkit-tap-highlight-color:transparent }
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
@@ -954,7 +957,18 @@ function toggleNavRail(){
 }
 window.addEventListener('resize',applyNavRailPreference);
 applyNavRailPreference();
-function openSheet(k){document.getElementById('sheet').innerHTML='<div class="row"><span></span><button class="icon" aria-label="Закрыть" onclick="closeSheet()">×</button></div>'+(sheets[k]||'');document.getElementById('overlay').classList.add('on');if(k==='search')setTimeout(()=>initDiscoverySearch(),0)}
+let sheetReturnFocus=null;
+function sheetFocusable(){
+ return [...document.querySelectorAll('#sheet button:not([disabled]),#sheet input:not([disabled]),#sheet select:not([disabled]),#sheet textarea:not([disabled]),#sheet [tabindex]:not([tabindex="-1"])')].filter(x=>x.offsetParent!==null)
+}
+function openSheet(k){
+ sheetReturnFocus=document.activeElement instanceof HTMLElement?document.activeElement:null;
+ const sheet=document.getElementById('sheet'),overlay=document.getElementById('overlay');
+ sheet.innerHTML='<div class="row"><span></span><button class="icon" aria-label="Закрыть" onclick="closeSheet()">×</button></div>'+(sheets[k]||'');
+ overlay.classList.add('on');overlay.setAttribute('aria-hidden','false');document.body.classList.add('sheetOpen');
+ if(k==='search')setTimeout(()=>{initDiscoverySearch();(document.getElementById('discoveryQuery')||sheetFocusable()[0])?.focus()},0);
+ else setTimeout(()=>sheetFocusable()[0]?.focus(),0)
+}
 let discoveryKind='',discoveryReplay=null,discoveryReview='',discoveryTimer=null;
 function initDiscoverySearch(){runDiscoverySearch()}
 function queueDiscoverySearch(){clearTimeout(discoveryTimer);discoveryTimer=setTimeout(runDiscoverySearch,180)}
@@ -981,9 +995,23 @@ async function toggleDiscoverySave(kind,ref,saved){
  if(!apiToken){openSheet('login');return}
  try{await api(saved?'/api/discovery/unsave':'/api/discovery/save',{method:'POST',body:JSON.stringify({target_kind:kind,target_ref:ref})});await syncState(true);await runDiscoverySearch()}catch(e){alert('Discovery: '+e.message)}
 }
-function closeSheet(){document.getElementById('overlay').classList.remove('on')}
+function closeSheet(){
+ const overlay=document.getElementById('overlay');
+ if(!overlay.classList.contains('on'))return;
+ overlay.classList.remove('on');overlay.setAttribute('aria-hidden','true');document.body.classList.remove('sheetOpen');
+ const target=sheetReturnFocus;sheetReturnFocus=null;
+ if(target&&target.isConnected)setTimeout(()=>target.focus(),0)
+}
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeSheet()});
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+document.addEventListener('keydown',e=>{
+ const overlay=document.getElementById('overlay');
+ if(e.key==='Escape'&&overlay.classList.contains('on')){e.preventDefault();closeSheet();return}
+ if(e.key!=='Tab'||!overlay.classList.contains('on'))return;
+ const focusable=sheetFocusable();if(!focusable.length){e.preventDefault();return}
+ const first=focusable[0],last=focusable[focusable.length-1];
+ if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+ else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+});
 function switchRole(r){role=r;document.getElementById('nav').classList.toggle('hidden',r!=='participant');if(r==='organizer')show('organizer');else if(r==='partner')show('partnerDash');else if(r==='staff')show('staff');else if(r==='editor')show('editor');else if(r==='moderator')show('moderator');else show('today');updateTag()}
 function setPhase(p){phase=p;const map={before:['ДО КОНФЕРЕНЦИИ · ДЕМО','Ваш день начинается здесь.','Соберите программу заранее. Во время события здесь появятся билет, карта и текущая сессия.'],during:['СЕГОДНЯ · CONFERENCE MODE','Вы уже на СОСТОЯНИИ.','Билет, текущая сессия, карта, live и изменения программы — на первом экране.'],after:['ПОСЛЕ КОНФЕРЕНЦИИ · POST-EVENT','Событие закончилось. Участие — нет.','Записи, материалы, сохранённые контакты, клуб и следующий тематический маршрут.']};document.getElementById('phasePill').textContent=map[p][0];document.getElementById('dayTitle').textContent=map[p][1];document.getElementById('daySub').textContent=map[p][2];updateTag()}
 function updateTag(){const who=!apiToken?'гость':({participant:'участник',organizer:'организатор',partner:'партнёр',staff:'check-in',editor:'редактор',moderator:'модератор',sales:'demo director'}[role]||'аккаунт');const tag=document.getElementById('roleTag');tag.textContent='v1.7 · '+who+' · '+({before:'ДО',during:'ВО ВРЕМЯ',after:'ПОСЛЕ'}[phase]||'SYNC');tag.classList.toggle('hidden',!apiToken||role==='participant');const demo=['sales','organizer'].includes(role)&&!!apiToken;const dock=document.getElementById('proofDock'),launcher=document.getElementById('goldenDemoLauncher');if(dock)dock.style.display=demo?'flex':'none';if(launcher)launcher.style.display=demo?'block':'none'}
