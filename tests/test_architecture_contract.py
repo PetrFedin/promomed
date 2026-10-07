@@ -40,6 +40,8 @@ MODULES = {
     "editorial_commands.py",
     "demo_commands.py",
     "reviewer_authority.py",
+    "evidence_interchange.py",
+    "institutional_commands.py",
 }
 
 
@@ -95,6 +97,7 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("handle_operations_command", SERVER)
         self.assertIn("handle_partner_command", SERVER)
         self.assertIn("handle_editorial_command", SERVER)
+        self.assertIn("handle_institutional_command", SERVER)
         self.assertIn("handle_demo_command", SERVER)
 
     def test_http_layer_has_no_hardcoded_account_credentials(self):
@@ -154,6 +157,19 @@ class ArchitectureContractTests(unittest.TestCase):
         public_idx=SERVER.index("public_outcome=handle_evidence_checkpoint_public(p,data)")
         auth_idx=SERVER.index("a=auth(self)", SERVER.index(" def do_POST(self):"))
         self.assertLess(public_idx,auth_idx)
+
+    def test_institutional_portable_verification_is_public_before_auth(self):
+        self.assertIn("handle_institutional_public", SERVER)
+        public_idx=SERVER.index("institutional_public=handle_institutional_public(p,data)")
+        auth_idx=SERVER.index("a=auth(self)", SERVER.index(" def do_POST(self):"))
+        self.assertLess(public_idx,auth_idx)
+
+    def test_institutional_openapi_contract_is_machine_readable(self):
+        import json
+        spec = json.loads((ROOT / "docs" / "openapi" / "institutional-evidence-v1.openapi.json").read_text(encoding="utf-8"))
+        self.assertEqual(spec["openapi"], "3.1.0")
+        self.assertIn("/api/evidence-interchange/verify-portable", spec["paths"])
+        self.assertIn("/api/evidence-interchange/package/deliver", spec["paths"])
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 405)

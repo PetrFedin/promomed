@@ -2355,3 +2355,41 @@ Truth boundary:
 - DID/JWKS/VC-compatible publication, signed status snapshots and institutional cross-signing remain future interoperability work, not current claims.
 
 Commercial consequence: a partner, university, professional society or enterprise knowledge platform can verify an exported Promomed evidence checkpoint without receiving Promomed's signing secret. This is a prerequisite for partner certification, governed syndication and institutional adoption.
+
+
+### Institutional Evidence Distribution Network v1 — repository checkpoint 2026-10-07
+
+This checkpoint implements the next approved institutional-adoption sequence:
+
+`Evidence Governance Interchange Profile -> Reference Evidence Package -> Institutional Publisher / Consumer Roles`.
+
+Implemented:
+
+- versioned self-describing Interchange Profile with stable schema ID and JSON Schema;
+- portable projection of artifact identity, sources, current claims, historical supersession/retraction, review role, disclosures, approval state, Evidence Seal hash and publication-hold state;
+- privacy-minimised reviewer export: role/state only, not reviewer identity;
+- explicit unconfigured review-validity boundary instead of invented expiry dates;
+- Reference Evidence Package bound to a current signed Evidence Checkpoint;
+- deterministic package SHA-256 and immutable historical retrieval;
+- public/offline portable package verifier that checks package hash, schema identity, embedded signed checkpoint, seal binding and authority boundary without Promomed DB/private-key access;
+- synthetic/non-clinical reference package for external integrators and diligence;
+- separate institutional organisation authority rather than overloading commercial partner records;
+- scoped institutional roles: publisher / consumer / contributor;
+- governed package delivery and deterministic delivery receipt;
+- delivery acknowledgement state;
+- package supersession lineage;
+- automatic downstream withdrawal when Change Impact Engine places a high/critical publication hold on an exported artifact;
+- historical withdrawn packages remain retrievable for audit rather than being deleted;
+- public package/reference reads and governance-only organisation/package mutations;
+- Investor Proof exposes Institutional Evidence Distribution Network as CI-PROVEN infrastructure while explicitly claiming zero external institutional adoption;
+- migrations `020_institutional_evidence_exchange` for SQLite/PostgreSQL;
+- contract documentation: `docs/INSTITUTIONAL_EVIDENCE_NETWORK_V1.md`.
+
+Truth boundary:
+
+- the interchange profile proves governed process provenance, not medical truth, efficacy, safety or regulator approval;
+- institutional publisher/consumer status does not grant Promomed claim-editing authority;
+- external institution identity/qualification remains source-attributed and must not be inferred from organisation type;
+- no external institutional customer, contract, accreditation or revenue is claimed by this checkpoint.
+
+Commercial consequence: reviewed Promomed knowledge can now be packaged as a verifiable institutional distribution product instead of remaining usable only inside the СОСТОЯНИЕ application.

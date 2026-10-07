@@ -1,0 +1,413 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Promomed Institutional Evidence Distribution API",
+    "version": "1.0.0",
+    "description": "Governed evidence-package distribution and verification. Process provenance only; no medical efficacy/safety certification."
+  },
+  "paths": {
+    "/api/evidence-interchange/reference": {
+      "get": {
+        "summary": "Get synthetic non-clinical interoperability reference fixture",
+        "responses": {
+          "200": {
+            "description": "Synthetic reference fixture",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/evidence-interchange/package": {
+      "get": {
+        "summary": "Retrieve an immutable institutional evidence package",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package document"
+          },
+          "404": {
+            "description": "Package not found"
+          }
+        }
+      }
+    },
+    "/api/evidence-interchange/verify-portable": {
+      "post": {
+        "summary": "Verify an institutional package using public material only",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "package",
+                  "issuer_document"
+                ],
+                "properties": {
+                  "package": {
+                    "type": "object"
+                  },
+                  "issuer_document": {
+                    "type": "object"
+                  },
+                  "status_list": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Portable verification result"
+          }
+        }
+      }
+    },
+    "/api/institutional-network": {
+      "get": {
+        "summary": "Read institutional organisations, packages and deliveries",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Institutional network snapshot"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/institution/register": {
+      "post": {
+        "summary": "Register an institutional organisation",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "organization_id",
+                  "name",
+                  "organization_type"
+                ],
+                "properties": {
+                  "organization_id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "organization_type": {
+                    "type": "string"
+                  },
+                  "external_ref": {
+                    "type": "string"
+                  },
+                  "credential_source": {
+                    "type": "string"
+                  },
+                  "partner_id": {
+                    "type": "string"
+                  },
+                  "demo_only": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Organisation registered"
+          },
+          "403": {
+            "description": "Governance role required"
+          }
+        }
+      }
+    },
+    "/api/institution/role": {
+      "post": {
+        "summary": "Bind an institutional publisher/consumer/reserved contributor role",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "organization_id",
+                  "role_scope"
+                ],
+                "properties": {
+                  "organization_id": {
+                    "type": "string"
+                  },
+                  "role_scope": {
+                    "enum": [
+                      "publisher",
+                      "consumer",
+                      "contributor"
+                    ]
+                  },
+                  "verification_ref": {
+                    "type": "string"
+                  },
+                  "effective_at": {
+                    "type": "integer"
+                  },
+                  "expires_at": {
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "demo_only": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Role bound"
+          },
+          "403": {
+            "description": "Governance role required"
+          }
+        }
+      }
+    },
+    "/api/evidence-interchange/package/create": {
+      "post": {
+        "summary": "Create a package from a current process-valid artifact and signed checkpoint",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "artifact_kind",
+                  "artifact_ref"
+                ],
+                "properties": {
+                  "artifact_kind": {
+                    "type": "string"
+                  },
+                  "artifact_ref": {
+                    "type": "string"
+                  },
+                  "checkpoint_sha256": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Package created"
+          },
+          "409": {
+            "description": "Artifact/checkpoint not eligible"
+          }
+        }
+      }
+    },
+    "/api/evidence-interchange/package/deliver": {
+      "post": {
+        "summary": "Deliver an active package to an active institutional publisher/consumer",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "package_id",
+                  "organization_id"
+                ],
+                "properties": {
+                  "package_id": {
+                    "type": "string"
+                  },
+                  "organization_id": {
+                    "type": "string"
+                  },
+                  "delivery_role": {
+                    "enum": [
+                      "publisher",
+                      "consumer"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Delivery receipt created"
+          },
+          "409": {
+            "description": "Role/package not eligible"
+          }
+        }
+      }
+    },
+    "/api/evidence-interchange/package/acknowledge": {
+      "post": {
+        "summary": "Acknowledge package delivery",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "delivery_id",
+                  "organization_id"
+                ],
+                "properties": {
+                  "delivery_id": {
+                    "type": "string"
+                  },
+                  "organization_id": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivery acknowledged"
+          }
+        }
+      }
+    },
+    "/api/evidence-interchange/package/withdraw": {
+      "post": {
+        "summary": "Governance withdrawal of active packages for an artifact",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "artifact_kind",
+                  "artifact_ref"
+                ],
+                "properties": {
+                  "artifact_kind": {
+                    "type": "string"
+                  },
+                  "artifact_ref": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Packages withdrawn"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "EvidenceGovernanceInterchangeProfile": {
+        "$ref": "../schemas/evidence-governance-interchange-v1.schema.json"
+      },
+      "ReferenceEvidencePackage": {
+        "$ref": "../schemas/reference-evidence-package-v1.schema.json"
+      },
+      "SyntheticReferenceFixture": {
+        "$ref": "../schemas/evidence-interchange-reference-fixture-v1.schema.json"
+      }
+    }
+  }
+}
