@@ -12,6 +12,7 @@ from app import (
     partner_commands,
     editorial_commands,
     institutional_commands,
+    syndication_commands,
     demo_commands,
 )
 
@@ -191,6 +192,42 @@ class CommandBoundaryTests(unittest.TestCase):
         ).fetchone()
         self.assertEqual(row["organization_type"], "university")
         self.assertEqual(row["status"], "active")
+
+    def test_syndication_governance_and_member_boundaries(self):
+        institutional_commands.handle_command(
+            self.c, "/api/institution/register", "governance", "governance@demo.ru",
+            {
+                "organization_id": "INST-SYND-BOUNDARY",
+                "name": "Synthetic Society",
+                "organization_type": "scientific_society",
+                "demo_only": True,
+            },
+        )
+        denied = syndication_commands.handle_command(
+            self.c, "/api/syndication/qualification/start", "participant", "participant@demo.ru",
+            {"organization_id": "INST-SYND-BOUNDARY", "demo_only": True},
+        )
+        self.assertEqual(denied.status, 403)
+        self.assertEqual(denied.payload["error"], "forbidden")
+
+        allowed = syndication_commands.handle_command(
+            self.c, "/api/syndication/qualification/start", "governance", "governance@demo.ru",
+            {"organization_id": "INST-SYND-BOUNDARY", "demo_only": True},
+        )
+        self.assertEqual(allowed.status, 201)
+        self.assertEqual(allowed.payload["data"]["qualification"]["status"], "pending")
+
+        contribution = syndication_commands.handle_command(
+            self.c, "/api/external-contribution/submit", "participant", "participant@demo.ru",
+            {
+                "organization_id": "INST-SYND-BOUNDARY",
+                "contribution_type": "source_recommendation",
+                "title": "Must be blocked without membership and qualification",
+                "payload": {"source_ref": "urn:test"},
+            },
+        )
+        self.assertEqual(contribution.status, 409)
+        self.assertEqual(contribution.payload["error"], "syndication_partner_not_qualified")
 
     def test_demo_control_role_boundary(self):
         denied = demo_commands.handle_command(
