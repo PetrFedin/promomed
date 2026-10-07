@@ -252,8 +252,9 @@ def _record_issuance(c, envelope):
     artifact = payload["artifact"]
     c.execute(
         """INSERT INTO evidence_checkpoint_issuance(
-             checkpoint_sha256,issuer_id,key_id,artifact_kind,artifact_ref,issued_at,seal_sha256
-           ) VALUES(?,?,?,?,?,?,?) ON CONFLICT(checkpoint_sha256) DO NOTHING""",
+             checkpoint_sha256,issuer_id,key_id,artifact_kind,artifact_ref,issued_at,seal_sha256,
+             payload_json,signature_b64
+           ) VALUES(?,?,?,?,?,?,?,?,?) ON CONFLICT(checkpoint_sha256) DO NOTHING""",
         (
             envelope["checkpointSha256"],
             payload["issuerId"],
@@ -262,8 +263,28 @@ def _record_issuance(c, envelope):
             artifact["ref"],
             payload["issuedAt"],
             payload["sealSha256"],
+            json.dumps(payload,ensure_ascii=False,sort_keys=True,separators=(",",":")),
+            envelope["signature"],
         ),
     )
+
+
+def checkpoint_document(c, checkpoint_sha256):
+    checkpoint_sha256=str(checkpoint_sha256 or "").strip().lower()
+    if len(checkpoint_sha256)!=64 or any(ch not in "0123456789abcdef" for ch in checkpoint_sha256):
+        raise ValueError("checkpoint_sha256_invalid")
+    row=c.execute(
+        """SELECT checkpoint_sha256,payload_json,signature_b64
+           FROM evidence_checkpoint_issuance WHERE checkpoint_sha256=?""",
+        (checkpoint_sha256,),
+    ).fetchone()
+    if not row:
+        raise ValueError("checkpoint_not_found")
+    return {
+        "payload": json.loads(row["payload_json"]),
+        "signature": row["signature_b64"],
+        "checkpointSha256": row["checkpoint_sha256"],
+    }
 
 
 def issue(c, artifact_kind, artifact_ref):
