@@ -531,3 +531,16 @@ Implemented in repository scope:
 - existing overflow, navigation, touch-target and readability contracts remain mandatory.
 
 Boundary: no pixel-perfect visual diff is claimed yet.
+
+
+## Browser QA Runtime v2 — visual matrix + canonical deep journeys
+
+Implemented in repository scope:
+
+- seven-viewport participant visual/layout matrix retained;
+- full deep functional journey runs on iPhone 15 Pro and desktop 1440x900;
+- other viewports stop after participant/account visual proof;
+- manifest records deep_journey per device;
+- screenshot completeness and responsive geometry contracts remain mandatory.
+
+This is a CI runtime optimization, not a reduction in participant responsive coverage.
