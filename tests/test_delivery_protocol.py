@@ -340,25 +340,77 @@ class PartnerDeliveryProtocolTests(unittest.TestCase):
             "SELECT payload_sha256 FROM syndication_delivery_events WHERE id=?",
             (event_id,),
         ).fetchone()
-        conflicting={
+        original_ack={
             "eventId":event_id,
             "payloadSha256":event["payload_sha256"],
             "status":"accepted",
-            "extra":"not-the-original-ack",
         }
         ts=int(time.time())
-        bad_sig=delivery_protocol.acknowledgement_signature(
-            self.secret,ts,event_id,conflicting
-        )
         with self.assertRaisesRegex(ValueError,"delivery_ack_conflict"):
             delivery_protocol.acknowledge_event(
-                self.c,event_id,"INST-DELIVERY-001",conflicting,ts,bad_sig
+                self.c,event_id,"INST-DELIVERY-001",original_ack,ts,"v1="+"0"*64
             )
         count=self.c.execute(
             "SELECT COUNT(*) n FROM syndication_delivery_acknowledgements WHERE event_id=?",
             (event_id,),
         ).fetchone()["n"]
         self.assertEqual(count,1)
+
+    def test_queued_event_can_route_through_new_active_endpoint_without_new_event(self):
+        self._subscribe()
+        _,delivery=self._package_and_delivery()
+        event_id=delivery["outboundEvent"]["id"]
+        original_endpoint=self.endpoint_registration["endpoint"]["id"]
+
+        delivery_protocol.suspend_endpoint(
+            self.c,original_endpoint,"governance@demo.ru","Synthetic endpoint rotation"
+        )
+        replacement=delivery_protocol.register_endpoint(
+            self.c,
+            "INST-DELIVERY-001",
+            "https://partner2.example.test/promomed",
+            "governance@demo.ru",
+            demo_only=True,
+        )
+        replacement_secret=replacement["secret"]
+
+        def verify_replacement(url,body,headers):
+            payload=json.loads(body.decode("utf-8"))
+            return {
+                "status":200,
+                "body":json.dumps({"challenge":payload["challenge"]}).encode("utf-8"),
+            }
+
+        delivery_protocol.verify_endpoint(
+            self.c,replacement["endpoint"]["id"],"governance@demo.ru",
+            transport=verify_replacement
+        )
+
+        captured={}
+        def transport(url,body,headers):
+            captured["url"]=url
+            captured["headers"]=dict(headers)
+            return {"status":204,"body":b""}
+
+        result=delivery_protocol.dispatch_event(
+            self.c,event_id,transport=transport
+        )
+        self.assertEqual(result["eventStatus"],"delivered")
+        self.assertEqual(captured["url"],"https://partner2.example.test/promomed")
+        attempt=self.c.execute(
+            """SELECT endpoint_id FROM syndication_delivery_attempts
+               WHERE event_id=? ORDER BY attempt_no DESC LIMIT 1""",
+            (event_id,),
+        ).fetchone()
+        self.assertEqual(attempt["endpoint_id"],replacement["endpoint"]["id"])
+
+        ack=self._ack(event_id,secret=replacement_secret)
+        self.assertEqual(ack["status"],"acknowledged")
+        event_count=self.c.execute(
+            "SELECT COUNT(*) n FROM syndication_delivery_events WHERE id=?",
+            (event_id,),
+        ).fetchone()["n"]
+        self.assertEqual(event_count,1)
 
     def test_invalid_ack_signature_is_rejected(self):
         self._subscribe()
