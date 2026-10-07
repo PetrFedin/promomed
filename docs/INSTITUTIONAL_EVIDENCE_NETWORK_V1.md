@@ -50,6 +50,12 @@ Package creation fails closed when Evidence Seal is not process-valid, publicati
 
 Public route: `GET /api/evidence-interchange/reference`
 
+Fixture schema identifier: `urn:promomed:schema:evidence-interchange-reference-fixture:v1`
+
+Repository schema: `docs/schemas/evidence-interchange-reference-fixture-v1.schema.json`
+
+The fixture deliberately uses a different schema from the production package so integration examples cannot be mistaken for signed production evidence.
+
 This returns a deterministic non-clinical example of:
 
 `source -> claim -> review -> disclosure -> approval -> package -> syndication -> correction -> withdrawal`
