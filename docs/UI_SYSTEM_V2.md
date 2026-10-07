@@ -166,3 +166,15 @@ My becomes a compact personal workspace on larger screens:
 - Messages and Participation settings form a second two-column working zone;
 - phone retains a simple sequential layout;
 - consent-first messaging and separate data/consent semantics remain unchanged.
+
+
+## 17. Participant state UX v2
+
+Participant-facing asynchronous surfaces use calm, consistent states:
+
+- loading states use restrained skeletons plus task-specific copy instead of bare 'Загрузка…';
+- loading animation is disabled by reduced-motion preference;
+- successful sync must replace loading copy and skeletons; browser QA verifies this;
+- transcript intelligence failure is recoverable in-place with a Retry action;
+- error states preserve context and do not navigate the participant away from the current surface;
+- operator/investor loading states are intentionally outside this participant-state checkpoint.
