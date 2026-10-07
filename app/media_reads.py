@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint
+from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange
 
 
 PUBLIC_EVIDENCE_ROUTES=(
@@ -22,6 +22,8 @@ def serve(raw_path, role):
         "/api/reviewer-authority",
         "/api/evidence-seal",
         "/api/evidence-bundle",
+        "/api/evidence-interchange/package",
+        "/api/institutional-network",
         *PUBLIC_EVIDENCE_ROUTES,
     ):
         return None
@@ -49,6 +51,24 @@ def serve(raw_path, role):
                 return {"data":evidence_checkpoint.checkpoint_document(c,checkpoint_sha)},200
             except ValueError as exc:
                 return {"error":str(exc)},404 if str(exc)=="checkpoint_not_found" else 422
+
+        if parsed.path=="/api/evidence-interchange/package":
+            package_id=(q.get("id") or [""])[0][:100]
+            if not package_id:
+                return {"error":"package_id_required"},422
+            try:
+                return {"data":evidence_interchange.package_document(c,package_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404 if str(exc)=="evidence_package_not_found" else 422
+
+        if parsed.path=="/api/institutional-network":
+            if role not in ("governance","editor","sales"):
+                return {"error":"forbidden"},403
+            organization_id=(q.get("organization_id") or [""])[0][:100] or None
+            try:
+                return {"data":evidence_interchange.institutional_snapshot(c,organization_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
 
         if parsed.path in ("/api/evidence-seal","/api/evidence-bundle"):
             kind=(q.get("artifact_kind") or [""])[0][:30]
