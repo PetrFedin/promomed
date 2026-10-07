@@ -99,6 +99,13 @@ Public reads:
 - `GET /api/evidence-interchange/reference`
 - `GET /api/evidence-interchange/package?id=...`
 
+Public verification:
+
+- `POST /api/evidence-interchange/verify-portable`
+- `ops/verify_evidence_package.py package.json issuer.json [status.json]`
+
+Portable package verification recomputes the package SHA-256, validates schema/version identifiers, verifies the embedded signed checkpoint with public key material, checks the package-to-seal binding and confirms the non-rewrite authority boundary. It does not require Promomed database access or the signing private key and explicitly returns `currentCanonicalStateVerified=false`.
+
 Governed read:
 
 - `GET /api/institutional-network`
