@@ -14,7 +14,7 @@ from app.operations_commands import handle_command as handle_operations_command
 from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command
 from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public
-from app.institutional_commands import handle_command as handle_institutional_command
+from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -366,6 +366,9 @@ class H(SimpleHTTPRequestHandler):
   public_outcome=handle_evidence_checkpoint_public(p,data)
   if public_outcome is not None:
    return self.out(public_outcome[0],public_outcome[1])
+  institutional_public=handle_institutional_public(p,data)
+  if institutional_public is not None:
+   return self.out(institutional_public[0],institutional_public[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
    c=conn()
