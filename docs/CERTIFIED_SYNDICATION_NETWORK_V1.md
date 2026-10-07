@@ -263,7 +263,8 @@ Revocation:
 
 - marks qualification revoked;
 - revokes active/paused subscriptions;
-- blocks new certified operations.
+- blocks new certified operations;
+- is terminal for that institutional identity in v1: a new qualification cycle cannot silently erase a revocation.
 
 Historical certification, contribution and receipt records remain available for audit.
 
