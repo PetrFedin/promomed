@@ -598,9 +598,10 @@ body{background:var(--canvas);color:var(--text)}
  #community>p{max-width:820px}
 }
 /* Events containment: wide timetable scrolls internally, never expands the page */
+#events{min-width:0;max-width:100%;overflow-x:clip;contain:inline-size}
 #events,#events #conferenceGrid,#events #fullProgram,#events #mySchedule{min-width:0;max-width:100%}
 #events #conferenceGrid{width:100%;max-width:100%;min-width:0}
-#events .lc-scroll{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;contain:inline-size;-webkit-overflow-scrolling:touch}
+#events .lc-scroll{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;contain:layout paint inline-size;-webkit-overflow-scrolling:touch}
 #events .lc-grid{width:max-content;min-width:100%;grid-template-columns:62px repeat(7,165px);overflow:visible}
 #events .lc-grid>*{min-width:0}
 @media(max-height:520px) and (orientation:landscape){
@@ -608,7 +609,7 @@ body{background:var(--canvas);color:var(--text)}
  #events .stagegrid,#events .eventOpsGrid{min-width:0;max-width:100%}
 }
 /* Events horizontal rails must remain internal scroll surfaces */
-#events .momentstrip{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;contain:inline-size;-webkit-overflow-scrolling:touch}
+#events .momentstrip{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;contain:layout paint inline-size;-webkit-overflow-scrolling:touch}
 #events .momenttile{flex:0 0 min(82%,680px);min-width:0}
 @media(max-height:520px) and (orientation:landscape){
  #events .momenttile{flex-basis:min(78vw,620px)}
