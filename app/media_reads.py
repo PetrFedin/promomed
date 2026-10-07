@@ -49,3 +49,13 @@ def serve(raw_path, role):
         ),200
     finally:
         c.close()
+
+
+def serve_public_post(path,data):
+    if path!="/api/evidence-checkpoint/verify":
+        return None
+    c=db.connect()
+    try:
+        return {"data":evidence_checkpoint.verify(c,data.get("envelope") or {})},200
+    finally:
+        c.close()
