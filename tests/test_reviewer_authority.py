@@ -107,6 +107,14 @@ class MedicalReviewerAuthorityTests(unittest.TestCase):
         self.c.rollback()
         self.assertTrue(self.authority.verify_event_chain(self.c))
 
+    def test_schema_rejects_invalid_review_decision_state(self):
+        with self.assertRaises(self.db.INTEGRITY_ERRORS):
+            self.c.execute(
+                "INSERT INTO review_decisions(id,assignment_id,candidate_id,reviewer_id,decision,rationale,evidence_snapshot_hash,attestation_method,decision_digest,signed_at,demo_only) "
+                "VALUES('bad','missing','missing','missing','override','x','h','x','d',1,1)"
+            )
+        self.c.rollback()
+
     def test_demo_profile_is_explicitly_not_independent_verified(self):
         d=self.authority.snapshot(self.c)
         p=next(x for x in d["profiles"] if x["account_email"]=="reviewer@demo.ru")
