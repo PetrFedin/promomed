@@ -586,10 +586,11 @@ def _record_observation(c,organization_id,event_id,observation_type,severity,det
     stable_key=stable_key or f"{event_id or organization_id}|{observation_type}|{time.time_ns()}"
     observation_id="obs:"+hashlib.sha256(stable_key.encode("utf-8")).hexdigest()[:24]
     c.execute(
-        """INSERT OR IGNORE INTO syndication_delivery_observations(
+        """INSERT INTO syndication_delivery_observations(
              id,organization_id,event_id,observation_type,severity,details_json,
              observed_at,demo_only
-           ) VALUES(?,?,?,?,?,?,?,?)""",
+           ) VALUES(?,?,?,?,?,?,?,?)
+           ON CONFLICT(id) DO NOTHING""",
         (
             observation_id,organization_id,event_id,observation_type,severity,
             _canonical(details),int(time.time()),int(bool(demo_only)),
