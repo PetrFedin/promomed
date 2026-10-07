@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:reference-evidence-package:v1",
+  "title": "Promomed Reference Evidence Package v1",
+  "type": "object",
+  "required": [
+    "packageVersion",
+    "profile",
+    "checkpoint",
+    "verificationAtPackaging",
+    "syndication"
+  ],
+  "properties": {
+    "packageVersion": {
+      "const": "promomed-reference-evidence-package-v1"
+    },
+    "profile": {
+      "$ref": "urn:promomed:schema:evidence-governance-interchange:v1"
+    },
+    "checkpoint": {
+      "type": "object",
+      "required": [
+        "payload",
+        "signature",
+        "checkpointSha256"
+      ]
+    },
+    "verificationAtPackaging": {
+      "type": "object",
+      "required": [
+        "status",
+        "checkpointSha256",
+        "sealSha256",
+        "issuerId",
+        "keyId"
+      ]
+    },
+    "syndication": {
+      "type": "object",
+      "required": [
+        "authority",
+        "partnerMayRewriteClaims",
+        "withdrawalPropagationRequired",
+        "allowedUse"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
