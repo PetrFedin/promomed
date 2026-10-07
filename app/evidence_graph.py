@@ -95,7 +95,9 @@ def _links(c,claim_id):
 
 
 def _trust_status(claim,citations,links):
-    active_citations=[x for x in citations if x["status"]=="active" and x.get("source_status")=="active"]
+    referenced_citations=[x for x in citations if x["status"]=="active"]
+    active_citations=[x for x in referenced_citations if x.get("source_status")=="active"]
+    invalidated_citations=[x for x in referenced_citations if x.get("source_status")!="active"]
     has_reviewer=bool(claim.get("reviewer") and claim.get("reviewed_at"))
     has_source=bool(active_citations)
     has_locator=bool(active_citations and all(str(x.get("locator") or "").strip() for x in active_citations))
@@ -104,7 +106,7 @@ def _trust_status(claim,citations,links):
     superseded=claim_status.startswith("superseded")
     retracted=claim_status.startswith("retracted")
     reviewed=claim_status in ("reviewed","reviewed_demo","review_required","review_required_demo")
-    trusted=reviewed and has_reviewer and has_source and has_locator and has_trace and not superseded and not retracted
+    trusted=reviewed and has_reviewer and has_source and has_locator and has_trace and not invalidated_citations and not superseded and not retracted
     if retracted:
         status="RETRACTED"
     elif superseded:
@@ -123,6 +125,7 @@ def _trust_status(claim,citations,links):
         "has_active_source":has_source,
         "has_exact_locator":has_locator,
         "has_graph_trace":has_trace,
+        "has_invalidated_citation":bool(invalidated_citations),
         "superseded":superseded,
         "retracted":retracted,
     }
