@@ -518,6 +518,29 @@ Open brand/product-design work:
 - consolidated component extraction after the MVP CSS stabilizes;
 - visual regression baselines for the most important participant journeys.
 
+#### Cross-cutting Product Experience — Participant Everyday Experience v2 — repository checkpoint 2026-10-07
+
+The participant shell is now refined screen-by-screen for repeated daily use while preserving the same medical, evidence, consent and business authorities.
+
+Implemented interaction hierarchy:
+
+- Today -> action-first hero with Continue / Events / Studio / My; topic navigation is no longer duplicated in the hero;
+- Today -> personal continuation + Relationship 365 form one compact working zone on tablet/desktop;
+- Media -> decorative category controls are removed; visible controls perform real actions (Search / Studio / Catalog);
+- Media -> paired editorial/corporate/audio surfaces and learning programmes use scan-friendly multi-column grids on larger screens;
+- Events -> Programme / My schedule / Map are primary operational actions;
+- Events -> Venue Concierge now/next and Partner Appointments form one operational workspace on larger screens;
+- Community -> explainable matches and consented meeting states become compact work surfaces; double opt-in remains explicit;
+- My -> Takeaways + 1/7/30 and Messages + Participation settings form compact paired workspaces on tablet/desktop;
+- phone keeps the simple sequential rhythm; larger screens gain density through layout rather than smaller text;
+- responsive browser QA remains mandatory for iPhone, landscape phone, tablet and desktop paths.
+
+Truth boundary:
+
+- these changes improve participant usability and visual hierarchy only;
+- no popularity ranking, health-risk scoring, diagnostic inference or hidden medical personalisation is introduced;
+- consent, reviewer authority, evidence admission and PostgreSQL authority are unchanged.
+
 ---
 
 ### Phase 3 — Search and semantic discovery
