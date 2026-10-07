@@ -23,6 +23,7 @@ def serve(raw_path, role):
         "/api/evidence-seal",
         "/api/evidence-bundle",
         "/api/evidence-interchange/package",
+        "/api/evidence-interchange/reference",
         "/api/institutional-network",
         *PUBLIC_EVIDENCE_ROUTES,
     ):
@@ -51,6 +52,9 @@ def serve(raw_path, role):
                 return {"data":evidence_checkpoint.checkpoint_document(c,checkpoint_sha)},200
             except ValueError as exc:
                 return {"error":str(exc)},404 if str(exc)=="checkpoint_not_found" else 422
+
+        if parsed.path=="/api/evidence-interchange/reference":
+            return {"data":evidence_interchange.reference_package()},200
 
         if parsed.path=="/api/evidence-interchange/package":
             package_id=(q.get("id") or [""])[0][:100]
