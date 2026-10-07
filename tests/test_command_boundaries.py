@@ -11,6 +11,7 @@ from app import (
     operations_commands,
     partner_commands,
     editorial_commands,
+    institutional_commands,
     demo_commands,
 )
 
@@ -160,6 +161,36 @@ class CommandBoundaryTests(unittest.TestCase):
         self.assertTrue(allowed.use_state)
         row = self.c.execute("SELECT status FROM cms WHERE id='A-014'").fetchone()
         self.assertEqual(row["status"], "approved")
+
+    def test_institutional_exchange_governance_boundary(self):
+        denied = institutional_commands.handle_command(
+            self.c, "/api/institution/register", "participant", "participant@demo.ru",
+            {
+                "organization_id": "INST-DEMO-BOUNDARY",
+                "name": "Synthetic University",
+                "organization_type": "university",
+                "demo_only": True,
+            },
+        )
+        self.assertEqual(denied.status, 403)
+        self.assertEqual(denied.payload["error"], "forbidden")
+
+        allowed = institutional_commands.handle_command(
+            self.c, "/api/institution/register", "governance", "governance@demo.ru",
+            {
+                "organization_id": "INST-DEMO-BOUNDARY",
+                "name": "Synthetic University",
+                "organization_type": "university",
+                "demo_only": True,
+            },
+        )
+        self.assertEqual(allowed.status, 201)
+        row = self.c.execute(
+            "SELECT organization_type,status FROM institutional_organizations WHERE id=?",
+            ("INST-DEMO-BOUNDARY",),
+        ).fetchone()
+        self.assertEqual(row["organization_type"], "university")
+        self.assertEqual(row["status"], "active")
 
     def test_demo_control_role_boundary(self):
         denied = demo_commands.handle_command(
