@@ -841,7 +841,7 @@ def contribution_receipt(c,contribution_id):
         "receiptSha256":row["receipt_sha256"],
         "envelope":json.loads(row["envelope_json"]),
         "admittedAt":row["admitted_at"],
-        "admittedBy":row["admitted_by"],
+        "admittedByRole":"governance",
     }
 
 
