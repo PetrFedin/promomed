@@ -92,7 +92,7 @@ Implemented in branch feat/mvp-ux-ui-v2:
 
 This is a UI-system checkpoint, not a claim of a final Promomed brand identity.
 
-The current CSS-generated gradients, abstract hero graphics and demo editorial art direction are MVP product-design assets. Final brand photography, illustration licensing, production iconography and official Promomed brand approval remain separate creative/brand admission work.
+The MVP now includes a locally vendored Visual Photography v1 layer using open-license contextual photography with an attribution record. These photographs illustrate the type of experience only and are never presented as real Promomed people, venues or events. Final commissioned/licensed Promomed brand photography, production iconography and official brand approval remain separate creative/brand admission work.
 
 ## 10. Polish layer
 
@@ -103,7 +103,7 @@ Additional daily-use refinements implemented in the polish branch:
 - tablet keeps the compact rail automatically and does not expose a redundant collapse control;
 - landscape phones remain on the thumb-first bottom-navigation shell even when their CSS width exceeds 768 px;
 - top actions and primary navigation use a coherent inline SVG icon language instead of prototype glyph characters;
-- editorial cover cards and hubs use CSS-native abstract art surfaces with no external image/licensing dependency;
+- high-value hero/editorial/event/studio/community surfaces use locally vendored open-license photography with documented source/licence; secondary topic hubs may remain graphic where photography would add noise;
 - reduced-motion users do not receive decorative hover motion.
 
 These refinements remain presentation-only and do not modify application authority.
@@ -211,3 +211,17 @@ Modal sheet behaviour follows a predictable keyboard and focus contract:
 - the overlay exposes dialog / modal semantics and aria-hidden state.
 
 This checkpoint changes interaction quality only; business and authority semantics are unchanged.
+
+## 20. Visual Photography v1
+
+The investor/demo layer must show the product through recognisable human and physical contexts rather than abstract gradients alone.
+
+Implemented rules:
+
+- Today hero, editorial covers, Media lead, Studio, flagship event, Community and Investor Proof use contextual photography;
+- assets are stored locally under `public/assets/editorial/` so the demo remains deterministic and works without third-party image delivery;
+- `public/assets/editorial/ATTRIBUTION.md` records source, author and licence for every vendored image;
+- photographs are explicitly illustrative and must not imply that depicted people/venues belong to Promomed;
+- dark overlays preserve typography contrast while photography carries the scene;
+- phone/tablet/desktop reuse the same semantic image set with viewport-specific crops;
+- final Promomed photography remains a separate brand/legal admission task.
