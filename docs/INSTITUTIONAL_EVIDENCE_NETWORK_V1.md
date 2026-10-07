@@ -102,6 +102,10 @@ Historical packages remain retrievable for audit and are not silently deleted.
 
 ## 8. Public and governed surfaces
 
+Machine-readable OpenAPI 3.1 contract:
+
+`docs/openapi/institutional-evidence-v1.openapi.json`
+
 Public reads:
 
 - `GET /api/evidence-interchange/reference`
