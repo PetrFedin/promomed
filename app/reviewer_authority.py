@@ -177,7 +177,7 @@ def assign_candidate(c,candidate_id,reviewer_email,assigned_by,scope_key=DEFAULT
     if conflict_history:
         raise ValueError("reviewer_conflict_history_blocks_reassignment")
     active=c.execute(
-        "SELECT id,status FROM review_assignments WHERE candidate_id=? AND review_role='scientific' AND status IN ('assigned','completed') ORDER BY assigned_at DESC LIMIT 1",
+        "SELECT id,status FROM review_assignments WHERE candidate_id=? AND review_role='scientific' AND status='assigned' ORDER BY assigned_at DESC LIMIT 1",
         (candidate_id,),
     ).fetchone()
     if active:
