@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:evidence-governance-interchange:v1",
+  "title": "Promomed Evidence Governance Interchange Profile v1",
+  "type": "object",
+  "required": [
+    "profileVersion",
+    "artifact",
+    "sources",
+    "claims",
+    "history",
+    "disclosures",
+    "approval",
+    "changeState",
+    "truthBoundary"
+  ],
+  "properties": {
+    "profileVersion": {
+      "const": "promomed-evidence-governance-interchange-v1"
+    },
+    "artifact": {
+      "type": "object",
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "sourceId",
+          "status"
+        ],
+        "properties": {
+          "sourceId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceKind": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publisher": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceRef": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "publishedAt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "claimId",
+          "version",
+          "status",
+          "review",
+          "citations"
+        ],
+        "properties": {
+          "claimId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "topic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "review": {
+            "type": "object"
+          },
+          "citations": {
+            "type": "array"
+          },
+          "supersedesClaimId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "correctionNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "history": {
+      "type": "array"
+    },
+    "disclosures": {
+      "type": "array"
+    },
+    "approval": {
+      "type": "object",
+      "required": [
+        "processState",
+        "processValid",
+        "evidencePackageSha256",
+        "reviewUntil",
+        "reviewValidityPolicy"
+      ]
+    },
+    "changeState": {
+      "type": "object",
+      "required": [
+        "publicationHeld",
+        "supersessionHistoryPresent"
+      ]
+    },
+    "truthBoundary": {
+      "type": "object",
+      "required": [
+        "processProvenanceOnly",
+        "medicalEfficacyCertified",
+        "clinicalCorrectnessCertified",
+        "reviewerIdentityExported",
+        "externalQualificationClaimsSourceAttributed"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
