@@ -474,6 +474,19 @@ body{background:var(--canvas);color:var(--text)}
   .profilegrid,.streamgrid{gap:12px}
 }
 
+.navCollapse{display:none}
+@media(min-width:1200px){
+ .navCollapse{display:flex!important;margin-top:auto;border-top:1px solid var(--line)!important;border-radius:14px!important;color:#78889b!important;background:#f8fafc!important}
+ .navCollapse:hover{background:#f0f4f8!important;color:#294666!important}
+ body.navCollapsed .app{padding-left:118px}
+ body.navCollapsed .nav{width:82px}
+ body.navCollapsed .nav:before{content:'с.';font-size:18px;text-align:center;padding-left:0;padding-right:0}
+ body.navCollapsed .nav button[data-s]{font-size:0;justify-content:center;gap:0;padding-left:4px;padding-right:4px}
+ body.navCollapsed .nav button[data-s] b{font-size:20px;width:auto}
+ body.navCollapsed .navCollapse{font-size:0;justify-content:center;gap:0}
+ body.navCollapsed .navCollapse b{font-size:20px;width:auto;margin:0}
+ body.navCollapsed .app>.top,body.navCollapsed .app>.screen,body.navCollapsed .app>.footer{width:min(100%,1320px)}
+}
 /* accessibility + predictable interaction states */
 a,button,[role="button"],.tap{ -webkit-tap-highlight-color:transparent }
 button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
@@ -736,7 +749,7 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{
 </main>
 
 <div class="roleTag hidden" id="roleTag" onclick="openSheet('control')">Не авторизован · подключение…</div>
-<nav class="nav" id="nav" aria-label="Основная навигация"><button class="on" data-s="today"><b>⌂</b>Главная</button><button data-s="media"><b>▤</b>Медиа</button><button data-s="events"><b>◫</b>События</button><button data-s="community"><b>◎</b>Сообщество</button><button data-s="me"><b>○</b>Моё</button></nav>
+<nav class="nav" id="nav" aria-label="Основная навигация"><button class="on" data-s="today"><b>⌂</b>Главная</button><button data-s="media"><b>▤</b>Медиа</button><button data-s="events"><b>◫</b>События</button><button data-s="community"><b>◎</b>Сообщество</button><button data-s="me"><b>○</b>Моё</button><button class="navCollapse" id="navCollapse" type="button" aria-label="Свернуть боковую навигацию" aria-expanded="true" onclick="toggleNavRail()"><b>⇤</b><span>Свернуть</span></button></nav>
 
 <div class="overlay" id="overlay" role="presentation" onclick="if(event.target===this)closeSheet()"><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Диалог"></div></div>
 <script>
@@ -766,7 +779,22 @@ productJourney:`<div class="ey blue">PRODUCT JOURNEY · DEMO</div><h2>От ин�
 gift:`<div class="ey blue">CURATED HEALTH KIT · DEMO</div><h2>Подарок должен продолжать маршрут</h2><p class="small muted">Eligibility → reserve → one-time code → staff confirm → received. Не лотерея и не стимул к покупке лекарства.</p><div class="card"><div class="ey green">ТРЕК · ВОССТАНОВЛЕНИЕ</div><h3>Набор «Вечер без перегруза»</h3><p class="small muted">Sleep mask / доступ к аудиопрактике / партнёрский wellness-сервис / редакционная памятка. Конкретные бренды появятся только после договорённостей.</p></div><div class="card"><div class="ey blue">ТРЕК · ДВИЖЕНИЕ</div><h3>Набор «Двигаться каждый день»</h3><p class="small muted">Полезный lifestyle-предмет / приглашение на партнёрскую практику / 30-дневный контент-маршрут.</p></div><div class="card center"><span class="pill green" id="giftState">ДОСТУПЕН</span><h3>Ваш demo health kit</h3><button class="btn" onclick="redeemGift(this)">Получить у стойки</button></div><div class="notice">Consumer-набор не содержит рецептурные лекарства и не обещает лечебный эффект. Категории подарков проходят legal / medical / partner review.</div>`
 };
 function show(id){if(id==='me'&&!apiToken){openSheet('login');return}if(id==='partnerDash')setTimeout(()=>loadInvestorProof('partner'),0);if(id==='investorProof')setTimeout(()=>loadInvestorProof(),0);if(id==='studio')setTimeout(()=>loadTranscriptIntelligence('P21'),0);if(id==='editor')setTimeout(()=>{loadEvidenceCoverage();loadChangeImpact();loadEvidenceMonitor()},0);document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('on',x.id===id));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('on',x.dataset.s===id));scrollTo(0,0)}
-document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.s));
+document.querySelectorAll('.nav button[data-s]').forEach(b=>b.onclick=()=>show(b.dataset.s));
+function applyNavRailPreference(){
+ const desktop=window.innerWidth>=1200,b=document.getElementById('navCollapse');
+ if(!desktop){document.body.classList.remove('navCollapsed');if(b)b.setAttribute('aria-expanded','true');return}
+ const collapsed=localStorage.getItem('sostoyanie_nav_collapsed')==='1';
+ document.body.classList.toggle('navCollapsed',collapsed);
+ if(b){b.setAttribute('aria-expanded',String(!collapsed));b.setAttribute('aria-label',collapsed?'Развернуть боковую навигацию':'Свернуть боковую навигацию');const icon=b.querySelector('b'),label=b.querySelector('span');if(icon)icon.textContent=collapsed?'⇥':'⇤';if(label)label.textContent=collapsed?'Развернуть':'Свернуть'}
+}
+function toggleNavRail(){
+ if(window.innerWidth<1200)return;
+ const next=!document.body.classList.contains('navCollapsed');
+ localStorage.setItem('sostoyanie_nav_collapsed',next?'1':'0');
+ applyNavRailPreference();
+}
+window.addEventListener('resize',applyNavRailPreference);
+applyNavRailPreference();
 function openSheet(k){document.getElementById('sheet').innerHTML='<div class="row"><span></span><button class="icon" aria-label="Закрыть" onclick="closeSheet()">×</button></div>'+(sheets[k]||'');document.getElementById('overlay').classList.add('on');if(k==='search')setTimeout(()=>initDiscoverySearch(),0)}
 let discoveryKind='',discoveryReplay=null,discoveryReview='',discoveryTimer=null;
 function initDiscoverySearch(){runDiscoverySearch()}
