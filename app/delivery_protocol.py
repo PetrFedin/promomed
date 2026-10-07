@@ -1116,20 +1116,31 @@ def runtime_snapshot(c,organization_id=None):
                ORDER BY a.completed_at DESC,a.attempt_no DESC LIMIT 200""",
             (org,),
         ))
+    endpoint_docs=endpoint_snapshot(c,organization_id)
+    production_endpoint=any(
+        not x["demoOnly"] and x["status"]=="active" for x in endpoint_docs
+    )
+    production_success=bool(c.execute(
+        """SELECT 1 FROM syndication_delivery_attempts a
+           JOIN syndication_delivery_events e ON e.id=a.event_id
+           WHERE e.demo_only=0 AND a.transport_status='success' LIMIT 1"""
+    ).fetchone())
+    production_ack=bool(c.execute(
+        """SELECT 1 FROM syndication_delivery_acknowledgements
+           WHERE demo_only=0 LIMIT 1"""
+    ).fetchone())
     return {
         "version":PROTOCOL_VERSION,
-        "endpoints":endpoint_snapshot(c,organization_id),
+        "endpoints":endpoint_docs,
         "events":events,
         "attempts":attempts,
         "scorecards":[behavior_scorecard(c,org) for org in orgs],
         "requalification":[evaluate_requalification(c,org) for org in orgs],
         "truthBoundary":{
             "signedWebhookProtocolImplemented":True,
-            "productionExternalEndpointConfigured":any(
-                not x["demoOnly"] and x["status"]=="active"
-                for x in endpoint_snapshot(c,organization_id)
-            ),
-            "productionTrafficClaimed":False,
+            "productionExternalEndpointConfigured":production_endpoint,
+            "productionDeliveryObserved":production_success,
+            "productionAcknowledgementObserved":production_ack,
             "automaticPartnerRevocation":False,
             "medicalEfficacyCertified":False,
         },
