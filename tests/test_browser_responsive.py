@@ -129,6 +129,20 @@ def run_device(browser, name: str, width: int, height: int, is_mobile: bool, has
     page.screenshot(path=str(OUT / f"{clean_name(name)}-home.png"), full_page=True)
     page.keyboard.press("Escape")
     expect(page.locator("#overlay")).not_to_have_class(re.compile(r"\bon\b"))
+    collapse=page.locator("#navCollapse")
+    if width >= 1200:
+        expect(collapse).to_be_visible()
+        expanded=page.locator("#nav").bounding_box()
+        collapse.click()
+        expect(page.locator("body")).to_have_class(re.compile(r"\bnavCollapsed\b"))
+        collapsed=page.locator("#nav").bounding_box()
+        assert expanded and collapsed and collapsed["width"] < expanded["width"], f"{name}: desktop rail did not collapse"
+        stored=page.evaluate("localStorage.getItem('sostoyanie_nav_collapsed')")
+        assert stored=="1", f"{name}: collapsed rail preference not persisted"
+        collapse.click()
+        expect(page.locator("body")).not_to_have_class(re.compile(r"\bnavCollapsed\b"))
+    else:
+        expect(collapse).to_be_hidden()
 
     for screen_id in ["media", "events", "community"]:
         page.locator(f'#nav button[data-s="{screen_id}"]').click()
