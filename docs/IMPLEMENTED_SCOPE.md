@@ -503,3 +503,17 @@ Implemented in repository scope:
 - tablet/desktop gain density through layout rather than smaller typography.
 
 Authority boundary: participant-experience refinements do not change evidence, medical review, consent, account, capital or persistence semantics.
+
+
+## Participant State UX v2 — loading, empty and recovery states
+
+Implemented in repository scope:
+
+- calm skeleton loading states for participant continuation, 1/7/30 journey, product context, transcript intelligence and programme;
+- meaningful empty states for product context, profile directory, filtered programme and transcript output;
+- in-place transcript retry state;
+- participant non-blocking toast feedback for selected everyday actions;
+- reduced-motion-aware shimmer behaviour;
+- browser QA asserts that successful participant loading states resolve.
+
+Authority boundary: state presentation does not change evidence, reviewer, consent, booking, account or persistence authority.

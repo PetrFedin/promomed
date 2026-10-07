@@ -541,6 +541,26 @@ Truth boundary:
 - no popularity ranking, health-risk scoring, diagnostic inference or hidden medical personalisation is introduced;
 - consent, reviewer authority, evidence admission and PostgreSQL authority are unchanged.
 
+#### Cross-cutting Product Experience — Participant State UX v2 — repository checkpoint 2026-10-07
+
+Participant asynchronous surfaces must remain understandable during slow, empty and failed states.
+
+Implemented rules:
+
+- participant loading surfaces use calm skeletons plus task-specific copy instead of bare loading text;
+- successful sync must replace loading skeleton/copy; responsive browser QA asserts resolution;
+- empty data is rendered as an intentional explanation with a next action where appropriate, not as a blank container;
+- transcript intelligence failure is recoverable in-place with Retry and preserves current navigation context;
+- participant action failures use non-blocking toast feedback rather than browser alerts;
+- reduced-motion preference disables decorative loading animation;
+- operator/investor asynchronous states are outside this participant checkpoint.
+
+Truth boundary:
+
+- State UX changes presentation and recovery behaviour only;
+- API authority, evidence, medical review, booking and persistence semantics are unchanged.
+
+
 ---
 
 ### Phase 3 — Search and semantic discovery
