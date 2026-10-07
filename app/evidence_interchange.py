@@ -348,6 +348,89 @@ def create_package(c,*,artifact_kind,artifact_ref,actor,checkpoint_sha256=None):
     }
 
 
+def verify_package_portable(document,issuer_document,status_list=None):
+    try:
+        payload=document["payload"]
+        package_sha=str(document.get("packageSha256") or "")
+        if payload.get("schemaId")!=PACKAGE_SCHEMA_ID or payload.get("packageVersion")!=PACKAGE_VERSION:
+            return {
+                "status":"INVALID_PACKAGE_SCHEMA",
+                "package_hash_valid":False,
+                "checkpoint_signature_valid":False,
+                "currentCanonicalStateVerified":False,
+            }
+        actual_sha=_sha(payload)
+        if actual_sha!=package_sha:
+            return {
+                "status":"INVALID_PACKAGE_HASH",
+                "package_hash_valid":False,
+                "checkpoint_signature_valid":False,
+                "currentCanonicalStateVerified":False,
+            }
+        profile=payload.get("profile") or {}
+        if profile.get("schemaId")!=PROFILE_SCHEMA_ID or profile.get("profileVersion")!=PROFILE_VERSION:
+            return {
+                "status":"INVALID_PROFILE_SCHEMA",
+                "package_hash_valid":True,
+                "checkpoint_signature_valid":False,
+                "currentCanonicalStateVerified":False,
+            }
+        checkpoint=payload.get("checkpoint") or {}
+        verification=evidence_checkpoint.verify_portable(
+            checkpoint,issuer_document,status_list or {}
+        )
+        if verification.get("status")!="VALID_PORTABLE":
+            return {
+                "status":"CHECKPOINT_"+str(verification.get("status") or "INVALID"),
+                "package_hash_valid":True,
+                "checkpoint_signature_valid":bool(verification.get("signature_valid")),
+                "checkpoint":verification,
+                "currentCanonicalStateVerified":False,
+            }
+        approval=profile.get("approval") or {}
+        checkpoint_payload=checkpoint.get("payload") or {}
+        packaging=payload.get("verificationAtPackaging") or {}
+        if approval.get("evidencePackageSha256")!=checkpoint_payload.get("sealSha256"):
+            return {
+                "status":"SEAL_BINDING_MISMATCH",
+                "package_hash_valid":True,
+                "checkpoint_signature_valid":True,
+                "currentCanonicalStateVerified":False,
+            }
+        if packaging.get("checkpointSha256")!=checkpoint.get("checkpointSha256"):
+            return {
+                "status":"CHECKPOINT_BINDING_MISMATCH",
+                "package_hash_valid":True,
+                "checkpoint_signature_valid":True,
+                "currentCanonicalStateVerified":False,
+            }
+        if payload.get("syndication",{}).get("partnerMayRewriteClaims") is not False:
+            return {
+                "status":"AUTHORITY_BOUNDARY_INVALID",
+                "package_hash_valid":True,
+                "checkpoint_signature_valid":True,
+                "currentCanonicalStateVerified":False,
+            }
+        return {
+            "status":"VALID_PORTABLE_PACKAGE",
+            "package_hash_valid":True,
+            "checkpoint_signature_valid":True,
+            "packageSha256":package_sha,
+            "checkpointSha256":checkpoint.get("checkpointSha256"),
+            "issuerId":verification.get("issuerId"),
+            "keyId":verification.get("keyId"),
+            "currentCanonicalStateVerified":False,
+            "medicalEfficacyCertified":False,
+        }
+    except (KeyError,TypeError,ValueError):
+        return {
+            "status":"INVALID_PACKAGE",
+            "package_hash_valid":False,
+            "checkpoint_signature_valid":False,
+            "currentCanonicalStateVerified":False,
+        }
+
+
 def package_document(c,package_id):
     row=c.execute(
         """SELECT id,artifact_kind,artifact_ref,profile_version,package_sha256,
