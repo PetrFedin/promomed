@@ -957,7 +957,7 @@ def reconcile_sla(c,now=None):
            WHERE o.status='breached'"""
     ))
     observations=0
-    organizations=set()
+    organizations={item["organization_id"] for item in missing_ack_rows}
     for row in rows:
         organizations.add(row["organization_id"])
         _record_observation(
