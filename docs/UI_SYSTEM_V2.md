@@ -195,3 +195,13 @@ Required browser evidence:
 - geometry contracts remain authoritative for navigation placement, touch targets and page overflow.
 
 This is not a pixel-perfect golden-image gate yet. The first objective is complete, comparable and inspectable evidence without creating brittle diffs from harmless rendering variance.
+
+
+## 20. Browser QA Runtime v2
+
+Responsive QA separates visual coverage from deep functional repetition:
+
+- all seven viewports retain full participant visual evidence;
+- iPhone 15 Pro and desktop retain the full deep authority/product journey;
+- the manifest marks which devices ran deep_journey;
+- reduced CI runtime must not reduce visual matrix coverage.
