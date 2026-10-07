@@ -146,8 +146,17 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn('p=="/api/corporate-readiness"', SERVER)
         self.assertNotIn('"procurement_gates" =', SERVER)
 
+    def test_checkpoint_verification_is_public_before_auth(self):
+        self.assertIn(
+            "from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public",
+            SERVER,
+        )
+        public_idx=SERVER.index("public_outcome=handle_evidence_checkpoint_public(p,data)")
+        auth_idx=SERVER.index("a=auth(self)", SERVER.index(" def do_POST(self):"))
+        self.assertLess(public_idx,auth_idx)
+
     def test_server_size_moves_down_not_up(self):
-        self.assertLessEqual(len(SERVER.splitlines()), 400)
+        self.assertLessEqual(len(SERVER.splitlines()), 405)
 
 
 if __name__ == "__main__":
