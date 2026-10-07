@@ -487,3 +487,14 @@ Truth boundary: this is the MVP product-design system, not final Promomed brand 
 - compact two-column account ticket on tablet/desktop;
 - reduced passport-card vertical footprint on larger screens;
 - unobscured home screenshots plus collapsed-rail visual evidence.
+
+## Participant Everyday Experience v2
+
+- action-first Today surface;
+- utility-first Media surface with no decorative inactive filters;
+- operational-first Events surface;
+- consent-first compact Community workspace;
+- compact My/account workspace on tablet and desktop;
+- internal timetable scroll viewport and DOM-level overflow diagnostics.
+
+These are UI/interaction hierarchy changes only; authority semantics are unchanged.
