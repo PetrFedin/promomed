@@ -55,6 +55,15 @@ def register_organization(
         raise ValueError("organization_identity_required")
     if organization_type not in ORGANIZATION_TYPES:
         raise ValueError("organization_type_invalid")
+    existing=c.execute(
+        "SELECT status,demo_only FROM institutional_organizations WHERE id=?",
+        (organization_id,),
+    ).fetchone()
+    if existing:
+        if existing["status"]!="active":
+            raise ValueError("organization_not_active")
+        if int(existing["demo_only"])!=int(bool(demo_only)):
+            raise ValueError("organization_demo_boundary_mismatch")
     if partner_id:
         partner=c.execute("SELECT id FROM partners WHERE id=?",(str(partner_id),)).fetchone()
         if not partner:
@@ -105,11 +114,13 @@ def bind_role(
     effective_at=None,expires_at=None,demo_only=False,
 ):
     org=c.execute(
-        "SELECT id,status FROM institutional_organizations WHERE id=?",
+        "SELECT id,status,demo_only FROM institutional_organizations WHERE id=?",
         (organization_id,),
     ).fetchone()
     if not org or org["status"]!="active":
         raise ValueError("organization_not_active")
+    if int(org["demo_only"])!=int(bool(demo_only)):
+        raise ValueError("institutional_role_demo_boundary_mismatch")
     if role_scope not in ROLE_SCOPES:
         raise ValueError("institutional_role_invalid")
     now=int(time.time())
@@ -405,6 +416,17 @@ def verify_package_portable(document,issuer_document,status_list=None):
                 "checkpoint_signature_valid":True,
                 "currentCanonicalStateVerified":False,
             }
+        if (
+            packaging.get("sealSha256")!=checkpoint_payload.get("sealSha256")
+            or packaging.get("issuerId")!=checkpoint_payload.get("issuerId")
+            or packaging.get("keyId")!=checkpoint_payload.get("keyId")
+        ):
+            return {
+                "status":"PACKAGING_ATTESTATION_MISMATCH",
+                "package_hash_valid":True,
+                "checkpoint_signature_valid":True,
+                "currentCanonicalStateVerified":False,
+            }
         if payload.get("syndication",{}).get("partnerMayRewriteClaims") is not False:
             return {
                 "status":"AUTHORITY_BOUNDARY_INVALID",
@@ -480,6 +502,14 @@ def deliver_package(c,*,package_id,organization_id,actor,delivery_role="consumer
         raise ValueError("evidence_package_not_active")
     if delivery_role not in ("consumer","publisher"):
         raise ValueError("delivery_role_invalid")
+    org=c.execute(
+        "SELECT status,demo_only FROM institutional_organizations WHERE id=?",
+        (organization_id,),
+    ).fetchone()
+    if not org or org["status"]!="active":
+        raise ValueError("organization_not_active")
+    if int(org["demo_only"])!=int(package["demo_only"]):
+        raise ValueError("package_organization_demo_boundary_mismatch")
     if not _active_role(c,organization_id,delivery_role):
         raise ValueError("institutional_role_not_active")
     now=int(time.time())
