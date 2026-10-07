@@ -512,6 +512,26 @@ def deliver_package(c,*,package_id,organization_id,actor,delivery_role="consumer
         raise ValueError("package_organization_demo_boundary_mismatch")
     if not _active_role(c,organization_id,delivery_role):
         raise ValueError("institutional_role_not_active")
+    existing=c.execute(
+        """SELECT id,status,delivered_at,receipt_sha256 FROM evidence_exchange_deliveries
+           WHERE package_id=? AND organization_id=? AND delivery_role=?""",
+        (package_id,organization_id,delivery_role),
+    ).fetchone()
+    if existing:
+        return {
+            "id":existing["id"],
+            "status":existing["status"],
+            "receiptSha256":existing["receipt_sha256"],
+            "receipt":{
+                "packageId":package_id,
+                "packageSha256":package["package_sha256"],
+                "organizationId":organization_id,
+                "deliveryRole":delivery_role,
+                "deliveredAt":existing["delivered_at"],
+            },
+            "idempotentReplay":True,
+        }
+
     now=int(time.time())
     receipt_core={
         "packageId":package_id,
