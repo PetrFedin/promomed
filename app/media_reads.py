@@ -1,15 +1,27 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority
+from app import db, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint
 
 
 def serve(raw_path, role):
     parsed=urlparse(raw_path)
-    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/change-impact","/api/evidence-monitor","/api/reviewer-authority"):
+    if parsed.path not in ("/api/transcript-intelligence","/api/evidence-graph","/api/evidence-coverage","/api/change-impact","/api/evidence-monitor","/api/reviewer-authority","/api/evidence-seal","/api/evidence-bundle","/api/evidence-checkpoint/public-key"):
         return None
     q=parse_qs(parsed.query)
+    if parsed.path=="/api/evidence-checkpoint/public-key":
+        try:
+            return {"data":evidence_checkpoint.public_key_document()},200
+        except ValueError as exc:
+            return {"error":str(exc)},503
     c=db.connect()
     try:
+        if parsed.path in ("/api/evidence-seal","/api/evidence-bundle"):
+            kind=(q.get("artifact_kind") or [""])[0][:30]
+            ref=(q.get("artifact_ref") or [""])[0][:80]
+            if not kind or not ref:
+                return {"error":"artifact_required"},422
+            data=evidence_seal.build(c,artifact_kind=kind,artifact_ref=ref) if parsed.path=="/api/evidence-seal" else evidence_seal.portable_bundle(c,artifact_kind=kind,artifact_ref=ref)
+            return {"data":data},200
         if parsed.path=="/api/transcript-intelligence":
             item=(q.get("item_id") or [""])[0][:40] or None
             return transcript_intelligence.snapshot(c,item_id=item,editor=role=="editor"),200
@@ -35,5 +47,15 @@ def serve(raw_path, role):
             artifact_ref=(q.get("artifact_ref") or [""])[0][:80] or None,
             claim_id=(q.get("claim_id") or [""])[0][:80] or None,
         ),200
+    finally:
+        c.close()
+
+
+def serve_public_post(path,data):
+    if path!="/api/evidence-checkpoint/verify":
+        return None
+    c=db.connect()
+    try:
+        return {"data":evidence_checkpoint.verify(c,data.get("envelope") or {})},200
     finally:
         c.close()
