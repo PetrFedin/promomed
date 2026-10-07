@@ -1,16 +1,16 @@
 CREATE TABLE IF NOT EXISTS reviewer_profiles(
  id TEXT PRIMARY KEY,
- account_email TEXT NOT NULL UNIQUE,
+ account_email TEXT NOT NULL UNIQUE REFERENCES accounts(email),
  display_name TEXT NOT NULL,
  reviewer_kind TEXT NOT NULL DEFAULT 'medical_scientific',
- credential_state TEXT NOT NULL DEFAULT 'pending',
+ credential_state TEXT NOT NULL DEFAULT 'pending' CHECK(credential_state IN ('pending','demo_attested','verified','revoked')),
  credential_ref TEXT NOT NULL DEFAULT '',
  credential_issuer TEXT NOT NULL DEFAULT '',
  credential_verified_by TEXT,
  credential_verified_at BIGINT,
  valid_until BIGINT,
  independent_attested INTEGER NOT NULL DEFAULT 0,
- status TEXT NOT NULL DEFAULT 'active',
+ status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','suspended','revoked')),
  created_at BIGINT NOT NULL,
  updated_at BIGINT NOT NULL,
  demo_only INTEGER NOT NULL DEFAULT 0
@@ -18,9 +18,9 @@ CREATE TABLE IF NOT EXISTS reviewer_profiles(
 
 CREATE TABLE IF NOT EXISTS reviewer_scopes(
  id TEXT PRIMARY KEY,
- reviewer_id TEXT NOT NULL,
+ reviewer_id TEXT NOT NULL REFERENCES reviewer_profiles(id),
  scope_key TEXT NOT NULL,
- status TEXT NOT NULL DEFAULT 'active',
+ status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','suspended','revoked')),
  verified_by TEXT,
  verified_at BIGINT,
  valid_until BIGINT,
@@ -30,11 +30,11 @@ CREATE TABLE IF NOT EXISTS reviewer_scopes(
 
 CREATE TABLE IF NOT EXISTS review_assignments(
  id TEXT PRIMARY KEY,
- candidate_id TEXT NOT NULL,
- review_role TEXT NOT NULL,
- reviewer_id TEXT NOT NULL,
+ candidate_id TEXT NOT NULL REFERENCES evidence_admission_candidates(id),
+ review_role TEXT NOT NULL CHECK(review_role IN ('scientific')),
+ reviewer_id TEXT NOT NULL REFERENCES reviewer_profiles(id),
  required_scope TEXT NOT NULL,
- status TEXT NOT NULL DEFAULT 'assigned',
+ status TEXT NOT NULL DEFAULT 'assigned' CHECK(status IN ('assigned','completed','recused','conflict_hold','cancelled')),
  assigned_by TEXT NOT NULL,
  assigned_at BIGINT NOT NULL,
  completed_at BIGINT,
@@ -44,9 +44,9 @@ CREATE INDEX IF NOT EXISTS idx_review_assignments_candidate ON review_assignment
 
 CREATE TABLE IF NOT EXISTS review_conflict_disclosures(
  id TEXT PRIMARY KEY,
- assignment_id TEXT NOT NULL,
- reviewer_id TEXT NOT NULL,
- conflict_state TEXT NOT NULL,
+ assignment_id TEXT NOT NULL REFERENCES review_assignments(id),
+ reviewer_id TEXT NOT NULL REFERENCES reviewer_profiles(id),
+ conflict_state TEXT NOT NULL CHECK(conflict_state IN ('none','potential','material')),
  details TEXT NOT NULL DEFAULT '',
  disclosed_at BIGINT NOT NULL,
  demo_only INTEGER NOT NULL DEFAULT 0
@@ -55,10 +55,10 @@ CREATE INDEX IF NOT EXISTS idx_review_conflicts_assignment ON review_conflict_di
 
 CREATE TABLE IF NOT EXISTS review_decisions(
  id TEXT PRIMARY KEY,
- assignment_id TEXT NOT NULL UNIQUE,
- candidate_id TEXT NOT NULL,
- reviewer_id TEXT NOT NULL,
- decision TEXT NOT NULL,
+ assignment_id TEXT NOT NULL UNIQUE REFERENCES review_assignments(id),
+ candidate_id TEXT NOT NULL REFERENCES evidence_admission_candidates(id),
+ reviewer_id TEXT NOT NULL REFERENCES reviewer_profiles(id),
+ decision TEXT NOT NULL CHECK(decision IN ('accept','reject','request_changes')),
  rationale TEXT NOT NULL,
  evidence_snapshot_hash TEXT NOT NULL,
  attestation_method TEXT NOT NULL,
