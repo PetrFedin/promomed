@@ -96,8 +96,6 @@ def _current_projection(c,organization_id,now=None):
             "cursor":scorecard["cursor"],
             "observationWindow":{
                 "windowSeconds":scorecard["windowSeconds"],
-                "windowStart":scorecard["windowStart"],
-                "windowEnd":scorecard["windowEnd"],
             },
             "events":scorecard["events"],
             "acknowledgedEvents":scorecard["acknowledgedEvents"],
