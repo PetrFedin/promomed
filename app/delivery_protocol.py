@@ -73,6 +73,8 @@ def webhook_signature(secret,timestamp,event_id,payload_sha256):
 def acknowledgement_signature(secret,timestamp,event_id,ack_payload):
     if not isinstance(ack_payload,dict):
         raise ValueError("delivery_ack_payload_invalid")
+    if set(ack_payload)!={"eventId","payloadSha256","status"}:
+        raise ValueError("delivery_ack_payload_invalid")
     ack_sha=_sha_bytes(_canonical(ack_payload).encode("utf-8"))
     return _sign(secret,timestamp,event_id,ack_sha)
 
@@ -630,8 +632,8 @@ def dispatch_event(c,event_id,actor="delivery_worker",transport=None,now=None):
             "nextAttemptAt":event["next_attempt_at"],
             "notDue":True,
         }
-    endpoint=_endpoint_row(c,event["endpoint_id"])
-    if not endpoint or endpoint["status"]!="active":
+    endpoint=_active_endpoint(c,event["organization_id"])
+    if not endpoint:
         raise ValueError("delivery_endpoint_not_active")
     attempts=_attempt_count(c,event_id)
     if attempts>=MAX_ATTEMPTS:
@@ -860,7 +862,7 @@ def acknowledge_event(c,event_id,organization_id,ack_payload,ack_timestamp,signa
         }
     if abs(now-ack_timestamp)>86400:
         raise ValueError("delivery_ack_timestamp_out_of_range")
-    secret=_endpoint_secret(event["endpoint_id"],attempt["secret_version"])
+    secret=_endpoint_secret(attempt["endpoint_id"],attempt["secret_version"])
     if not verify_signature(secret,ack_timestamp,event_id,ack_sha,signature):
         raise ValueError("delivery_ack_signature_invalid")
     received_at=now
