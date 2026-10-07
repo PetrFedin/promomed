@@ -83,6 +83,10 @@ class EvidenceInterchangeTests(unittest.TestCase):
             self.c,artifact_kind="content",artifact_ref="CT01"
         )
         self.assertEqual(
+            profile["schemaId"],
+            "urn:promomed:schema:evidence-governance-interchange:v1",
+        )
+        self.assertEqual(
             profile["profileVersion"],
             "promomed-evidence-governance-interchange-v1",
         )
@@ -102,6 +106,10 @@ class EvidenceInterchangeTests(unittest.TestCase):
         package=self._package()
         document=evidence_interchange.package_document(self.c,package["id"])
         self.assertEqual(document["state"],"active")
+        self.assertEqual(
+            document["payload"]["schemaId"],
+            "urn:promomed:schema:reference-evidence-package:v1",
+        )
         self.assertTrue(document["integrity"]["packageHashValid"])
         self.assertEqual(
             document["integrity"]["checkpointVerification"]["status"],
