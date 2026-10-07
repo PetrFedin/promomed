@@ -433,6 +433,49 @@
           }
         }
       }
+    },
+    "/api/external-contribution/revise": {
+      "post": {
+        "summary": "Create immutable revised contribution after request_changes",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "contribution_id",
+                  "payload"
+                ],
+                "properties": {
+                  "contribution_id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "payload": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Revised contribution created"
+          },
+          "409": {
+            "description": "Revision boundary failure"
+          }
+        }
+      }
     }
   },
   "components": {
