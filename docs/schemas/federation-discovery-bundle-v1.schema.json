@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:federation-discovery-bundle:v1",
+  "title": "Promomed Federation Discovery Bundle v1",
+  "type": "object",
+  "required": [
+    "statementVersion",
+    "statementType",
+    "issuerId",
+    "keyId",
+    "alg",
+    "issuedAt",
+    "body",
+    "medicalEfficacyCertified"
+  ],
+  "properties": {
+    "statementVersion": {
+      "const": "promomed-portable-statement-v1"
+    },
+    "statementType": {
+      "const": "promomed-federation-discovery-bundle-v1"
+    },
+    "issuerId": {
+      "type": "string"
+    },
+    "keyId": {
+      "type": "string"
+    },
+    "alg": {
+      "const": "Ed25519"
+    },
+    "issuedAt": {
+      "type": "integer"
+    },
+    "medicalEfficacyCertified": {
+      "const": false
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "bundleVersion",
+        "organizationId",
+        "profile",
+        "evaluation",
+        "anchors",
+        "did",
+        "jwks",
+        "issuedAt",
+        "validUntil",
+        "truthBoundary"
+      ],
+      "properties": {
+        "bundleVersion": {
+          "const": "promomed-federation-discovery-bundle-v1"
+        },
+        "organizationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "object",
+          "required": [
+            "id",
+            "version",
+            "sha256"
+          ]
+        },
+        "evaluation": {
+          "type": "object"
+        },
+        "anchors": {
+          "type": "array"
+        },
+        "did": {
+          "type": "object"
+        },
+        "jwks": {
+          "type": "object"
+        },
+        "issuedAt": {
+          "type": "integer"
+        },
+        "validUntil": {
+          "type": "integer"
+        },
+        "truthBoundary": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
