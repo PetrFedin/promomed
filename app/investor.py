@@ -48,6 +48,9 @@ def snapshot(c):
         "production_webhook_endpoints": _count(c, "syndication_delivery_endpoints", "WHERE status='active' AND demo_only=0"),
         "production_delivery_events": _count(c, "syndication_delivery_events", "WHERE demo_only=0"),
         "production_delivery_acks": _count(c, "syndication_delivery_acknowledgements", "WHERE demo_only=0"),
+        "production_trust_snapshots": _count(c, "institutional_status_snapshots", "WHERE demo_only=0"),
+        "production_trust_bundles": _count(c, "institutional_trust_bundles", "WHERE demo_only=0"),
+        "production_external_trust_verifications": _count(c, "institutional_trust_verifications", "WHERE demo_only=0"),
     }
 
     capabilities = [
@@ -135,6 +138,16 @@ def snapshot(c):
                 "Signed webhook events, endpoint verification, retry/backoff, append-only delivery attempts, "
                 "partner-signed acknowledgements, contiguous cursors and behaviour-driven requalification are repository-contract proven. "
                 "No production endpoint, external delivery traffic or production SLA achievement is claimed."
+            ),
+        },
+        {
+            "id": "partner_trust_bundle",
+            "title": "Partner Trust Bundle & Cross-Organisation Verification",
+            "status": "ci_proven",
+            "proof": (
+                "Signed institutional status snapshots, immutable trust bundles, fresh revocation/status material "
+                "and independent portable verification are repository-contract proven. "
+                "No production trust snapshot, external verifier organisation or institutional adoption is claimed."
             ),
         },
     ]
@@ -238,6 +251,14 @@ def snapshot(c):
             "detail": (
                 "Immutable delivery events, signed attempts, acknowledgement evidence, cursor continuity and SLA observations "
                 "can feed requalification decisions without granting the automation authority to suspend or revoke a partner."
+            ),
+        },
+        {
+            "title": "Portable institutional trust state",
+            "status": "ci_proven",
+            "detail": (
+                "Partner qualification, delivery cursor and observed process status can be frozen into signed snapshots, "
+                "verified without database access and cross-checked against fresh revocation/status material."
             ),
         },
     ]

@@ -8,7 +8,7 @@ from app.core import audit, notify, promote_waitlist, setv, sval; from app.comma
 from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 from app.community_commands import handle_command as handle_community_command; from app.learning_commands import handle_command as handle_learning_command; from app.participant_commands import handle_command as handle_participant_command
 from app.programme_commands import handle_command as handle_programme_command; from app.operations_commands import handle_command as handle_operations_command; from app.partner_commands import handle_command as handle_partner_command
-from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public; from app.syndication_commands import handle_command as handle_syndication_command, handle_public as handle_syndication_public
+from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public; from app.syndication_commands import handle_command as handle_syndication_command, handle_public as handle_syndication_public; from app.trust_commands import handle_command as handle_trust_command, handle_public as handle_trust_public
 from app.demo_commands import handle_command as handle_demo_command
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -178,7 +178,6 @@ def init():
    c.execute("INSERT OR IGNORE INTO attendee_profiles(email,intent,interests,networking,visibility,updated) VALUES(?, 'Понять полезное для себя','сон,наука,движение',1,'event_only',?)",(e,int(time.time())))
    c.execute("INSERT OR IGNORE INTO passport(email,updated) VALUES(?,?)",(e,int(time.time())))
   transcript_intelligence.seed_demo(c); evidence_graph.seed_demo(c); reviewer_authority.seed_demo(c); evidence_monitor.seed_demo(c); c.commit(); db.sync_sequences(c); c.close()
-
 class H(SimpleHTTPRequestHandler):
  def __init__(self,*a,**kw): super().__init__(*a,directory=ROOT,**kw)
  def cors(self):
@@ -360,9 +359,10 @@ class H(SimpleHTTPRequestHandler):
   public_outcome=handle_evidence_checkpoint_public(p,data)
   if public_outcome is not None:
    return self.out(public_outcome[0],public_outcome[1])
-  institutional_public=handle_institutional_public(p,data); syndication_public=handle_syndication_public(p,data)
+  institutional_public=handle_institutional_public(p,data); syndication_public=handle_syndication_public(p,data); trust_public=handle_trust_public(p,data)
   if institutional_public is not None: return self.out(institutional_public[0],institutional_public[1])
   if syndication_public is not None: return self.out(syndication_public[0],syndication_public[1])
+  if trust_public is not None: return self.out(trust_public[0],trust_public[1])
   if p=="/api/login":
    email=str(data.get("email","")).lower(); pw=str(data.get("password",""))
    c=conn()
@@ -386,7 +386,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
     if outcome is None: outcome=handle_institutional_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_syndication_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_syndication_command(c,p,role,email,data); outcome=handle_trust_command(c,p,role,email,data) if outcome is None else outcome
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
     if outcome is None: outcome=handle_investment_command(c,p,role,email,data)
     if outcome is None: outcome=handle_deal_command(c,p,role,email,data)

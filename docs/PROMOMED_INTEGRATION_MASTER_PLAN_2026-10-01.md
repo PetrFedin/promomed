@@ -2584,3 +2584,45 @@ Lifecycle requirements:
 - external verification is evidence of cryptographic/process verification only, not endorsement.
 
 Commercial consequence: Promomed can distribute not only evidence packages but also independently verifiable institutional trust state, enabling enterprise due diligence, partner onboarding, procurement checks and federated knowledge-network integrations without exposing internal database authority.
+
+
+### Partner Trust Bundle v1 + Cross-Organisation Verification — repository checkpoint 2026-10-07
+
+Base authority: synchronized `main` after Partner Delivery Protocol v2 + PostgreSQL portability hardening — `c6bd68a497ad1761ca534d322c0ecdcb4b0313b1`.
+
+Implemented repository scope:
+
+- deterministic institutional status projection over qualification, public process certifications, delivery protocol state, cursor and 30-day behaviour evidence;
+- stable state fingerprint excludes wall-clock-only window start/end values;
+- Ed25519 signed institutional status snapshots using the existing Promomed issuer/key lifecycle;
+- snapshot validity window with idempotent replay while material state is unchanged;
+- immutable snapshot core separated from mutable `current / superseded / revoked` status;
+- revoked historical predecessor remains revoked while still participating in explicit supersession lineage;
+- append-only snapshot lifecycle events;
+- short-lived signed snapshot-status statement exposing supersession/revocation without mutating old snapshots;
+- immutable Partner Trust Bundle containing exact snapshot, issuer material, packaged status material and deterministic bundle SHA-256;
+- portable verifier with no Promomed DB/private-key dependency;
+- explicit distinction between packaged historical validity and current Promomed state;
+- `currentPromomedStateVerified=true` only when fresh signed status material and fresh trusted issuer document are supplied;
+- distinct verifier outcomes for invalid hash/signature, unknown issuer, revoked issuer key, expired snapshot and revoked snapshot;
+- cross-organisation verification receipt over exact bundle/snapshot hash;
+- verifier actor requires governance authority or verified operator/administrator membership in the verifier organisation;
+- duplicate same-result verification is idempotent;
+- verifier receipt cannot mutate partner qualification, evidence/claims, snapshot status or issuer authority;
+- exact snapshot/bundle public retrieval plus governed trust-network projection;
+- offline reference verifier: `ops/verify_partner_trust_bundle.py`;
+- SQLite/PostgreSQL migration `023_partner_trust_bundle`;
+- JSON Schemas + OpenAPI 3.1 contract;
+- detailed authority contract: `docs/PARTNER_TRUST_BUNDLE_V1.md`;
+- Investor Proof exposes the capability while non-demo trust/adoption counters remain zero until actual evidence exists.
+
+Truth boundary:
+
+- trust bundle verifies cryptographic/process provenance and institutional integration status only;
+- an old offline bundle is not evidence of current Promomed state without fresh signed status material;
+- external verification receipt is not endorsement, accreditation or scientific authority;
+- no production trust bundle recipient, external verifier organisation, consortium adoption, accreditation, contract, ARR/MRR or revenue is claimed.
+
+Commercial consequence: Promomed can provide portable due-diligence and procurement-grade institutional trust evidence without exposing internal database authority, while preserving revocation, expiry and historical lineage semantics.
+
+**Next candidate after green merge:** Federated Trust Anchors + DID/JWKS-compatible Publication + Institution-Signed Verification Receipts, gated by explicit trust-anchor governance and real external participation evidence.

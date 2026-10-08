@@ -45,6 +45,8 @@ MODULES = {
     "syndication_network.py",
     "syndication_commands.py",
     "delivery_protocol.py",
+    "trust_bundle.py",
+    "trust_commands.py",
 }
 
 
@@ -232,6 +234,25 @@ class ArchitectureContractTests(unittest.TestCase):
             "FOR EACH ROW EXECUTE FUNCTION promomed_block_syndication_delivery_audit_mutation()",
             postgres,
         )
+
+    def test_partner_trust_verification_is_public_before_auth(self):
+        self.assertIn("handle_trust_public",SERVER)
+        public_idx=SERVER.index("trust_public=handle_trust_public(p,data)")
+        auth_idx=SERVER.index("a=auth(self)",SERVER.index(" def do_POST(self):"))
+        self.assertLess(public_idx,auth_idx)
+
+    def test_partner_trust_openapi_and_schemas_are_machine_readable(self):
+        import json
+        spec=json.loads((ROOT/"docs"/"openapi"/"partner-trust-v1.openapi.json").read_text(encoding="utf-8"))
+        snapshot=json.loads((ROOT/"docs"/"schemas"/"institutional-status-snapshot-v1.schema.json").read_text(encoding="utf-8"))
+        bundle=json.loads((ROOT/"docs"/"schemas"/"partner-trust-bundle-v1.schema.json").read_text(encoding="utf-8"))
+        receipt=json.loads((ROOT/"docs"/"schemas"/"trust-verification-receipt-v1.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(spec["openapi"],"3.1.0")
+        self.assertIn("/api/trust/verify-portable",spec["paths"])
+        self.assertIn("/api/trust/verification/record",spec["paths"])
+        self.assertEqual(snapshot["$id"],"urn:promomed:schema:institutional-status-snapshot:v1")
+        self.assertEqual(bundle["$id"],"urn:promomed:schema:partner-trust-bundle:v1")
+        self.assertEqual(receipt["$id"],"urn:promomed:schema:trust-verification-receipt:v1")
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 405)

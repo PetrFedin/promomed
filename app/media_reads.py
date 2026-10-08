@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, delivery_protocol, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network
+from app import db, delivery_protocol, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network, trust_bundle
 
 
 PUBLIC_EVIDENCE_ROUTES=(
@@ -29,6 +29,9 @@ def serve(raw_path, role):
         "/api/syndication/delivery-runtime",
         "/api/syndication/certification",
         "/api/external-contribution/receipt",
+        "/api/trust/snapshot",
+        "/api/trust/bundle",
+        "/api/trust-network",
         *PUBLIC_EVIDENCE_ROUTES,
     ):
         return None
@@ -68,6 +71,33 @@ def serve(raw_path, role):
                 return {"data":evidence_interchange.package_document(c,package_id)},200
             except ValueError as exc:
                 return {"error":str(exc)},404 if str(exc)=="evidence_package_not_found" else 422
+
+        if parsed.path=="/api/trust/snapshot":
+            snapshot_id=(q.get("id") or [""])[0][:120]
+            if not snapshot_id:
+                return {"error":"snapshot_id_required"},422
+            try:
+                return {"data":trust_bundle.snapshot_document(c,snapshot_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
+
+        if parsed.path=="/api/trust/bundle":
+            bundle_id=(q.get("id") or [""])[0][:120]
+            if not bundle_id:
+                return {"error":"bundle_id_required"},422
+            try:
+                return {"data":trust_bundle.bundle_document(c,bundle_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
+
+        if parsed.path=="/api/trust-network":
+            if role not in ("governance","editor","sales"):
+                return {"error":"forbidden"},403
+            organization_id=(q.get("organization_id") or [""])[0][:100] or None
+            try:
+                return {"data":trust_bundle.trust_snapshot(c,organization_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
 
         if parsed.path=="/api/syndication/delivery-runtime":
             if role not in ("governance","editor","sales"):

@@ -13,6 +13,7 @@ from app import (
     editorial_commands,
     institutional_commands,
     syndication_commands,
+    trust_commands,
     demo_commands,
 )
 
@@ -249,6 +250,23 @@ class CommandBoundaryTests(unittest.TestCase):
         )
         self.assertEqual(denied_dispatch.status, 403)
         self.assertEqual(denied_dispatch.payload["error"], "forbidden")
+
+    def test_partner_trust_governance_and_verifier_boundaries(self):
+        denied=trust_commands.handle_command(
+            self.c,"/api/trust/snapshot/issue","participant","participant@demo.ru",
+            {"organization_id":"INST-MISSING"}
+        )
+        self.assertEqual(denied.status,403)
+        self.assertEqual(denied.payload["error"],"forbidden")
+
+        denied_verify=trust_commands.handle_command(
+            self.c,"/api/trust/verification/record","participant","participant@demo.ru",
+            {
+                "bundle_id":"trust:missing",
+                "verifier_organization_id":"INST-MISSING",
+            },
+        )
+        self.assertEqual(denied_verify.status,409)
 
     def test_demo_control_role_boundary(self):
         denied = demo_commands.handle_command(

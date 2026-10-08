@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:partner-trust-bundle:v1",
+  "title": "Promomed Partner Trust Bundle v1",
+  "type": "object",
+  "required": [
+    "schemaId",
+    "bundleVersion",
+    "createdAt",
+    "snapshot",
+    "issuerDocument",
+    "issuerStatusAtPackaging",
+    "snapshotStatusAtPackaging",
+    "truthBoundary",
+    "bundleSha256"
+  ],
+  "properties": {
+    "schemaId": {
+      "const": "urn:promomed:schema:partner-trust-bundle:v1"
+    },
+    "bundleVersion": {
+      "const": "promomed-partner-trust-bundle-v1"
+    },
+    "createdAt": {
+      "type": "integer"
+    },
+    "snapshot": {
+      "type": "object",
+      "required": [
+        "snapshotId",
+        "snapshotSha256",
+        "envelope"
+      ],
+      "properties": {
+        "snapshotId": {
+          "type": "string"
+        },
+        "snapshotSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "envelope": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": false
+    },
+    "issuerDocument": {
+      "type": "object"
+    },
+    "issuerStatusAtPackaging": {
+      "type": "object"
+    },
+    "snapshotStatusAtPackaging": {
+      "type": "object"
+    },
+    "truthBoundary": {
+      "type": "object"
+    },
+    "bundleSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": false
+}

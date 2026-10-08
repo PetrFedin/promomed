@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:institutional-status-snapshot:v1",
+  "title": "Promomed Institutional Status Snapshot v1",
+  "type": "object",
+  "required": [
+    "statementVersion",
+    "statementType",
+    "issuerId",
+    "keyId",
+    "alg",
+    "issuedAt",
+    "body",
+    "medicalEfficacyCertified"
+  ],
+  "properties": {
+    "statementVersion": {
+      "const": "promomed-portable-statement-v1"
+    },
+    "statementType": {
+      "const": "promomed-institutional-status-snapshot-v1"
+    },
+    "issuerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "keyId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "alg": {
+      "const": "Ed25519"
+    },
+    "issuedAt": {
+      "type": "integer"
+    },
+    "medicalEfficacyCertified": {
+      "const": false
+    },
+    "body": {
+      "type": "object",
+      "required": [
+        "snapshotVersion",
+        "organizationId",
+        "statusFingerprint",
+        "validFrom",
+        "validUntil",
+        "state",
+        "currentPromomedStateVerifiedAtIssuance",
+        "medicalEfficacyCertified"
+      ],
+      "properties": {
+        "snapshotVersion": {
+          "const": "promomed-institutional-status-snapshot-v1"
+        },
+        "organizationId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "statusFingerprint": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "validFrom": {
+          "type": "integer"
+        },
+        "validUntil": {
+          "type": "integer"
+        },
+        "state": {
+          "type": "object"
+        },
+        "currentPromomedStateVerifiedAtIssuance": {
+          "const": true
+        },
+        "medicalEfficacyCertified": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
