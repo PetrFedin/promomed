@@ -51,6 +51,7 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(statuses["certified_syndication_network"], "ci_proven")
         self.assertEqual(statuses["partner_delivery_protocol"], "ci_proven")
         self.assertEqual(statuses["partner_trust_bundle"], "ci_proven")
+        self.assertEqual(statuses["federated_trust_anchors"], "ci_proven")
         self.assertEqual(proof["counts"]["institutional_organizations"], 0)
         self.assertEqual(proof["counts"]["evidence_exchange_packages"], 0)
         self.assertEqual(proof["counts"]["qualified_syndication_partners"], 0)
@@ -61,6 +62,8 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(proof["counts"]["production_trust_snapshots"], 0)
         self.assertEqual(proof["counts"]["production_trust_bundles"], 0)
         self.assertEqual(proof["counts"]["production_external_trust_verifications"], 0)
+        self.assertEqual(proof["counts"]["production_federated_anchors"], 0)
+        self.assertEqual(proof["counts"]["production_institution_signed_receipts"], 0)
 
     def test_capital_milestones_are_dependency_gated(self):
         proof = self.investor.snapshot(self.c)
@@ -176,6 +179,17 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(proof["counts"]["production_trust_snapshots"],0)
         self.assertEqual(proof["counts"]["production_trust_bundles"],0)
         self.assertEqual(proof["counts"]["production_external_trust_verifications"],0)
+
+    def test_federated_trust_is_visible_without_external_adoption_claim(self):
+        proof=self.investor.snapshot(self.c)
+        capabilities={x["id"]:x for x in proof["capabilities"]}
+        federation=capabilities["federated_trust_anchors"]
+        self.assertEqual(federation["status"],"ci_proven")
+        text=federation["proof"].lower()
+        self.assertIn("no production external anchor",text)
+        self.assertIn("no",text)
+        self.assertEqual(proof["counts"]["production_federated_anchors"],0)
+        self.assertEqual(proof["counts"]["production_institution_signed_receipts"],0)
 
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
