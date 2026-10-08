@@ -51,6 +51,7 @@ MODULES = {
     "federation_interop.py",
     "pilot_workspace.py",
     "institutional_onboarding.py",
+    "institutional_data_room.py",
 }
 
 
@@ -307,6 +308,17 @@ class ArchitectureContractTests(unittest.TestCase):
         ):
             self.assertIn(route,media)
         self.assertIn("/api/federation/discovery-bundle/verify-portable",commands)
+
+    def test_institutional_data_room_is_guarded_and_read_only(self):
+        media=(APP/"media_reads.py").read_text(encoding="utf-8")
+        runtime=(APP/"institutional_data_room.py").read_text(encoding="utf-8")
+        self.assertIn("/api/institutional-data-room",media)
+        self.assertIn("institutional_data_room.snapshot",media)
+        self.assertIn('"readOnly":True',runtime)
+        self.assertIn('"externalParticipationAcceptance":"GATED"',runtime)
+        self.assertNotIn("INSERT ",runtime)
+        self.assertNotIn("UPDATE ",runtime)
+        self.assertNotIn("DELETE ",runtime)
 
     def test_institutional_onboarding_room_is_guarded_and_read_only(self):
         media=(APP/"media_reads.py").read_text(encoding="utf-8")

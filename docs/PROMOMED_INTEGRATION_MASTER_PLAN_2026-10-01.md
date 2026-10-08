@@ -2828,3 +2828,33 @@ Commercial consequence:
 Promomed can now run a structured institutional diligence/onboarding session around one shared product surface: what is proven, what is missing, who owns it, what customer evidence is required and what must be agreed before contract/procurement.
 
 **Next dependency after green merge/live proof:** refine onboarding UX from real institutional working-session feedback; implement canonical participation acceptance only when an actual non-demo institutional participant exists.
+
+
+### Institutional Working Session / Procurement Data Room v1 — implementation candidate 2026-10-08
+
+Repository base: `main@d50937899206f09d6828daa18c23ac4728f84fb6`.
+
+Purpose:
+
+turn the onboarding/readiness layer into one facilitated institutional diligence surface.
+
+Flow:
+
+`agenda -> evidence artifacts -> open readiness/procurement items -> decisions to make -> handoff -> deterministic session export`.
+
+Implementation boundaries:
+
+- read-only orchestration over Institutional Onboarding Room and existing authorities;
+- unresolved readiness and procurement gates are surfaced as open items;
+- decision list is visible but every decision remains `canResolveHere=false`;
+- session export gets deterministic SHA-256;
+- meeting notes are not persisted;
+- decision acceptance is not persisted;
+- no commercial commitment or contract is created;
+- External Participation Acceptance remains `GATED`.
+
+Commercial consequence:
+
+Promomed can support a real first diligence/working session without turning workshop UX into hidden governance or synthetic traction.
+
+**Next dependency after green merge/live proof:** use the Data Room in an actual institutional conversation; only real observed workflow friction may justify persistent meeting notes, formal approval objects or canonical participation acceptance.
