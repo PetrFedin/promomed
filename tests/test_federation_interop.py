@@ -101,6 +101,20 @@ class FederationInteroperabilityTests(unittest.TestCase):
         )
         return private,anchor
 
+    def test_public_profile_and_manifest_reads_are_side_effect_free(self):
+        before=self.c.execute(
+            "SELECT COUNT(*) n FROM federation_interoperability_profiles"
+        ).fetchone()["n"]
+        profile=federation_interop.public_profile(self.c)
+        manifest=federation_interop.discovery_manifest(self.c)
+        after=self.c.execute(
+            "SELECT COUNT(*) n FROM federation_interoperability_profiles"
+        ).fetchone()["n"]
+        self.assertEqual(before,0)
+        self.assertEqual(after,0)
+        self.assertFalse(profile["persisted"])
+        self.assertEqual(manifest["profile"]["sha256"],profile["profileSha256"])
+
     def test_profile_is_deterministic_and_version_collision_safe(self):
         now=int(time.time())
         first=federation_interop.ensure_profile(self.c,"governance@demo.ru",now=now)
