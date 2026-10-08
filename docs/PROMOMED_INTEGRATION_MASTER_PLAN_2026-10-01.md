@@ -2706,7 +2706,7 @@ Commercial consequence: federation becomes discoverable and integrable without e
 
 ### Federation Interoperability Profile v1 + Trust Anchor Discovery — repository checkpoint 2026-10-08
 
-Base authority: live-proven `main@f71f73d6aca36928844fee81d6b2ba7227b33a6a` after Federated Trust Anchors v1 merge/live proof.
+Repository base: `main@f71f73d6aca36928844fee81d6b2ba7227b33a6a`; its runtime-code parent `f13f106d00ab39751fd350be734415cd21af66b6` is exact-SHA Render live-proven. The intervening `f71f73d...` commit updates master-plan documentation only.
 
 Implemented repository scope:
 
