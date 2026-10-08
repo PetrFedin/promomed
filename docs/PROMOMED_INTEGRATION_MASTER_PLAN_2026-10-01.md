@@ -2626,3 +2626,52 @@ Truth boundary:
 Commercial consequence: Promomed can provide portable due-diligence and procurement-grade institutional trust evidence without exposing internal database authority, while preserving revocation, expiry and historical lineage semantics.
 
 **Next candidate after green merge:** Federated Trust Anchors + DID/JWKS-compatible Publication + Institution-Signed Verification Receipts, gated by explicit trust-anchor governance and real external participation evidence.
+
+
+### Federated Trust Anchors v1 + Institution-Signed Verification Receipts — repository checkpoint 2026-10-08
+
+Base authority: exact merged `main` after Partner Trust Bundle v1 — `bd642bd28ea974e9a5635d9a90cc3beb6c4c1868`.
+
+Implemented repository scope:
+
+- migration `024_federated_trust_anchors` for SQLite/PostgreSQL;
+- immutable institutional anchor core separated from mutable lifecycle state;
+- lifecycle: `pending_proof -> pending_governance -> active -> retired|suspended|revoked`;
+- Ed25519 proof-of-possession challenge before governance activation;
+- external institution private keys are never stored by Promomed;
+- verified organisation administrator/governance may propose and prove keys; only governance may activate/suspend/revoke;
+- explicit rotation lineage through `rotated_from_anchor_id`;
+- suspended predecessor cannot be bypassed by proposing an unlinked new key;
+- Promomed-hosted `did:web`-compatible projection on canonical organisation ID;
+- public JWKS-compatible OKP/Ed25519/EdDSA projection with lifecycle metadata;
+- DID/JWKS projections do not claim control over external institution domains;
+- Promomed-signed `promomed-federated-anchor-status-v1` statement over current/historical admitted anchors;
+- institution-signed verification receipt binds exact trust-bundle SHA, snapshot SHA, verifier organisation, admitted anchor/key, verification material and reproducible result digest;
+- Promomed recomputes the Partner Trust Bundle result before admitting an institution-signed receipt;
+- retired key remains historically usable only within its prior validity window; suspended/revoked key cannot admit new receipts;
+- portable verifier checks `Promomed issuer -> anchor status -> institution key -> institution receipt -> trust-bundle result` without Promomed DB/private keys;
+- exact receipt retrieval + governed federation registry;
+- JSON Schemas + OpenAPI 3.1 contract;
+- offline reference verifier: `ops/verify_institution_signed_receipt.py`;
+- mandatory regression suite covers proof/governance separation, rotation, suspension, receipt reproducibility, offline chain and immutable audit;
+- Investor Proof exposes federation as CI-PROVEN architecture while non-demo anchor/receipt counts remain zero until actual evidence exists.
+
+Truth boundary:
+
+- public-key possession is not accreditation, endorsement, regulator approval or scientific authority;
+- Promomed-hosted DID does not imply control of an external university/society/company domain;
+- DID/JWKS publication is an interoperability projection over admitted Promomed authority, not a second canonical identity database;
+- institution-signed receipt is evidence that the institution's admitted key signed a reproducible verification result; it cannot alter qualification, canonical evidence, Promomed issuer state or medical governance;
+- no production external anchor, consortium, accreditation relationship, paid federation contract, ARR/MRR or real external adoption is claimed.
+
+Live release boundary observed on 2026-10-08:
+
+- repository/UI/persistence/browser gates for `main@bd642bd28ea974e9a5635d9a90cc3beb6c4c1868` passed;
+- live Render proof failed only because `sostoyanie-promomed-live` remained on stale SHA `148083d5ae03b8da2973efde6d5eceed8844d304` for the entire exact-SHA proof window;
+- live backend reported `sqlite`, `durable=false`, `demo_seed=true`;
+- repository `render.yaml` explicitly records that this existing Public Git service requires an explicit deploy API trigger until the Git provider webhook is reconnected;
+- therefore no current exact-main production/live proof is claimed for Partner Trust Bundle or federation layers.
+
+Commercial consequence: Promomed can model a federation where institutions retain private-key custody but participate in a machine-verifiable institutional trust chain governed by explicit Promomed admission and revocation semantics.
+
+**Next gate:** green repository CI for federation -> restore exact-main Render deployment -> only then Federation Interoperability Profile + Trust Anchor Discovery + real external pilot admission.

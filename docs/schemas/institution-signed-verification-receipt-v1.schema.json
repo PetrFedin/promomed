@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:institution-signed-verification-receipt:v1",
+  "title": "Promomed Institution-Signed Verification Receipt v1",
+  "type": "object",
+  "required": [
+    "receiptVersion",
+    "bundleId",
+    "bundleSha256",
+    "snapshotSha256",
+    "verifierOrganizationId",
+    "anchorId",
+    "issuerId",
+    "keyId",
+    "verifiedAt",
+    "verificationStatus",
+    "verificationResultSha256",
+    "verificationMaterial",
+    "verificationMaterialHashes",
+    "authorityBoundary"
+  ],
+  "properties": {
+    "receiptVersion": {
+      "const": "promomed-institution-signed-verification-receipt-v1"
+    },
+    "bundleId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bundleSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "snapshotSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "verifierOrganizationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "anchorId": {
+      "type": "string",
+      "pattern": "^anchor:[0-9a-f]{24}$"
+    },
+    "issuerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "keyId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verifiedAt": {
+      "type": "integer"
+    },
+    "verificationStatus": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verificationResultSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "verificationMaterial": {
+      "type": "object"
+    },
+    "verificationMaterialHashes": {
+      "type": "object",
+      "required": [
+        "currentStatusStatementSha256",
+        "currentIssuerDocumentSha256"
+      ],
+      "properties": {
+        "currentStatusStatementSha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "currentIssuerDocumentSha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "authorityBoundary": {
+      "type": "object",
+      "required": [
+        "changesPartnerQualification",
+        "changesCanonicalEvidence",
+        "changesPromomedIssuerState",
+        "externalEndorsementInferred",
+        "professionalAccreditation"
+      ],
+      "properties": {
+        "changesPartnerQualification": {
+          "const": false
+        },
+        "changesCanonicalEvidence": {
+          "const": false
+        },
+        "changesPromomedIssuerState": {
+          "const": false
+        },
+        "externalEndorsementInferred": {
+          "const": false
+        },
+        "professionalAccreditation": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

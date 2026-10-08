@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, delivery_protocol, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network, trust_bundle
+from app import db, delivery_protocol, federated_trust, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network, trust_bundle
 
 
 PUBLIC_EVIDENCE_ROUTES=(
@@ -13,7 +13,11 @@ PUBLIC_EVIDENCE_ROUTES=(
 
 def serve(raw_path, role):
     parsed=urlparse(raw_path)
-    if parsed.path not in (
+    dynamic_federated_public=(
+        parsed.path.startswith("/trust/")
+        and (parsed.path.endswith("/did.json") or parsed.path.endswith("/jwks.json"))
+    )
+    if not dynamic_federated_public and parsed.path not in (
         "/api/transcript-intelligence",
         "/api/evidence-graph",
         "/api/evidence-coverage",
@@ -32,6 +36,8 @@ def serve(raw_path, role):
         "/api/trust/snapshot",
         "/api/trust/bundle",
         "/api/trust-network",
+        "/api/federation",
+        "/api/federation/receipt",
         *PUBLIC_EVIDENCE_ROUTES,
     ):
         return None
@@ -71,6 +77,44 @@ def serve(raw_path, role):
                 return {"data":evidence_interchange.package_document(c,package_id)},200
             except ValueError as exc:
                 return {"error":str(exc)},404 if str(exc)=="evidence_package_not_found" else 422
+
+        if parsed.path.startswith("/trust/") and parsed.path.endswith("/did.json"):
+            from urllib.parse import unquote
+            organization_id=unquote(parsed.path[len("/trust/"):-len("/did.json")]).strip("/")
+            if not organization_id:
+                return {"error":"organization_id_required"},422
+            try:
+                return {"data":federated_trust.did_document(c,organization_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
+
+        if parsed.path.startswith("/trust/") and parsed.path.endswith("/jwks.json"):
+            from urllib.parse import unquote
+            organization_id=unquote(parsed.path[len("/trust/"):-len("/jwks.json")]).strip("/")
+            if not organization_id:
+                return {"error":"organization_id_required"},422
+            try:
+                return federated_trust.jwks_document(c,organization_id),200
+            except ValueError as exc:
+                return {"error":str(exc)},404
+
+        if parsed.path=="/api/federation/receipt":
+            receipt_id=(q.get("id") or [""])[0][:160]
+            if not receipt_id:
+                return {"error":"receipt_id_required"},422
+            try:
+                return {"data":federated_trust.signed_receipt_document(c,receipt_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
+
+        if parsed.path=="/api/federation":
+            if role not in ("governance","editor","sales"):
+                return {"error":"forbidden"},403
+            organization_id=(q.get("organization_id") or [""])[0][:100] or None
+            try:
+                return {"data":federated_trust.federation_snapshot(c,organization_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404
 
         if parsed.path=="/api/trust/snapshot":
             snapshot_id=(q.get("id") or [""])[0][:120]

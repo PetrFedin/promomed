@@ -51,6 +51,8 @@ def snapshot(c):
         "production_trust_snapshots": _count(c, "institutional_status_snapshots", "WHERE demo_only=0"),
         "production_trust_bundles": _count(c, "institutional_trust_bundles", "WHERE demo_only=0"),
         "production_external_trust_verifications": _count(c, "institutional_trust_verifications", "WHERE demo_only=0"),
+        "production_federated_anchors": _count(c, "institutional_federated_anchors", "WHERE demo_only=0"),
+        "production_institution_signed_receipts": _count(c, "institutional_signed_verification_receipts", "WHERE demo_only=0"),
     }
 
     capabilities = [
@@ -148,6 +150,16 @@ def snapshot(c):
                 "Signed institutional status snapshots, immutable trust bundles, fresh revocation/status material "
                 "and independent portable verification are repository-contract proven. "
                 "No production trust snapshot, external verifier organisation or institutional adoption is claimed."
+            ),
+        },
+        {
+            "id": "federated_trust_anchors",
+            "title": "Federated Trust Anchors & Institution-Signed Verification",
+            "status": "ci_proven",
+            "proof": (
+                "Proof-of-possession, governance-admitted institutional public keys, DID/JWKS-compatible publication, "
+                "rotation/revocation lineage and institution-signed verification receipts are repository-contract proven. "
+                "No production external anchor, consortium, accreditation relationship or institution-signed production receipt is claimed."
             ),
         },
     ]
@@ -259,6 +271,14 @@ def snapshot(c):
             "detail": (
                 "Partner qualification, delivery cursor and observed process status can be frozen into signed snapshots, "
                 "verified without database access and cross-checked against fresh revocation/status material."
+            ),
+        },
+        {
+            "title": "Federated institutional trust chain",
+            "status": "ci_proven",
+            "detail": (
+                "Promomed governance can bind independently controlled institutional public keys after proof-of-possession, "
+                "publish DID/JWKS-compatible status and verify institution-signed receipts without taking custody of external private keys."
             ),
         },
     ]

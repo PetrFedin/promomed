@@ -268,6 +268,21 @@ class CommandBoundaryTests(unittest.TestCase):
         )
         self.assertEqual(denied_verify.status,409)
 
+    def test_federated_trust_governance_boundary(self):
+        denied=trust_commands.handle_command(
+            self.c,"/api/federation/anchor/activate","participant","participant@demo.ru",
+            {"anchor_id":"anchor:missing"}
+        )
+        self.assertEqual(denied.status,403)
+        self.assertEqual(denied.payload["error"],"forbidden")
+
+        public=trust_commands.handle_public(
+            "/api/federation/receipt/verify-portable",
+            {"receipt":{},"bundle":{},"anchor_status_statement":{},"promomed_issuer_document":{}},
+        )
+        self.assertIsNotNone(public)
+        self.assertEqual(public[1],200)
+
     def test_demo_control_role_boundary(self):
         denied = demo_commands.handle_command(
             self.c, "/api/demo/reset", "participant", "participant@demo.ru", {}
