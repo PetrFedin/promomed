@@ -2664,14 +2664,41 @@ Truth boundary:
 - institution-signed receipt is evidence that the institution's admitted key signed a reproducible verification result; it cannot alter qualification, canonical evidence, Promomed issuer state or medical governance;
 - no production external anchor, consortium, accreditation relationship, paid federation contract, ARR/MRR or real external adoption is claimed.
 
-Live release boundary observed on 2026-10-08:
+Merged/live authority update 2026-10-08:
 
-- repository/UI/persistence/browser gates for `main@bd642bd28ea974e9a5635d9a90cc3beb6c4c1868` passed;
-- live Render proof failed only because `sostoyanie-promomed-live` remained on stale SHA `148083d5ae03b8da2973efde6d5eceed8844d304` for the entire exact-SHA proof window;
-- live backend reported `sqlite`, `durable=false`, `demo_seed=true`;
-- repository `render.yaml` explicitly records that this existing Public Git service requires an explicit deploy API trigger until the Git provider webhook is reconnected;
-- therefore no current exact-main production/live proof is claimed for Partner Trust Bundle or federation layers.
+- PR #46 merged into `main` at `f13f106d00ab39751fd350be734415cd21af66b6`;
+- exact federation SHA was explicitly deployed to `sostoyanie-promomed-live`;
+- live Render proof: PASS;
+- UI / architecture: PASS;
+- SQLite persistence: PASS;
+- PostgreSQL persistence: PASS;
+- responsive browser QA on Monitor / iPad / iPhone: PASS;
+- live service still operates in demo SQLite mode, so this proves exact-code live execution, not production durability;
+- no production external anchor, institution-signed production receipt, accreditation, consortium relationship or external adoption is claimed.
 
-Commercial consequence: Promomed can model a federation where institutions retain private-key custody but participate in a machine-verifiable institutional trust chain governed by explicit Promomed admission and revocation semantics.
+Commercial consequence: Promomed now has a live-proven federation protocol in which institutions retain private-key custody while participating in a machine-verifiable institutional trust chain governed by explicit admission, rotation and revocation semantics.
 
-**Next gate:** green repository CI for federation -> restore exact-main Render deployment -> only then Federation Interoperability Profile + Trust Anchor Discovery + real external pilot admission.
+### Federation Interoperability Profile + Trust Anchor Discovery — next repository layer
+
+Implementation sequence:
+
+`interoperability profile identity -> profile capabilities -> discovery manifest -> trust-anchor directory -> profile/anchor compatibility -> machine-readable conformance result -> portable discovery bundle -> external pilot admission gate`.
+
+Repository scope allowed now:
+
+- versioned interoperability profile describing supported statement types, algorithms, DID/JWKS surfaces, receipt versions, status-list semantics and freshness expectations;
+- public discovery manifest for Promomed federation capabilities;
+- organisation discovery directory containing only already-admitted public anchor material;
+- deterministic compatibility evaluation between an institution anchor and an interoperability profile;
+- machine-readable discovery/conformance JSON Schema + OpenAPI contract;
+- portable discovery bundle that can be validated without Promomed DB;
+- explicit freshness / revocation / profile-version semantics;
+- no automatic promotion of discovered keys into admitted trust anchors.
+
+External pilot gate:
+
+- pilot admission remains blocked until a real non-demo institution supplies independently controlled public-key evidence and an attributable organisation identity;
+- synthetic/demo organisations may test protocol mechanics only;
+- no accreditation, consortium membership, external adoption or commercial relationship may be inferred from discovery/profile compatibility.
+
+Commercial consequence: federation becomes discoverable and integrable without exposing internal authority, while keeping discovery separate from governance admission.
