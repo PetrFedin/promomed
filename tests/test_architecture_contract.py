@@ -47,6 +47,7 @@ MODULES = {
     "delivery_protocol.py",
     "trust_bundle.py",
     "trust_commands.py",
+    "federated_trust.py",
 }
 
 
@@ -253,6 +254,44 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertEqual(snapshot["$id"],"urn:promomed:schema:institutional-status-snapshot:v1")
         self.assertEqual(bundle["$id"],"urn:promomed:schema:partner-trust-bundle:v1")
         self.assertEqual(receipt["$id"],"urn:promomed:schema:trust-verification-receipt:v1")
+
+    def test_federated_trust_public_verifier_and_dynamic_reads_are_reachable(self):
+        commands=(APP/"trust_commands.py").read_text(encoding="utf-8")
+        media=(APP/"media_reads.py").read_text(encoding="utf-8")
+        self.assertIn('/api/federation/receipt/verify-portable',commands)
+        self.assertIn('parsed.path.startswith("/trust/")',media)
+        self.assertIn('parsed.path.endswith("/did.json")',media)
+        self.assertIn('parsed.path.endswith("/jwks.json")',media)
+        self.assertIn("dynamic_federated_public",media)
+
+    def test_federated_trust_openapi_and_schemas_are_machine_readable(self):
+        import json
+        spec=json.loads((ROOT/"docs"/"openapi"/"federated-trust-v1.openapi.json").read_text(encoding="utf-8"))
+        anchor=json.loads((ROOT/"docs"/"schemas"/"federated-trust-anchor-v1.schema.json").read_text(encoding="utf-8"))
+        receipt=json.loads((ROOT/"docs"/"schemas"/"institution-signed-verification-receipt-v1.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(spec["openapi"],"3.1.0")
+        self.assertIn("/trust/{organization_id}/did.json",spec["paths"])
+        self.assertIn("/trust/{organization_id}/jwks.json",spec["paths"])
+        self.assertIn("/api/federation/receipt/verify-portable",spec["paths"])
+        self.assertEqual(anchor["$id"],"urn:promomed:schema:federated-trust-anchor:v1")
+        self.assertEqual(receipt["$id"],"urn:promomed:schema:institution-signed-verification-receipt:v1")
+
+    def test_federated_trust_runtime_uses_postgres_portable_dml(self):
+        runtime=(APP/"federated_trust.py").read_text(encoding="utf-8")
+        self.assertNotIn("INSERT OR IGNORE",runtime)
+        self.assertNotIn("REPLACE INTO",runtime)
+        self.assertIn("ON CONFLICT(event_sha256) DO NOTHING",runtime)
+
+    def test_federated_trust_migration_contract_matches_runtime(self):
+        sqlite=(ROOT/"migrations"/"sqlite"/"024_federated_trust_anchors.sql").read_text(encoding="utf-8")
+        postgres=(ROOT/"migrations"/"postgres"/"024_federated_trust_anchors.sql").read_text(encoding="utf-8")
+        for migration in (sqlite,postgres):
+            for state in ("pending_proof","pending_governance","active","retired","suspended","revoked"):
+                self.assertIn("'"+state+"'",migration)
+            self.assertIn("institutional_signed_verification_receipts",migration)
+            self.assertIn("institutional_federated_anchor_events",migration)
+        self.assertIn("immutable_institutional_federated_anchor",sqlite)
+        self.assertIn("promomed_block_federated_trust_audit_mutation",postgres)
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 405)
