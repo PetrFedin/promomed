@@ -53,6 +53,7 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(statuses["partner_trust_bundle"], "ci_proven")
         self.assertEqual(statuses["federated_trust_anchors"], "ci_proven")
         self.assertEqual(statuses["federation_interoperability"], "ci_proven")
+        self.assertEqual(statuses["institutional_pilot_readiness"], "ci_proven")
         self.assertEqual(proof["counts"]["institutional_organizations"], 0)
         self.assertEqual(proof["counts"]["evidence_exchange_packages"], 0)
         self.assertEqual(proof["counts"]["qualified_syndication_partners"], 0)
@@ -204,6 +205,17 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertIn("no real external pilot",text)
         self.assertEqual(proof["counts"]["production_federation_profile_evaluations"],0)
         self.assertEqual(proof["counts"]["production_federation_discovery_bundles"],0)
+
+    def test_institutional_pilot_readiness_is_visible_without_traction_claim(self):
+        proof=self.investor.snapshot(self.c)
+        capabilities={x["id"]:x for x in proof["capabilities"]}
+        pilot=capabilities["institutional_pilot_readiness"]
+        self.assertEqual(pilot["status"],"ci_proven")
+        text=pilot["proof"].lower()
+        self.assertIn("demo institutions remain blocked",text)
+        self.assertIn("no real pilot",text)
+        self.assertNotIn("signed customer",text)
+        self.assertNotIn("arr",text)
 
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)
