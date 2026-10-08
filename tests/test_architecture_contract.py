@@ -48,6 +48,7 @@ MODULES = {
     "trust_bundle.py",
     "trust_commands.py",
     "federated_trust.py",
+    "federation_interop.py",
 }
 
 
@@ -292,6 +293,47 @@ class ArchitectureContractTests(unittest.TestCase):
             self.assertIn("institutional_federated_anchor_events",migration)
         self.assertIn("immutable_institutional_federated_anchor",sqlite)
         self.assertIn("promomed_block_federated_trust_audit_mutation",postgres)
+
+    def test_federation_interop_public_discovery_is_reachable(self):
+        media=(APP/"media_reads.py").read_text(encoding="utf-8")
+        commands=(APP/"trust_commands.py").read_text(encoding="utf-8")
+        for route in (
+            "/.well-known/promomed-federation.json",
+            "/api/federation/profile",
+            "/api/federation/discovery",
+            "/api/federation/discovery-bundle",
+        ):
+            self.assertIn(route,media)
+        self.assertIn("/api/federation/discovery-bundle/verify-portable",commands)
+
+    def test_federation_interop_runtime_uses_postgres_portable_dml(self):
+        runtime=(APP/"federation_interop.py").read_text(encoding="utf-8")
+        self.assertNotIn("INSERT OR IGNORE",runtime)
+        self.assertNotIn("REPLACE INTO",runtime)
+
+    def test_federation_interop_migration_contract_matches_runtime(self):
+        sqlite=(ROOT/"migrations"/"sqlite"/"025_federation_interoperability.sql").read_text(encoding="utf-8")
+        postgres=(ROOT/"migrations"/"postgres"/"025_federation_interoperability.sql").read_text(encoding="utf-8")
+        for migration in (sqlite,postgres):
+            for status in ("compatible","compatible_with_warnings","incompatible","no_active_anchor"):
+                self.assertIn("'"+status+"'",migration)
+            self.assertIn("federation_interoperability_profiles",migration)
+            self.assertIn("federation_profile_evaluations",migration)
+            self.assertIn("federation_discovery_bundles",migration)
+        self.assertIn("immutable_federation_interoperability_profile",sqlite)
+        self.assertIn("promomed_block_federation_interop_audit_mutation",postgres)
+
+    def test_federation_interop_openapi_and_schemas_are_machine_readable(self):
+        import json
+        spec=json.loads((ROOT/"docs"/"openapi"/"federation-interoperability-v1.openapi.json").read_text(encoding="utf-8"))
+        profile=json.loads((ROOT/"docs"/"schemas"/"federation-interoperability-profile-v1.schema.json").read_text(encoding="utf-8"))
+        bundle=json.loads((ROOT/"docs"/"schemas"/"federation-discovery-bundle-v1.schema.json").read_text(encoding="utf-8"))
+        self.assertEqual(spec["openapi"],"3.1.0")
+        self.assertIn("/.well-known/promomed-federation.json",spec["paths"])
+        self.assertIn("/api/federation/discovery",spec["paths"])
+        self.assertIn("/api/federation/discovery-bundle/verify-portable",spec["paths"])
+        self.assertEqual(profile["$id"],"urn:promomed:schema:federation-interoperability-profile:v1")
+        self.assertEqual(bundle["$id"],"urn:promomed:schema:federation-discovery-bundle:v1")
 
     def test_server_size_moves_down_not_up(self):
         self.assertLessEqual(len(SERVER.splitlines()), 405)

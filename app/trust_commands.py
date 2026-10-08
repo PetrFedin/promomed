@@ -1,5 +1,5 @@
 from app.commanding import custom, error
-from app import federated_trust, trust_bundle
+from app import federated_trust, federation_interop, trust_bundle
 
 
 ROUTES={
@@ -15,6 +15,8 @@ ROUTES={
     "/api/federation/anchor/revoke",
     "/api/federation/anchor/status/issue",
     "/api/federation/receipt/submit",
+    "/api/federation/compatibility/evaluate",
+    "/api/federation/discovery-bundle/issue",
 }
 
 
@@ -71,6 +73,23 @@ def handle_command(c,route,role,email,data):
 
         if role!="governance":
             return error("forbidden",403)
+
+        if route=="/api/federation/compatibility/evaluate":
+            result=federation_interop.evaluate_compatibility(
+                c,
+                str(data.get("organization_id") or "")[:100],
+                actor=email,
+            )
+            return custom({"data":result},201)
+
+        if route=="/api/federation/discovery-bundle/issue":
+            result=federation_interop.issue_discovery_bundle(
+                c,
+                str(data.get("organization_id") or "")[:100],
+                email,
+                int(data.get("validity_seconds") or federation_interop.DEFAULT_BUNDLE_VALIDITY),
+            )
+            return custom({"data":result},201 if not result.get("idempotentReplay") else 200)
 
         if route=="/api/federation/anchor/activate":
             result=federated_trust.activate_anchor(
@@ -146,6 +165,12 @@ def handle_command(c,route,role,email,data):
 
 
 def handle_public(route,data):
+    if route=="/api/federation/discovery-bundle/verify-portable":
+        result=federation_interop.verify_discovery_bundle(
+            data.get("bundle") or {},
+            data.get("issuer_document") or {},
+        )
+        return {"data":result},200
     if route=="/api/federation/receipt/verify-portable":
         result=federated_trust.verify_signed_receipt_portable(
             data.get("receipt") or {},

@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, delivery_protocol, federated_trust, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network, trust_bundle
+from app import db, delivery_protocol, federated_trust, federation_interop, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network, trust_bundle
 
 
 PUBLIC_EVIDENCE_ROUTES=(
@@ -38,6 +38,10 @@ def serve(raw_path, role):
         "/api/trust-network",
         "/api/federation",
         "/api/federation/receipt",
+        "/.well-known/promomed-federation.json",
+        "/api/federation/profile",
+        "/api/federation/discovery",
+        "/api/federation/discovery-bundle",
         *PUBLIC_EVIDENCE_ROUTES,
     ):
         return None
@@ -95,6 +99,38 @@ def serve(raw_path, role):
                 return {"error":"organization_id_required"},422
             try:
                 return federated_trust.jwks_document(c,organization_id),200
+            except ValueError as exc:
+                return {"error":str(exc)},404
+
+        if parsed.path=="/.well-known/promomed-federation.json":
+            return federation_interop.discovery_manifest(c),200
+
+        if parsed.path=="/api/federation/profile":
+            return {"data":federation_interop.public_profile(c)},200
+
+        if parsed.path=="/api/federation/discovery":
+            organization_id=(q.get("organization_id") or [""])[0][:100]
+            if not organization_id:
+                return {"error":"organization_id_required"},422
+            try:
+                return {
+                    "data":{
+                        "profile":federation_interop.public_profile(c),
+                        "organizationId":organization_id,
+                        "anchors":federation_interop.anchor_directory(c,organization_id),
+                        "did":federated_trust.did_document(c,organization_id),
+                        "jwks":federated_trust.jwks_document(c,organization_id),
+                    }
+                },200
+            except ValueError as exc:
+                return {"error":str(exc)},404
+
+        if parsed.path=="/api/federation/discovery-bundle":
+            bundle_id=(q.get("id") or [""])[0][:160]
+            if not bundle_id:
+                return {"error":"bundle_id_required"},422
+            try:
+                return {"data":federation_interop.discovery_bundle_document(c,bundle_id)},200
             except ValueError as exc:
                 return {"error":str(exc)},404
 

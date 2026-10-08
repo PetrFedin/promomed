@@ -52,6 +52,7 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(statuses["partner_delivery_protocol"], "ci_proven")
         self.assertEqual(statuses["partner_trust_bundle"], "ci_proven")
         self.assertEqual(statuses["federated_trust_anchors"], "ci_proven")
+        self.assertEqual(statuses["federation_interoperability"], "ci_proven")
         self.assertEqual(proof["counts"]["institutional_organizations"], 0)
         self.assertEqual(proof["counts"]["evidence_exchange_packages"], 0)
         self.assertEqual(proof["counts"]["qualified_syndication_partners"], 0)
@@ -64,6 +65,8 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertEqual(proof["counts"]["production_external_trust_verifications"], 0)
         self.assertEqual(proof["counts"]["production_federated_anchors"], 0)
         self.assertEqual(proof["counts"]["production_institution_signed_receipts"], 0)
+        self.assertEqual(proof["counts"]["production_federation_profile_evaluations"], 0)
+        self.assertEqual(proof["counts"]["production_federation_discovery_bundles"], 0)
 
     def test_capital_milestones_are_dependency_gated(self):
         proof = self.investor.snapshot(self.c)
@@ -190,6 +193,17 @@ class InvestorProjectionTests(unittest.TestCase):
         self.assertIn("no",text)
         self.assertEqual(proof["counts"]["production_federated_anchors"],0)
         self.assertEqual(proof["counts"]["production_institution_signed_receipts"],0)
+
+    def test_federation_interoperability_is_visible_without_pilot_claim(self):
+        proof=self.investor.snapshot(self.c)
+        capabilities={x["id"]:x for x in proof["capabilities"]}
+        interop=capabilities["federation_interoperability"]
+        self.assertEqual(interop["status"],"ci_proven")
+        text=interop["proof"].lower()
+        self.assertIn("discovery never admits a key",text)
+        self.assertIn("no real external pilot",text)
+        self.assertEqual(proof["counts"]["production_federation_profile_evaluations"],0)
+        self.assertEqual(proof["counts"]["production_federation_discovery_bundles"],0)
 
     def test_revenue_architecture_does_not_claim_financial_forecasts(self):
         proof = self.investor.snapshot(self.c)

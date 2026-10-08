@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:federation-interoperability-profile:v1",
+  "title": "Promomed Federation Interoperability Profile v1",
+  "type": "object",
+  "required": [
+    "profileVersion",
+    "identity",
+    "cryptography",
+    "portableStatements",
+    "statusSemantics",
+    "freshness",
+    "surfaces",
+    "governance",
+    "truthBoundary"
+  ],
+  "properties": {
+    "profileVersion": {
+      "const": "promomed-federation-interop-v1"
+    },
+    "identity": {
+      "type": "object"
+    },
+    "cryptography": {
+      "type": "object"
+    },
+    "portableStatements": {
+      "type": "object"
+    },
+    "statusSemantics": {
+      "type": "object"
+    },
+    "freshness": {
+      "type": "object"
+    },
+    "surfaces": {
+      "type": "object"
+    },
+    "governance": {
+      "type": "object"
+    },
+    "truthBoundary": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}
