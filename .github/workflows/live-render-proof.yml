@@ -47,7 +47,10 @@ jobs:
                               capture_output=True,text=True,timeout=25,check=True
                           ).stdout
                           required=[
-                              "<b>⌂</b>Главная",
+                              'id="nav"',
+                              'aria-label="Основная навигация"',
+                              'data-s="today"',
+                              ">Главная</button>",
                               'id="accountInbox"',
                               'id="goldenDemoLauncher"',
                               "Написать организатору",
