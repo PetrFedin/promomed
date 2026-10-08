@@ -150,6 +150,28 @@ class FederationInteroperabilityTests(unittest.TestCase):
         self.assertEqual(result["failures"],[])
         self.assertFalse(result["authorityBoundary"]["createsAccreditation"])
 
+    def test_valid_genesis_to_v2_rotation_remains_compatible(self):
+        _,first=self._admit_anchor()
+        private2,public2=_institution_keypair()
+        proposed=federated_trust.propose_anchor(
+            self.c,"INST-INTEROP-001","urn:synthetic:interop","interop-key-v2",
+            public2,"participant2@demo.ru",source_ref="urn:test:key-v2",
+            rotated_from_anchor_id=first["id"],demo_only=True
+        )
+        proof=_sign(private2,proposed["proof"])
+        federated_trust.verify_anchor_proof(
+            self.c,proposed["anchor"]["id"],proof,"participant2@demo.ru"
+        )
+        federated_trust.activate_anchor(
+            self.c,proposed["anchor"]["id"],"governance@demo.ru",
+            validity_seconds=864000
+        )
+        result=federation_interop.evaluate_compatibility(
+            self.c,"INST-INTEROP-001","governance@demo.ru"
+        )
+        self.assertEqual(result["compatibilityStatus"],"compatible")
+        self.assertEqual(result["warnings"],[])
+
     def test_public_directory_is_scoped_and_exposes_no_internal_proof_material(self):
         self._admit_anchor()
         directory=federation_interop.anchor_directory(self.c,"INST-INTEROP-001")
