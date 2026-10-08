@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:promomed:schema:federated-trust-anchor:v1",
+  "title": "Promomed Federated Institutional Trust Anchor v1",
+  "type": "object",
+  "required": [
+    "id",
+    "organizationId",
+    "anchorVersion",
+    "issuerId",
+    "keyId",
+    "alg",
+    "publicKeyB64",
+    "status",
+    "privateKeyStored"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^anchor:[0-9a-f]{24}$"
+    },
+    "organizationId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "anchorVersion": {
+      "const": "promomed-federated-trust-anchor-v1"
+    },
+    "issuerId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "keyId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "alg": {
+      "const": "Ed25519"
+    },
+    "publicKeyB64": {
+      "type": "string",
+      "minLength": 40
+    },
+    "status": {
+      "enum": [
+        "pending_proof",
+        "pending_governance",
+        "active",
+        "retired",
+        "suspended",
+        "revoked"
+      ]
+    },
+    "validFrom": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "validUntil": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "rotatedFromAnchorId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "proofVerifiedAt": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "activatedAt": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "retiredAt": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "suspendedAt": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "suspensionReason": {
+      "type": "string"
+    },
+    "revokedAt": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "revocationReason": {
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "demoOnly": {
+      "type": "boolean"
+    },
+    "privateKeyStored": {
+      "const": false
+    }
+  },
+  "additionalProperties": true
+}
