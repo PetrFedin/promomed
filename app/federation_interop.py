@@ -130,7 +130,36 @@ def ensure_profile(c,actor="system",now=None):
 
 
 def public_profile(c):
-    return ensure_profile(c,actor="public-profile")
+    definition=profile_definition()
+    digest=_sha(definition)
+    profile_id="fip:"+digest[:24]
+    row=c.execute(
+        """SELECT id,profile_version,profile_sha256,profile_json,status,effective_at
+           FROM federation_interoperability_profiles
+           WHERE profile_version=?""",
+        (PROFILE_VERSION,),
+    ).fetchone()
+    if row:
+        if row["profile_sha256"]!=digest:
+            raise ValueError("interoperability_profile_version_collision")
+        return {
+            "id":row["id"],
+            "profileVersion":row["profile_version"],
+            "profileSha256":row["profile_sha256"],
+            "profile":json.loads(row["profile_json"]),
+            "status":row["status"],
+            "effectiveAt":row["effective_at"],
+            "persisted":True,
+        }
+    return {
+        "id":profile_id,
+        "profileVersion":PROFILE_VERSION,
+        "profileSha256":digest,
+        "profile":definition,
+        "status":"active",
+        "effectiveAt":None,
+        "persisted":False,
+    }
 
 
 def _public_base():
