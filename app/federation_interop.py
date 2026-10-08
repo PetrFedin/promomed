@@ -262,8 +262,14 @@ def evaluate_compatibility(c,organization_id,actor="system",now=None):
         if anchor["validUntil"] is not None and int(anchor["validUntil"])<now:
             failures.append("anchor_expired")
         if not failures:
-            historical=[x for x in anchors if x["status"]=="retired"]
-            if historical and any(x["rotatedFromAnchorId"] is None for x in historical):
+            anchor_ids={x["anchorId"] for x in anchors}
+            roots=[x for x in anchors if x["rotatedFromAnchorId"] is None]
+            broken=[
+                x for x in anchors
+                if x["rotatedFromAnchorId"] is not None
+                and x["rotatedFromAnchorId"] not in anchor_ids
+            ]
+            if len(anchors)>1 and (len(roots)!=1 or broken):
                 warnings.append("historical_rotation_lineage_incomplete")
             status="compatible_with_warnings" if warnings else "compatible"
         else:
