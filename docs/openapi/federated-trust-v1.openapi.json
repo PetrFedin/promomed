@@ -1,0 +1,283 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Promomed Federated Trust Anchors API",
+    "version": "1.0.0",
+    "description": "Governance-admitted institutional public keys, proof-of-possession, DID/JWKS-compatible publication, key rotation/revocation and institution-signed trust verification receipts."
+  },
+  "paths": {
+    "/trust/{organization_id}/did.json": {
+      "get": {
+        "summary": "Resolve Promomed-hosted did:web-compatible institutional identity",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "DID document"
+          },
+          "404": {
+            "description": "Organisation not found"
+          }
+        }
+      }
+    },
+    "/trust/{organization_id}/jwks.json": {
+      "get": {
+        "summary": "Read public JWKS-compatible institutional key set with lifecycle metadata",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "JWKS document"
+          },
+          "404": {
+            "description": "Organisation not found"
+          }
+        }
+      }
+    },
+    "/api/federation": {
+      "get": {
+        "summary": "Read governed federation registry projection",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Federation registry"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/federation/receipt": {
+      "get": {
+        "summary": "Retrieve immutable institution-signed verification receipt",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed receipt"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/federation/anchor/propose": {
+      "post": {
+        "summary": "Propose external institutional public key and receive proof challenge",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Anchor proposed"
+          },
+          "409": {
+            "description": "Authority/key boundary failure"
+          }
+        }
+      }
+    },
+    "/api/federation/anchor/prove": {
+      "post": {
+        "summary": "Submit proof-of-possession signature",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Proof verified and anchor awaits governance"
+          }
+        }
+      }
+    },
+    "/api/federation/anchor/activate": {
+      "post": {
+        "summary": "Governance activates proof-verified anchor",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Anchor activated"
+          },
+          "403": {
+            "description": "Governance required"
+          }
+        }
+      }
+    },
+    "/api/federation/anchor/suspend": {
+      "post": {
+        "summary": "Governance suspends active anchor",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Anchor suspended"
+          }
+        }
+      }
+    },
+    "/api/federation/anchor/revoke": {
+      "post": {
+        "summary": "Governance revokes anchor",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Anchor revoked"
+          }
+        }
+      }
+    },
+    "/api/federation/anchor/status/issue": {
+      "post": {
+        "summary": "Issue Promomed-signed anchor status statement",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Signed anchor status statement"
+          }
+        }
+      }
+    },
+    "/api/federation/receipt/submit": {
+      "post": {
+        "summary": "Submit institution-signed verification receipt bound to exact trust bundle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Receipt admitted"
+          },
+          "409": {
+            "description": "Signature/result/authority mismatch"
+          }
+        }
+      }
+    },
+    "/api/federation/receipt/verify-portable": {
+      "post": {
+        "summary": "Verify Promomed anchor-status -> institution key -> receipt chain without Promomed DB",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "receipt",
+                  "bundle",
+                  "anchor_status_statement",
+                  "promomed_issuer_document"
+                ],
+                "properties": {
+                  "receipt": {
+                    "type": "object"
+                  },
+                  "bundle": {
+                    "$ref": "../schemas/partner-trust-bundle-v1.schema.json"
+                  },
+                  "anchor_status_statement": {
+                    "type": "object"
+                  },
+                  "promomed_issuer_document": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Portable federation verification result"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "FederatedTrustAnchor": {
+        "$ref": "../schemas/federated-trust-anchor-v1.schema.json"
+      },
+      "InstitutionSignedVerificationReceipt": {
+        "$ref": "../schemas/institution-signed-verification-receipt-v1.schema.json"
+      }
+    }
+  }
+}
