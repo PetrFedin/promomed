@@ -4,90 +4,125 @@
   "title": "Promomed Federation Discovery Bundle v1",
   "type": "object",
   "required": [
-    "statementVersion",
-    "statementType",
-    "issuerId",
-    "keyId",
-    "alg",
-    "issuedAt",
-    "body",
-    "medicalEfficacyCertified"
+    "payload",
+    "signature",
+    "statementSha256"
   ],
   "properties": {
-    "statementVersion": {
-      "const": "promomed-portable-statement-v1"
-    },
-    "statementType": {
-      "const": "promomed-federation-discovery-bundle-v1"
-    },
-    "issuerId": {
-      "type": "string"
-    },
-    "keyId": {
-      "type": "string"
-    },
-    "alg": {
-      "const": "Ed25519"
-    },
-    "issuedAt": {
-      "type": "integer"
-    },
-    "medicalEfficacyCertified": {
-      "const": false
-    },
-    "body": {
+    "payload": {
       "type": "object",
       "required": [
-        "bundleVersion",
-        "organizationId",
-        "profile",
-        "evaluation",
-        "anchors",
-        "did",
-        "jwks",
+        "statementVersion",
+        "statementType",
+        "issuerId",
+        "keyId",
+        "alg",
         "issuedAt",
-        "validUntil",
-        "truthBoundary"
+        "body",
+        "medicalEfficacyCertified"
       ],
       "properties": {
-        "bundleVersion": {
+        "statementVersion": {
+          "const": "promomed-portable-statement-v1"
+        },
+        "statementType": {
           "const": "promomed-federation-discovery-bundle-v1"
         },
-        "organizationId": {
+        "issuerId": {
           "type": "string",
           "minLength": 1
         },
-        "profile": {
-          "type": "object",
-          "required": [
-            "id",
-            "version",
-            "sha256"
-          ]
+        "keyId": {
+          "type": "string",
+          "minLength": 1
         },
-        "evaluation": {
-          "type": "object"
-        },
-        "anchors": {
-          "type": "array"
-        },
-        "did": {
-          "type": "object"
-        },
-        "jwks": {
-          "type": "object"
+        "alg": {
+          "const": "Ed25519"
         },
         "issuedAt": {
           "type": "integer"
         },
-        "validUntil": {
-          "type": "integer"
+        "medicalEfficacyCertified": {
+          "const": false
         },
-        "truthBoundary": {
-          "type": "object"
+        "body": {
+          "type": "object",
+          "required": [
+            "bundleVersion",
+            "organizationId",
+            "profile",
+            "evaluation",
+            "anchors",
+            "did",
+            "jwks",
+            "issuedAt",
+            "validUntil",
+            "truthBoundary"
+          ],
+          "properties": {
+            "bundleVersion": {
+              "const": "promomed-federation-discovery-bundle-v1"
+            },
+            "organizationId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "profile": {
+              "type": "object",
+              "required": [
+                "id",
+                "version",
+                "sha256"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "version": {
+                  "const": "promomed-federation-interop-v1"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              },
+              "additionalProperties": false
+            },
+            "evaluation": {
+              "type": "object"
+            },
+            "anchors": {
+              "type": "array"
+            },
+            "did": {
+              "type": "object"
+            },
+            "jwks": {
+              "type": "object"
+            },
+            "issuedAt": {
+              "type": "integer"
+            },
+            "validUntil": {
+              "type": "integer"
+            },
+            "truthBoundary": {
+              "type": "object"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
+    },
+    "signature": {
+      "type": "string",
+      "minLength": 40
+    },
+    "statementSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
     }
   },
   "additionalProperties": false
