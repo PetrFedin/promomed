@@ -53,6 +53,8 @@ def snapshot(c):
         "production_external_trust_verifications": _count(c, "institutional_trust_verifications", "WHERE demo_only=0"),
         "production_federated_anchors": _count(c, "institutional_federated_anchors", "WHERE demo_only=0"),
         "production_institution_signed_receipts": _count(c, "institutional_signed_verification_receipts", "WHERE demo_only=0"),
+        "production_federation_profile_evaluations": _count(c, "federation_profile_evaluations", "WHERE demo_only=0"),
+        "production_federation_discovery_bundles": _count(c, "federation_discovery_bundles", "WHERE demo_only=0"),
     }
 
     capabilities = [
@@ -160,6 +162,16 @@ def snapshot(c):
                 "Proof-of-possession, governance-admitted institutional public keys, DID/JWKS-compatible publication, "
                 "rotation/revocation lineage and institution-signed verification receipts are repository-contract proven. "
                 "No production external anchor, consortium, accreditation relationship or institution-signed production receipt is claimed."
+            ),
+        },
+        {
+            "id": "federation_interoperability",
+            "title": "Federation Interoperability Profile & Trust Anchor Discovery",
+            "status": "ci_proven",
+            "proof": (
+                "Versioned interoperability profile, scoped public discovery, deterministic compatibility evaluation "
+                "and signed portable discovery bundles are repository-contract proven. "
+                "Discovery never admits a key and no real external pilot or federation adoption is claimed."
             ),
         },
     ]
@@ -279,6 +291,14 @@ def snapshot(c):
             "detail": (
                 "Promomed governance can bind independently controlled institutional public keys after proof-of-possession, "
                 "publish DID/JWKS-compatible status and verify institution-signed receipts without taking custody of external private keys."
+            ),
+        },
+        {
+            "title": "Discoverable federation without auto-trust",
+            "status": "ci_proven",
+            "detail": (
+                "A versioned federation profile and scoped discovery bundle make public trust capabilities machine-discoverable "
+                "while keeping compatibility separate from governance admission, accreditation and external adoption."
             ),
         },
     ]
