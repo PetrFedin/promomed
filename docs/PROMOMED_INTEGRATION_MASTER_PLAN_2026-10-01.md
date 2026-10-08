@@ -2742,3 +2742,46 @@ External pilot gate:
 Commercial consequence: federation capabilities become machine-discoverable and independently integrable without exposing internal authority or weakening governance admission.
 
 **Next dependency after green merge/live proof:** External Pilot Admission Profile + Partner Onboarding Evidence Pack — implementation remains gated until a real non-demo institutional participant exists.
+
+
+### Institutional Pilot Readiness Workspace v1 — implementation candidate 2026-10-08
+
+Repository base: `main@4ba84009857f1c0e35b37104e1683f214a06cfef`.
+
+Purpose:
+
+turn the existing institutional / syndication / federation authority into one practical pre-pilot workspace without creating synthetic adoption evidence.
+
+Readiness flow:
+
+`institution identity -> verified human authority -> institution role -> syndication qualification -> independently controlled key -> federation compatibility -> portable evidence pack -> delivery readiness -> explicit participation evidence -> governance admission review`.
+
+Implemented as a read-only projection over existing authorities:
+
+- `institutional_organizations`;
+- `institutional_memberships`;
+- `institutional_role_bindings`;
+- `syndication_partner_qualifications`;
+- `institutional_federated_anchors`;
+- `federation_profile_evaluations`;
+- `federation_discovery_bundles`;
+- `syndication_delivery_endpoints`.
+
+Internal route:
+
+`GET /api/institutional-pilot-readiness?organization_id=...`
+
+Truth boundary:
+
+- no new pilot/adoption table is created;
+- the projection cannot create an organisation, membership, qualification or anchor;
+- demo-only institutions remain explicitly blocked;
+- compatibility does not imply adoption or accreditation;
+- explicit external pilot participation evidence remains deliberately unimplemented until a real non-demo participant exists;
+- a production delivery endpoint is useful operational readiness evidence but is not required merely to enter admission review.
+
+Commercial consequence:
+
+the institutional buyer / CEO / strategic partner can now see one fail-closed checklist explaining exactly what is already proven, what remains blocked and the next evidence required before a governed external pilot.
+
+**Next dependency after green merge:** complete CI proof for the workspace, then expose the same readiness model in the institutional onboarding UI. Do not implement canonical participation acceptance or claim a real pilot until an actual non-demo institution exists.
