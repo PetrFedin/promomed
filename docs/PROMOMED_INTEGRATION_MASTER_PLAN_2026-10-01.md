@@ -2785,3 +2785,46 @@ Commercial consequence:
 the institutional buyer / CEO / strategic partner can now see one fail-closed checklist explaining exactly what is already proven, what remains blocked and the next evidence required before a governed external pilot.
 
 **Next dependency after green merge:** complete CI proof for the workspace, then expose the same readiness model in the institutional onboarding UI. Do not implement canonical participation acceptance or claim a real pilot until an actual non-demo institution exists.
+
+
+### Institutional Onboarding Room v1 — implementation candidate 2026-10-08
+
+Repository base: `main@794b3a76f36aa7aa21a6a882ce8553a3da03a857`.
+
+Purpose:
+
+convert the existing readiness checklist into a structured first-working-session product for institutional buyers and partners.
+
+Flow:
+
+`Organisation Profile -> People & Authority -> Technical Qualification -> Trust & Key Setup -> Integration Readiness -> Evidence Pack -> Security / Legal / Procurement Pack -> Pilot Scope Builder -> Responsibilities / RACI -> Pilot Success Criteria -> Commercial / Procurement Handoff -> External Participation Acceptance`.
+
+Implemented boundary:
+
+- read-only orchestration over existing institutional, syndication, federation and corporate-readiness authorities;
+- deterministic Procurement Evidence Pack with canonical SHA-256;
+- procurement pack includes architecture/runtime posture, security controls, data inventory, privacy principles, interoperability identity/hash, integration requirements, SLA boundaries, vendor/legal questions, procurement gates and customer inputs required;
+- Pilot Scope Builder is a non-persisted working-session template;
+- RACI is a default working matrix, not named-person acceptance;
+- Pilot Success Criteria expose formulas but no invented target values;
+- Commercial Handoff remains `pre_contract`;
+- External Participation Acceptance remains `GATED`.
+
+Internal route:
+
+`GET /api/institutional-onboarding-room?organization_id=...`
+
+Truth boundary:
+
+- demo institution remains demo-only;
+- procurement evidence pack is not security certification, legal advice, DPA, SLA, accreditation, contract or adoption evidence;
+- scope drafting does not create a pilot;
+- compatibility does not create adoption;
+- no signed customer, purchase order, ARR/MRR, revenue or external pilot is claimed;
+- external participation acceptance cannot be activated until a real non-demo institution provides attributable participation evidence.
+
+Commercial consequence:
+
+Promomed can now run a structured institutional diligence/onboarding session around one shared product surface: what is proven, what is missing, who owns it, what customer evidence is required and what must be agreed before contract/procurement.
+
+**Next dependency after green merge/live proof:** refine onboarding UX from real institutional working-session feedback; implement canonical participation acceptance only when an actual non-demo institutional participant exists.
