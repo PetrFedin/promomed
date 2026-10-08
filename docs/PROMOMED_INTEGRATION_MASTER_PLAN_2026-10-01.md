@@ -2702,3 +2702,43 @@ External pilot gate:
 - no accreditation, consortium membership, external adoption or commercial relationship may be inferred from discovery/profile compatibility.
 
 Commercial consequence: federation becomes discoverable and integrable without exposing internal authority, while keeping discovery separate from governance admission.
+
+
+### Federation Interoperability Profile v1 + Trust Anchor Discovery — repository checkpoint 2026-10-08
+
+Base authority: live-proven `main@f71f73d6aca36928844fee81d6b2ba7227b33a6a` after Federated Trust Anchors v1 merge/live proof.
+
+Implemented repository scope:
+
+- migration `025_federation_interoperability` for SQLite/PostgreSQL;
+- immutable versioned interoperability profile `promomed-federation-interop-v1` with deterministic SHA-256;
+- profile covers canonical organisation identity, did:web publication, Ed25519/OKP/EdDSA, portable statement/receipt versions, lifecycle semantics, freshness and governance boundaries;
+- public profile and well-known discovery manifest are side-effect-free read projections;
+- public well-known manifest: `/.well-known/promomed-federation.json`;
+- scoped discovery requires exact `organization_id`; no bulk public institutional/anchor directory is exposed;
+- discovery returns only already-admitted non-pending public anchor material plus DID/JWKS projections;
+- proof challenges, proof signatures, internal membership evidence and private keys are never exposed by discovery;
+- deterministic compatibility evaluation yields `compatible / compatible_with_warnings / incompatible / no_active_anchor`;
+- compatibility evidence cannot admit keys, change qualification, create accreditation or endorsement;
+- Promomed-signed discovery bundle binds exact profile identity/hash, organisation, evaluation, admitted anchors, DID/JWKS and validity interval;
+- portable discovery verification requires no Promomed DB/private key and validates signature, expiry and canonical profile hash;
+- JSON Schemas + OpenAPI 3.1 contract;
+- offline reference verifier: `ops/verify_federation_discovery_bundle.py`;
+- mandatory regression suite covers stable profile identity, side-effect-free public reads, no-active-anchor behaviour, admitted-anchor compatibility, scoped privacy, portable verification, expiry/hash enforcement and immutable audit;
+- Investor Proof exposes interoperability architecture while non-demo evaluation/discovery-bundle counters remain zero until actual evidence exists.
+
+Truth boundary:
+
+- discovery is not admission;
+- profile compatibility is not accreditation, endorsement, medical/scientific certification, legal identity certification or regulator approval;
+- Promomed does not infer external adoption from a compatible profile or synthetic demo anchor;
+- no real external pilot, consortium membership, institutional adoption, contract, ARR/MRR or revenue is claimed.
+
+External pilot gate:
+
+- a real pilot remains blocked until a non-demo institution supplies attributable institutional identity, independently controlled public-key evidence, proof-of-possession and governance-admissible participation evidence;
+- synthetic/demo institutions may validate protocol mechanics only and cannot be promoted into investor traction evidence.
+
+Commercial consequence: federation capabilities become machine-discoverable and independently integrable without exposing internal authority or weakening governance admission.
+
+**Next dependency after green merge/live proof:** External Pilot Admission Profile + Partner Onboarding Evidence Pack — implementation remains gated until a real non-demo institutional participant exists.
