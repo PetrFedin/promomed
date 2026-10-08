@@ -49,6 +49,7 @@ MODULES = {
     "trust_commands.py",
     "federated_trust.py",
     "federation_interop.py",
+    "pilot_workspace.py",
 }
 
 
@@ -305,6 +306,18 @@ class ArchitectureContractTests(unittest.TestCase):
         ):
             self.assertIn(route,media)
         self.assertIn("/api/federation/discovery-bundle/verify-portable",commands)
+
+    def test_institutional_pilot_readiness_workspace_is_guarded_and_read_only(self):
+        media=(APP/"media_reads.py").read_text(encoding="utf-8")
+        runtime=(APP/"pilot_workspace.py").read_text(encoding="utf-8")
+        self.assertIn("/api/institutional-pilot-readiness",media)
+        self.assertIn("pilot_workspace.snapshot",media)
+        self.assertIn('role not in ("governance","editor","sales")',media)
+        self.assertIn('"readOnlyProjection": True',runtime)
+        self.assertIn('"externalAdoptionInferred": False',runtime)
+        self.assertNotIn("INSERT ",runtime)
+        self.assertNotIn("UPDATE ",runtime)
+        self.assertNotIn("DELETE ",runtime)
 
     def test_federation_interop_runtime_uses_postgres_portable_dml(self):
         runtime=(APP/"federation_interop.py").read_text(encoding="utf-8")
