@@ -1,0 +1,163 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Promomed Federation Interoperability API",
+    "version": "1.0.0",
+    "description": "Versioned federation profile, scoped trust-anchor discovery, deterministic compatibility evaluation and portable discovery bundles."
+  },
+  "paths": {
+    "/.well-known/promomed-federation.json": {
+      "get": {
+        "summary": "Discover Promomed federation capabilities",
+        "responses": {
+          "200": {
+            "description": "Federation discovery manifest"
+          }
+        }
+      }
+    },
+    "/api/federation/profile": {
+      "get": {
+        "summary": "Read active interoperability profile",
+        "responses": {
+          "200": {
+            "description": "Profile document"
+          }
+        }
+      }
+    },
+    "/api/federation/discovery": {
+      "get": {
+        "summary": "Discover admitted public trust material for one exact organisation",
+        "parameters": [
+          {
+            "name": "organization_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Scoped discovery result"
+          },
+          "404": {
+            "description": "Organisation not found"
+          },
+          "422": {
+            "description": "Organisation ID required"
+          }
+        }
+      }
+    },
+    "/api/federation/compatibility/evaluate": {
+      "post": {
+        "summary": "Evaluate one organisation against the active federation profile",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Immutable compatibility evaluation"
+          },
+          "403": {
+            "description": "Governance required"
+          }
+        }
+      }
+    },
+    "/api/federation/discovery-bundle/issue": {
+      "post": {
+        "summary": "Issue signed portable federation discovery bundle",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Idempotent replay"
+          },
+          "201": {
+            "description": "Discovery bundle issued"
+          }
+        }
+      }
+    },
+    "/api/federation/discovery-bundle": {
+      "get": {
+        "summary": "Retrieve exact immutable discovery bundle",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Discovery bundle"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/federation/discovery-bundle/verify-portable": {
+      "post": {
+        "summary": "Verify discovery bundle without Promomed DB/private key",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "bundle",
+                  "issuer_document"
+                ],
+                "properties": {
+                  "bundle": {
+                    "$ref": "../schemas/federation-discovery-bundle-v1.schema.json"
+                  },
+                  "issuer_document": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Portable verification result"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    },
+    "schemas": {
+      "FederationInteroperabilityProfile": {
+        "$ref": "../schemas/federation-interoperability-profile-v1.schema.json"
+      },
+      "FederationDiscoveryBundle": {
+        "$ref": "../schemas/federation-discovery-bundle-v1.schema.json"
+      }
+    }
+  }
+}
