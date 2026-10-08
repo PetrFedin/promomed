@@ -174,6 +174,16 @@ def snapshot(c):
                 "Discovery never admits a key and no real external pilot or federation adoption is claimed."
             ),
         },
+        {
+            "id": "institutional_pilot_readiness",
+            "title": "Institutional Pilot Readiness Workspace",
+            "status": "ci_proven",
+            "proof": (
+                "A fail-closed read-only workspace composes existing identity, membership, qualification, "
+                "federated key, compatibility, portable evidence and delivery authorities into one pilot-readiness path. "
+                "Demo institutions remain blocked and no real pilot, adoption or accreditation is claimed."
+            ),
+        },
     ]
 
     revenue_architecture = [
