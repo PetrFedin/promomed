@@ -26,7 +26,7 @@ class InstitutionalDataRoomTests(unittest.TestCase):
             self.c,
             organization_id="INST-DATAROOM-DEMO-001",
             name="Synthetic Data Room Institution",
-            organization_type="clinic",
+            organization_type="strategic_partner",
             actor="governance@demo.ru",
             external_ref="urn:synthetic:data-room:001",
             credential_source="synthetic test fixture",
