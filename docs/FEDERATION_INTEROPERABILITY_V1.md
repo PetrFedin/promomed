@@ -1,7 +1,7 @@
 # Federation Interoperability Profile v1 + Trust Anchor Discovery
 
 **Status:** repository implementation candidate  
-**Base authority:** live-proven `main@f71f73d6aca36928844fee81d6b2ba7227b33a6a`.
+**Repository base:** `main@f71f73d6aca36928844fee81d6b2ba7227b33a6a`. Runtime-code parent `f13f106d00ab39751fd350be734415cd21af66b6` is exact-SHA Render live-proven; `f71f73d...` changes master-plan documentation only.
 
 ## 1. Purpose
 
