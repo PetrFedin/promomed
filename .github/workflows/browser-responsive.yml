@@ -45,6 +45,7 @@ jobs:
           python tests/test_command_center_browser.py
           python tests/test_pilot_proposal_browser.py
           python tests/test_buyer_fit_browser.py
+          python tests/test_evidence_export_browser.py
           python tests/test_outreach_pack_browser.py
           python tests/test_commercial_workspace_browser.py
       - name: Upload browser evidence
