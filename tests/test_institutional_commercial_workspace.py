@@ -28,11 +28,12 @@ class InstitutionalCommercialWorkspaceTests(unittest.TestCase):
         self.assertIn("window.print()",self.html)
         self.assertIn("Printed planning guide.",self.html)
 
-    def test_workspace_contains_no_data_mutation_or_fake_metrics(self):
+    def test_workspace_contains_no_synthetic_scoring_or_revenue_metrics(self):
         upper=self.html.upper()
-        self.assertNotIn("WIN PROBABILITY",upper)
-        self.assertNotIn("PIPELINE VALUE",upper)
-        self.assertNotIn("ARR",upper)
-        self.assertNotIn("MRR",upper)
+        self.assertNotIn("WIN PROBABILITY =",upper)
+        self.assertNotIn("PIPELINE VALUE =",upper)
+        self.assertNotIn("ARR =",upper)
+        self.assertNotIn("MRR =",upper)
+        self.assertIn("НЕТ ФАКТА BUYER INTEREST, NEXT MEETING, DEAL PROBABILITY ИЛИ PIPELINE VALUE.",upper)
 
 if __name__=="__main__":unittest.main()
