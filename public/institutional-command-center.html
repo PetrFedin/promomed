@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#08131f">
+  <title>СОСТОЯНИЕ · Diligence Command Center</title>
+  <style>
+    :root{
+      --bg:#07111c;--surface:#0d1c2b;--surface2:#13263a;--line:#23415d;
+      --text:#f4f8fc;--muted:#9eb2c5;--blue:#8edcff;--green:#9be7bc;
+      --amber:#ffd58a;--red:#ff9b9b;--shadow:0 18px 50px rgba(0,0,0,.28)
+    }
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#07111c,#0b1724 45%,#07111c);color:var(--text);font:15px/1.48 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    button,input{font:inherit} button{cursor:pointer}
+    .shell{width:min(1460px,100%);margin:auto;padding:24px clamp(16px,3vw,44px) 72px}
+    .top{display:flex;gap:20px;align-items:flex-start;justify-content:space-between;margin-bottom:22px}
+    .brand{letter-spacing:.14em;font-size:12px;color:var(--blue);font-weight:800}.top h1{margin:6px 0 4px;font-size:clamp(28px,4vw,54px);line-height:1.03;max-width:900px}.lead{color:var(--muted);max-width:920px;margin:0}
+    .truth{border:1px solid #744d27;background:#2a1c10;color:#ffd7a1;border-radius:16px;padding:12px 15px;max-width:340px;font-size:13px}
+    .panel{background:rgba(13,28,43,.92);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+    .auth{display:grid;grid-template-columns:1.2fr 1fr 1.3fr auto;gap:10px;align-items:end}.field label{display:block;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.09em;margin:0 0 6px}.field input{width:100%;border:1px solid #31506d;border-radius:12px;background:#07131f;color:#fff;padding:12px 13px;min-height:46px}.field input:focus{outline:2px solid var(--blue);outline-offset:1px}.btn{border:0;border-radius:12px;padding:12px 16px;min-height:46px;background:var(--blue);color:#032033;font-weight:900}.btn.secondary{background:#19334c;color:#dcecff;border:1px solid #31506d}.actions{display:flex;gap:8px;flex-wrap:wrap}.statusline{color:var(--muted);font-size:13px;margin-top:10px}
+    .hidden{display:none!important}.ey{font-size:11px;font-weight:900;letter-spacing:.1em;color:var(--blue)}
+    .summary{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px}.verdict{grid-row:span 2;background:#10273b;border:1px solid #2f5978;border-radius:18px;padding:18px}.verdict h2{margin:7px 0 10px;font-size:clamp(22px,3vw,38px);line-height:1.05}.metric{background:#0b1927;border:1px solid var(--line);border-radius:16px;padding:14px}.metric strong{display:block;font-size:30px;margin-top:4px}.metric span{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.06em}
+    .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.domain{border:1px solid var(--line);border-radius:18px;background:#0b1927;padding:15px}.domain h3{margin:6px 0 8px;text-transform:capitalize}.badge{display:inline-flex;border:1px solid #426685;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;letter-spacing:.05em}.blocked{color:var(--red);border-color:#774141;background:#2a1518}.ready{color:var(--green);border-color:#397057;background:#10251c}.neutral{color:var(--muted)}
+    .mini{color:var(--muted);font-size:12px}.list{display:grid;gap:8px;margin-top:12px}.row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;background:#0a1724;border:1px solid #1d364d;border-radius:13px;padding:11px}.row b{display:block}.row .owner{color:var(--blue);font-size:12px;margin-top:3px}.row .why{color:var(--muted);font-size:12px;margin-top:3px}.row .state{white-space:nowrap}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}.sectionTitle{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-bottom:12px}.sectionTitle h2{margin:4px 0 0;font-size:24px}
+    .path{display:grid;gap:8px}.stage{display:grid;grid-template-columns:42px 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);border-radius:15px;padding:12px;background:#0a1724}.num{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#16324b;color:var(--blue);font-weight:900}.stage .flags{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.pill{font-size:10px;border:1px solid #355673;border-radius:999px;padding:3px 7px;color:var(--muted)}
+    .ownerCard{border:1px solid var(--line);border-radius:15px;padding:13px;background:#0a1724}.ownerCard h3{margin:0 0 5px}.ownerStats{display:flex;gap:8px;color:var(--muted);font-size:12px}.track{border-left:3px solid var(--blue);padding:10px 12px;background:#0a1724;border-radius:0 13px 13px 0}.track h3{margin:0 0 4px}.impossible li{margin-bottom:7px;color:#d9e5ef}
+    .footerTruth{border:1px solid #744d27;background:#24190f;border-radius:16px;padding:14px;color:#ffd7a1}.error{color:#ffb0b0}.ok{color:var(--green)}
+    @media(max-width:1080px){.auth{grid-template-columns:1fr 1fr}.summary{grid-template-columns:2fr repeat(2,1fr)}.grid4{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:700px){.shell{padding:16px 12px 48px}.top{display:block}.truth{margin-top:14px;max-width:none}.auth,.summary,.grid4,.two{grid-template-columns:1fr}.verdict{grid-row:auto}.actions .btn{flex:1}.stage{grid-template-columns:36px 1fr}.stage>.badge{grid-column:2}.row{display:block}.row .state{margin-top:8px}.panel{padding:14px;border-radius:17px}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <div>
+        <div class="brand">СОСТОЯНИЕ · INSTITUTIONAL DILIGENCE</div>
+        <h1>Diligence Command Center</h1>
+        <p class="lead">Почему пилот или сделка ещё не движутся, кто владеет каждым блокером, что можно вести параллельно и что действительно готово только к решению — но ещё не одобрено.</p>
+      </div>
+      <div class="truth"><b>Жёсткая граница</b><br>READY FOR DECISION ≠ APPROVED.<br>Participation Acceptance остаётся GATED.</div>
+    </header>
+
+    <section class="panel" aria-label="Авторизация и выбор организации">
+      <div class="auth">
+        <div class="field"><label>EMAIL</label><input id="email" type="email" value="sales@demo.ru" autocomplete="username"></div>
+        <div class="field"><label>PASSWORD</label><input id="password" type="password" placeholder="demo password" autocomplete="current-password"></div>
+        <div class="field"><label>ORGANIZATION ID</label><input id="organizationId" type="text" maxlength="100" placeholder="точный institutional organization ID"></div>
+        <div class="actions"><button class="btn" id="loginLoad">Войти и открыть</button><button class="btn secondary" id="reload" type="button">Обновить</button></div>
+      </div>
+      <div id="status" class="statusline">Нужна роль organizer / partner / sales. Демо-пароль интерфейс намеренно не подставляет.</div>
+    </section>
+
+    <div id="content" class="hidden">
+      <section class="summary" aria-label="Executive summary">
+        <article class="verdict"><div class="ey">EXECUTIVE VERDICT</div><h2 id="verdict">—</h2><p id="primary" class="mini"></p></article>
+        <article class="metric"><span>BLOCKING ITEMS</span><strong id="blocking">0</strong></article>
+        <article class="metric"><span>READY FOR DECISION</span><strong id="readyCount">0</strong></article>
+        <article class="metric"><span>HARD STOPS</span><strong id="hardStops">0</strong></article>
+        <article class="metric"><span>PRODUCTION READY</span><strong id="productionReady">NO</strong></article>
+      </section>
+
+      <section class="panel">
+        <div class="sectionTitle"><div><div class="ey">DEAL READINESS BY DOMAIN</div><h2>Где именно стоит сделка</h2></div></div>
+        <div id="domains" class="grid4"></div>
+      </section>
+
+      <section class="two">
+        <article class="panel"><div class="ey">CRITICAL PATH TO CONTRACT</div><h2>Последовательные гейты</h2><div id="criticalPath" class="path"></div></article>
+        <article class="panel"><div class="ey">OWNER QUEUE</div><h2>У кого сейчас мяч</h2><div id="ownerQueue" class="list"></div></article>
+      </section>
+
+      <section class="two">
+        <article class="panel"><div class="ey">PARALLEL WORKSTREAMS</div><h2>Что можно вести одновременно</h2><div id="parallelTracks" class="list"></div></article>
+        <article class="panel"><div class="ey">READY FOR DECISION</div><h2>Готово к маршрутизации, не к автосогласованию</h2><div id="readyItems" class="list"></div></article>
+      </section>
+
+      <section class="panel"><div class="ey">IMPOSSIBLE WITHOUT PARTICIPATION ACCEPTANCE</div><h2>Что система принципиально не разрешает заявить</h2><ul id="impossible" class="impossible"></ul></section>
+      <section class="footerTruth"><b>Read-only executive projection.</b> Critical path и parallel tracks — управленческая композиция, а не contract, approval, accreditation или adoption authority. <span id="exportSha"></span></section>
+    </div>
+  </main>
+
+  <script>
+    const $=id=>document.getElementById(id);
+    const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    let token=sessionStorage.getItem('promomedCommandToken')||'';
+
+    async function request(path,options={}){
+      const headers={'Content-Type':'application/json',...(options.headers||{})};
+      if(token)headers.Authorization='Bearer '+token;
+      const response=await fetch(path,{...options,headers});
+      let data={}; try{data=await response.json()}catch(_){data={error:'invalid_json_response'}}
+      if(!response.ok)throw new Error(data.error||('HTTP '+response.status));
+      return data;
+    }
+
+    function badge(status){
+      const cls=status==='BLOCKED'?'blocked':status==='READY_FOR_DECISION'?'ready':'neutral';
+      return '<span class="badge '+cls+'">'+esc(status)+'</span>';
+    }
+    function empty(message){return '<div class="mini">'+esc(message)+'</div>'}
+
+    function render(data){
+      const s=data.executiveSummary||{};
+      $('verdict').textContent=(s.verdict||'—').replaceAll('_',' ');
+      $('primary').textContent='Primary blocker: '+(s.primaryBlocker||'none')+' · next owner: '+(s.nextOwner||'none');
+      $('blocking').textContent=s.blockingItems??0;
+      $('readyCount').textContent=s.readyForDecisionItems??0;
+      $('hardStops').textContent=s.hardStops??0;
+      $('productionReady').textContent=s.productionRuntimeReady?'YES':'NO';
+
+      $('domains').innerHTML=Object.values(data.domains||{}).map(d=>'<article class="domain">'+
+        '<div class="ey">'+esc(d.domain).toUpperCase()+'</div><h3>'+esc(d.domain)+'</h3>'+badge(d.status)+
+        '<p class="mini">Blockers: '+esc(d.blockerCount)+' · ready: '+esc(d.readyForDecisionCount)+'</p>'+ 
+        '<div class="list">'+(d.blockers||[]).slice(0,4).map(x=>'<div class="row"><div><b>'+esc(x.title)+'</b><div class="owner">'+esc(x.owner||'Unassigned')+'</div></div></div>').join('')+'</div></article>').join('');
+
+      $('criticalPath').innerHTML=(data.criticalPath||[]).map((x,i)=>'<div class="stage">'+
+        '<div class="num">'+(i+1)+'</div><div><b>'+esc(x.title)+'</b><div class="flags"><span class="pill">hard stop '+(x.hardStop?'YES':'NO')+'</span><span class="pill">parallel '+(x.parallelizable?'YES':'NO')+'</span><span class="pill">owners '+esc((x.nextOwners||[]).join(', ')||'—')+'</span></div></div>'+badge(x.status)+'</div>').join('');
+
+      $('ownerQueue').innerHTML=(data.ownerQueue||[]).map(x=>'<div class="ownerCard"><h3>'+esc(x.owner)+'</h3><div class="ownerStats"><span>blocking '+esc(x.blocking)+'</span><span>ready '+esc(x.readyForDecision)+'</span></div><div class="mini">'+(x.items||[]).slice(0,5).map(i=>esc(i.title)+' ['+esc(i.state)+']').join(' · ')+'</div></div>').join('')||empty('Нет активной очереди владельцев.');
+
+      $('parallelTracks').innerHTML=(data.parallelTracks||[]).map(x=>'<div class="track"><h3>'+esc(x.title)+'</h3><div class="mini">Owners: '+esc((x.owners||[]).join(', ')||'—')+'</div><div class="mini">Blocking items: '+esc((x.blockingItemIds||[]).length)+'</div></div>').join('');
+
+      $('readyItems').innerHTML=(data.readyForDecision||[]).map(x=>'<div class="row"><div><b>'+esc(x.title)+'</b><div class="owner">'+esc(x.owner||'Unassigned')+'</div><div class="why">approved=NO</div></div>'+badge(x.state)+'</div>').join('')||empty('Нет пунктов READY FOR DECISION.');
+      $('impossible').innerHTML=(data.impossibleWithoutParticipation||[]).map(x=>'<li>'+esc(x)+'</li>').join('');
+      $('exportSha').textContent='Export SHA-256: '+(data.export?.sha256||'—');
+      $('content').classList.remove('hidden');
+    }
+
+    async function loginAndLoad(){
+      const email=$('email').value.trim(); const password=$('password').value;
+      try{
+        $('status').textContent='Авторизация…';
+        const login=await request('/api/login',{method:'POST',body:JSON.stringify({email,password})});
+        token=login.token; sessionStorage.setItem('promomedCommandToken',token);
+        $('status').innerHTML='<span class="ok">Вход выполнен: '+esc(login.name)+' · '+esc(login.role)+'</span>';
+        await load();
+      }catch(e){$('status').innerHTML='<span class="error">'+esc(e.message)+'</span>'}
+    }
+
+    async function load(){
+      const id=$('organizationId').value.trim();
+      if(!id){$('status').innerHTML='<span class="error">Укажите точный organization ID.</span>';return}
+      try{
+        $('status').textContent='Загрузка Command Center…';
+        const data=await request('/api/institutional-command-center/'+encodeURIComponent(id));
+        render(data);
+        $('status').innerHTML='<span class="ok">Command Center загружен. Read-only projection.</span>';
+      }catch(e){$('status').innerHTML='<span class="error">'+esc(e.message)+'</span>'}
+    }
+
+    $('loginLoad').addEventListener('click',loginAndLoad);
+    $('reload').addEventListener('click',load);
+    $('password').addEventListener('keydown',e=>{if(e.key==='Enter')loginAndLoad()});
+  </script>
+</body>
+</html>
