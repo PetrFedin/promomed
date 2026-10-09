@@ -1,6 +1,6 @@
 from urllib.parse import unquote
 
-from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal, institutional_buyer_fit, institutional_outreach_pack
+from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal, institutional_buyer_fit, institutional_outreach_pack, institutional_evidence_export
 
 
 ROUTES = {
@@ -19,9 +19,21 @@ COMMAND_CENTER_PREFIX = "/api/institutional-command-center/"
 PILOT_PROPOSAL_PREFIX = "/api/institutional-pilot-proposal/"
 BUYER_FIT_ROUTE = "/api/institutional-buyer-fit-matrix"
 OUTREACH_PREFIX = "/api/institutional-outreach-pack/"
+EVIDENCE_EXPORT_PREFIX = "/api/institutional-evidence-export/"
 
 
 def read(c, path, role):
+    if path.startswith(EVIDENCE_EXPORT_PREFIX):
+        if role not in ("organizer", "partner", "sales"):
+            return {"error": "forbidden"}, 403
+        archetype=unquote(path[len(EVIDENCE_EXPORT_PREFIX):]).strip()[:80]
+        if not archetype:
+            return {"error": "archetype_required"}, 422
+        try:
+            return institutional_evidence_export.snapshot(c, archetype), 200
+        except ValueError as exc:
+            return {"error": str(exc)}, 422
+
     if path.startswith(OUTREACH_PREFIX):
         if role not in ("organizer", "partner", "sales"):
             return {"error": "forbidden"}, 403
