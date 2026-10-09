@@ -1,6 +1,6 @@
 from urllib.parse import unquote
 
-from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal
+from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal, institutional_buyer_fit
 
 
 ROUTES = {
@@ -17,9 +17,15 @@ ROUTES = {
 }
 COMMAND_CENTER_PREFIX = "/api/institutional-command-center/"
 PILOT_PROPOSAL_PREFIX = "/api/institutional-pilot-proposal/"
+BUYER_FIT_ROUTE = "/api/institutional-buyer-fit-matrix"
 
 
 def read(c, path, role):
+    if path == BUYER_FIT_ROUTE:
+        if role not in ("organizer", "partner", "sales"):
+            return {"error": "forbidden"}, 403
+        return institutional_buyer_fit.snapshot(c), 200
+
     if path.startswith(PILOT_PROPOSAL_PREFIX):
         if role not in ("organizer", "partner", "sales"):
             return {"error": "forbidden"}, 403
