@@ -1,6 +1,6 @@
 from urllib.parse import unquote
 
-from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal, institutional_buyer_fit
+from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal, institutional_buyer_fit, institutional_outreach_pack
 
 
 ROUTES = {
@@ -18,9 +18,21 @@ ROUTES = {
 COMMAND_CENTER_PREFIX = "/api/institutional-command-center/"
 PILOT_PROPOSAL_PREFIX = "/api/institutional-pilot-proposal/"
 BUYER_FIT_ROUTE = "/api/institutional-buyer-fit-matrix"
+OUTREACH_PREFIX = "/api/institutional-outreach-pack/"
 
 
 def read(c, path, role):
+    if path.startswith(OUTREACH_PREFIX):
+        if role not in ("organizer", "partner", "sales"):
+            return {"error": "forbidden"}, 403
+        archetype=unquote(path[len(OUTREACH_PREFIX):]).strip()[:80]
+        if not archetype:
+            return {"error": "archetype_required"}, 422
+        try:
+            return institutional_outreach_pack.snapshot(c, archetype), 200
+        except ValueError as exc:
+            return {"error": str(exc)}, 422
+
     if path == BUYER_FIT_ROUTE:
         if role not in ("organizer", "partner", "sales"):
             return {"error": "forbidden"}, 403
