@@ -24,6 +24,10 @@ class InstitutionalAccessibilityPerformanceTests(unittest.TestCase):
         self.assertIn("tabindex','-1",js)
         self.assertIn("Перейти к основному содержанию",js)
 
+    def test_skip_link_is_inserted_after_nav_construction_so_it_becomes_first_dom_child(self):
+        js=(PUBLIC/"institutional-shell.js").read_text(encoding="utf-8")
+        self.assertGreater(js.index("document.body.prepend(skip)"),js.index("document.body.prepend(nav)"))
+
     def test_static_performance_budgets(self):
         css=(PUBLIC/"institutional-shell.css").read_bytes()
         js=(PUBLIC/"institutional-shell.js").read_bytes()
