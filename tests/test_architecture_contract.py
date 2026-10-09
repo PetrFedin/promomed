@@ -56,6 +56,7 @@ MODULES = {
     "institutional_followup_board.py",
     "institutional_command_center.py",
     "institutional_pilot_proposal.py",
+    "institutional_buyer_fit.py",
 }
 
 
@@ -312,6 +313,18 @@ class ArchitectureContractTests(unittest.TestCase):
         ):
             self.assertIn(route,media)
         self.assertIn("/api/federation/discovery-bundle/verify-portable",commands)
+
+    def test_institutional_buyer_fit_is_guarded_and_read_only(self):
+        strategic=(APP/"strategic_reads.py").read_text(encoding="utf-8")
+        runtime=(APP/"institutional_buyer_fit.py").read_text(encoding="utf-8")
+        self.assertIn("/api/institutional-buyer-fit-matrix",strategic)
+        self.assertIn("institutional_buyer_fit.snapshot",strategic)
+        self.assertIn('"noSyntheticScore":True',runtime)
+        self.assertIn('"fitIsCapabilityMatchOnly":True',runtime)
+        self.assertIn('"externalParticipationAcceptance":"GATED"',runtime)
+        self.assertNotIn("INSERT ",runtime)
+        self.assertNotIn("UPDATE ",runtime)
+        self.assertNotIn("DELETE ",runtime)
 
     def test_institutional_pilot_proposal_is_guarded_and_read_only(self):
         strategic=(APP/"strategic_reads.py").read_text(encoding="utf-8")
