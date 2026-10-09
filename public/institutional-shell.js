@@ -18,7 +18,6 @@
   skip.href='#main-content';
   skip.textContent='Перейти к основному содержанию';
   skip.addEventListener('click',()=>{setTimeout(()=>main&&main.focus({preventScroll:true}),0)});
-  document.body.prepend(skip);
   const current=location.pathname;
   const active=pages.find(x=>x.path===current);
   const nav=document.createElement('nav');
@@ -33,4 +32,5 @@
   trail.innerHTML='<b>Institutional commercial route</b><span class="institutionalShellCue">'+(active?active.stage:'Planning surface')+'</span><span class="institutionalShellCue">Planning ≠ customer truth</span>';
   document.body.prepend(trail);
   document.body.prepend(nav);
+  document.body.prepend(skip);
 })();
