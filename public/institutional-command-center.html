@@ -30,6 +30,7 @@
     @media(max-width:1080px){.auth{grid-template-columns:1fr 1fr}.summary{grid-template-columns:2fr repeat(2,1fr)}.grid4{grid-template-columns:repeat(2,1fr)}}
     @media(max-width:700px){.shell{padding:16px 12px 48px}.top{display:block}.truth{margin-top:14px;max-width:none}.auth,.summary,.grid4,.two{grid-template-columns:1fr}.verdict{grid-row:auto}.actions .btn{flex:1}.stage{grid-template-columns:36px 1fr}.stage>.badge{grid-column:2}.row{display:block}.row .state{margin-top:8px}.panel{padding:14px;border-radius:17px}}
   </style>
+<link rel="stylesheet" href="/institutional-shell.css">
 </head>
 <body>
   <main class="shell">
@@ -154,5 +155,6 @@
     $('reload').addEventListener('click',load);
     $('password').addEventListener('keydown',e=>{if(e.key==='Enter')loginAndLoad()});
   </script>
+<script src="/institutional-shell.js"></script>
 </body>
 </html>

@@ -13,6 +13,7 @@ button,input,select{font:inherit}.shell{width:min(1460px,100%);margin:auto;paddi
 @media(max-width:680px){.shell{padding:14px 11px 44px}.top{display:block}.truth{max-width:none;margin-top:12px}.auth,.summary,.grid2,.grid3{grid-template-columns:1fr}.hero{grid-row:auto}.panel{padding:12px}}
 @media print{body{background:#fff;color:#111}.shell{width:100%;padding:0}.truth,.panel,.hero,.metric,.card,.row,.footer{background:#fff;color:#111;border-color:#bbb}.muted,.small{color:#444}.actions,.screenOnly{display:none!important}.brand,.ey{color:#111}.printOnly{display:block}.grid2,.grid3{grid-template-columns:1fr 1fr}.footer{page-break-inside:avoid}}
 </style>
+<link rel="stylesheet" href="/institutional-shell.css">
 </head>
 <body><main class="shell">
 <header class="top"><div><div class="brand">СОСТОЯНИЕ · INSTITUTIONAL EVIDENCE</div><h1>Evidence Export Pack</h1><p class="muted">Один проверяемый пакет уже доказанных planning artifacts: capability fit, pilot proposal, outreach brief и коммерческий маршрут — с SHA-256 source bindings и без synthetic customer truth.</p></div><div class="truth"><b>EXPORT ≠ CUSTOMER EVIDENCE.</b><br>Manifest proves package composition.<br>It does not prove buyer intent, meeting, pilot or approval.</div></header>
@@ -67,4 +68,5 @@ async function load(){try{$('status').textContent='Сборка пакета...'
 $('load').addEventListener('click',load);
 $('download').addEventListener('click',()=>{if(!current)return;const blob=new Blob([JSON.stringify(current.export.document,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=current.export.suggestedFilename||'promomed-evidence-pack.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
 </script>
+<script src="/institutional-shell.js"></script>
 </body></html>
