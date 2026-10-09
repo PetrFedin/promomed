@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111c">
+<title>СОСТОЯНИЕ · Institutional Evidence Export Pack</title>
+<style>
+:root{--bg:#07111c;--s:#0d1c2b;--line:#23415d;--text:#f4f8fc;--muted:#9eb2c5;--blue:#8edcff;--green:#9be7bc;--amber:#ffd58a;--red:#ff9b9b}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#07111c,#0b1724 45%,#07111c);color:var(--text);font:15px/1.46 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit}.shell{width:min(1460px,100%);margin:auto;padding:22px clamp(14px,3vw,42px) 64px}.top{display:flex;justify-content:space-between;gap:18px}.brand,.ey{font-size:11px;font-weight:900;letter-spacing:.1em;color:var(--blue)}h1{font-size:clamp(30px,4vw,54px);line-height:1.02;margin:7px 0}.muted{color:var(--muted)}.truth{max-width:390px;border:1px solid #744d27;background:#271a10;color:#ffd7a1;border-radius:15px;padding:12px}.panel{margin-top:14px;background:rgba(13,28,43,.94);border:1px solid var(--line);border-radius:18px;padding:15px}.auth{display:grid;grid-template-columns:1.2fr 1fr 1.1fr auto;gap:10px;align-items:end}.field label{display:block;font-size:11px;color:var(--muted);font-weight:800;margin-bottom:5px}.field input,.field select{width:100%;min-height:44px;border:1px solid #31506d;background:#07131f;color:#fff;border-radius:11px;padding:10px 12px}.btn{min-height:44px;border:1px solid #31506d;border-radius:11px;background:#153149;color:#eaf6ff;font-weight:900;padding:10px 14px;cursor:pointer}.btn.primary{background:var(--blue);color:#032033;border-color:var(--blue)}.actions{display:flex;gap:8px;flex-wrap:wrap}.hidden{display:none!important}.summary{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:10px}.hero,.metric,.card{border:1px solid var(--line);border-radius:15px;background:#0a1724;padding:13px}.hero{grid-row:span 2}.hero h2{margin:6px 0;font-size:clamp(22px,3vw,36px)}.metric strong{display:block;font-size:28px}.metric span{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:.07em}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.list{display:grid;gap:8px}.row{border:1px solid #1e3951;background:#091724;border-radius:12px;padding:10px}.badge{display:inline-flex;padding:4px 7px;border:1px solid #496987;border-radius:999px;font-size:10px;font-weight:900}.gated{color:var(--red);border-color:#744040}.ready{color:var(--green);border-color:#397057}.warn{color:var(--amber);border-color:#715729}.small{font-size:12px;color:var(--muted)}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}.footer{margin-top:14px;border:1px solid #744d27;background:#24190f;color:#ffd7a1;border-radius:14px;padding:12px}.printOnly{display:none}
+@media(max-width:980px){.auth{grid-template-columns:1fr 1fr}.summary{grid-template-columns:2fr 1fr 1fr}.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:680px){.shell{padding:14px 11px 44px}.top{display:block}.truth{max-width:none;margin-top:12px}.auth,.summary,.grid2,.grid3{grid-template-columns:1fr}.hero{grid-row:auto}.panel{padding:12px}}
+@media print{body{background:#fff;color:#111}.shell{width:100%;padding:0}.truth,.panel,.hero,.metric,.card,.row,.footer{background:#fff;color:#111;border-color:#bbb}.muted,.small{color:#444}.actions,.screenOnly{display:none!important}.brand,.ey{color:#111}.printOnly{display:block}.grid2,.grid3{grid-template-columns:1fr 1fr}.footer{page-break-inside:avoid}}
+</style>
+</head>
+<body><main class="shell">
+<header class="top"><div><div class="brand">СОСТОЯНИЕ · INSTITUTIONAL EVIDENCE</div><h1>Evidence Export Pack</h1><p class="muted">Один проверяемый пакет уже доказанных planning artifacts: capability fit, pilot proposal, outreach brief и коммерческий маршрут — с SHA-256 source bindings и без synthetic customer truth.</p></div><div class="truth"><b>EXPORT ≠ CUSTOMER EVIDENCE.</b><br>Manifest proves package composition.<br>It does not prove buyer intent, meeting, pilot or approval.</div></header>
+
+<section class="panel"><div class="auth">
+<div class="field"><label>EMAIL</label><input id="email" type="email" value="sales@demo.ru" autocomplete="username"></div>
+<div class="field"><label>PASSWORD</label><input id="password" type="password" placeholder="demo password" autocomplete="current-password"></div>
+<div class="field"><label>PARTNER ARCHETYPE</label><select id="archetype"><option value="clinic">Clinic / healthcare provider</option><option value="university">University / education institution</option><option value="medical_society">Medical / scientific society</option><option value="pharma">Pharma / biopharma partner</option><option value="knowledge_provider">Knowledge / content provider</option><option value="strategic_partner">Strategic / ecosystem partner</option></select></div>
+<button id="load" class="btn primary">Собрать pack</button>
+</div><div id="status" class="small">Нужна роль organizer / partner / sales. Пароль намеренно не подставляется.</div></section>
+
+<div id="content" class="hidden">
+<section class="summary">
+<article class="hero"><div class="ey">EXECUTIVE SUMMARY</div><h2 id="label">—</h2><p id="headline" class="muted"></p><div id="useCases" class="small"></div></article>
+<article class="metric"><span>STRONG DIMENSIONS</span><strong id="strongCount">0</strong></article>
+<article class="metric"><span>CONDITIONAL</span><strong id="conditionalCount">0</strong></article>
+<article class="metric"><span>FIRST MEETING</span><strong id="meetingMinutes">0m</strong></article>
+<article class="metric"><span>ARTIFACTS</span><strong id="artifactCount">0</strong></article>
+</section>
+
+<section class="panel"><div class="ey">ARTIFACT CATALOG</div><h2>Что входит в пакет</h2><div id="artifacts" class="grid3"></div></section>
+
+<section class="grid2">
+<article class="panel"><div class="ey">SOURCE HASH BINDINGS</div><h2>Какие исходные exports связаны</h2><div id="bindings" class="list"></div></article>
+<article class="panel"><div class="ey">CUSTOMER INPUTS REQUIRED</div><h2>Что всё ещё должен предоставить реальный buyer</h2><div id="inputs" class="list"></div></article>
+</section>
+
+<section class="grid2">
+<article class="panel"><div class="ey">VALIDATION QUESTIONS</div><h2>Что нельзя угадывать</h2><div id="questions" class="list"></div></article>
+<article class="panel"><div class="ey">CLAIMS NOT TO MAKE</div><h2>Что пакет запрещает заявлять</h2><div id="claims" class="list"></div></article>
+</section>
+
+<section class="panel"><div class="ey">ORGANIZATION-SPECIFIC DILIGENCE</div><h2>Почему Command Center не включён как evidence</h2><div id="diligence" class="row"></div></section>
+
+<section class="panel screenOnly"><div class="ey">EXPORT ACTIONS</div><h2>Передать / сохранить</h2><div class="actions"><button id="download" class="btn primary">Скачать JSON manifest</button><button class="btn" onclick="window.print()">Печать / PDF</button><a class="btn" href="/institutional-commercial-workspace.html">Открыть Commercial Workspace</a></div></section>
+
+<div class="footer"><b>Manifest SHA-256:</b> <span id="sha" class="mono">—</span><br><span class="small">Planning package only. Named customer, meeting, buyer interest, pipeline, pilot, contract, PO, revenue and Participation Acceptance are not created by this export.</span></div>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));let token=sessionStorage.getItem('promomedEvidencePackToken')||'',current=null;
+async function api(path,opt={}){const h={'Content-Type':'application/json',...(opt.headers||{})};if(token)h.Authorization='Bearer '+token;const r=await fetch(path,{...opt,headers:h});let d={};try{d=await r.json()}catch(_){d={error:'invalid_json'}}if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d}
+function render(d){current=d;$('label').textContent=d.archetypeLabel;$('headline').textContent=d.executiveSummary?.proposalHeadline||'';$('useCases').textContent=(d.executiveSummary?.primaryUseCases||[]).join(' · ');$('strongCount').textContent=(d.executiveSummary?.strongCapabilityDimensions||[]).length;$('conditionalCount').textContent=(d.executiveSummary?.conditionalCapabilityDimensions||[]).length;$('meetingMinutes').textContent=(d.executiveSummary?.firstMeetingMinutes||0)+'m';$('artifactCount').textContent=(d.artifactCatalog||[]).length;
+$('artifacts').innerHTML=(d.artifactCatalog||[]).map(x=>'<article class="card"><span class="badge '+(x.authority==='requires_real_organization_context'?'gated':'ready')+'">'+esc(x.authority)+'</span><h3>'+esc(x.title)+'</h3><div class="small">'+esc(x.purpose)+'</div><div class="small mono">'+esc(x.sourceSha256||'organization-specific / not bound')+'</div><div class="actions"><a class="btn" href="'+esc(x.surface)+'">Открыть</a></div></article>').join('');
+$('bindings').innerHTML=Object.entries(d.generatedFrom||{}).map(([k,v])=>'<div class="row"><b>'+esc(k)+'</b><div class="small mono">'+esc(v)+'</div></div>').join('');
+$('inputs').innerHTML=(d.executiveSummary?.customerInputsRequired||[]).map(x=>'<div class="row">'+esc(x)+'</div>').join('');
+$('questions').innerHTML=(d.validationQuestions||[]).map(x=>'<div class="row">'+esc(x)+'</div>').join('');
+$('claims').innerHTML=(d.claimsNotToMake||[]).map(x=>'<div class="row">'+esc(x)+'</div>').join('');
+$('diligence').innerHTML='<b>'+esc(d.diligenceBoundary?.reason||'')+'</b><div class="small">'+esc(d.diligenceBoundary?.nextStep||'')+'</div>';
+$('sha').textContent=d.export?.sha256||'—';$('content').classList.remove('hidden')}
+async function load(){try{$('status').textContent='Сборка пакета...';if(!token){const d=await api('/api/login',{method:'POST',body:JSON.stringify({email:$('email').value.trim(),password:$('password').value})});token=d.token;sessionStorage.setItem('promomedEvidencePackToken',token)}render(await api('/api/institutional-evidence-export/'+encodeURIComponent($('archetype').value)));$('status').textContent='Evidence pack generated. No customer/pipeline truth created.'}catch(e){$('status').textContent='Ошибка: '+e.message;$('content').classList.add('hidden')}}
+$('load').addEventListener('click',load);
+$('download').addEventListener('click',()=>{if(!current)return;const blob=new Blob([JSON.stringify(current.export.document,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=current.export.suggestedFilename||'promomed-evidence-pack.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)});
+</script>
+</body></html>
