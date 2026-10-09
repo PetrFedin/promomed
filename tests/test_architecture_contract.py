@@ -52,6 +52,7 @@ MODULES = {
     "pilot_workspace.py",
     "institutional_onboarding.py",
     "institutional_data_room.py",
+    "institutional_working_session.py",
 }
 
 
@@ -308,6 +309,17 @@ class ArchitectureContractTests(unittest.TestCase):
         ):
             self.assertIn(route,media)
         self.assertIn("/api/federation/discovery-bundle/verify-portable",commands)
+
+    def test_institutional_working_session_is_guarded_and_read_only(self):
+        media=(APP/"media_reads.py").read_text(encoding="utf-8")
+        runtime=(APP/"institutional_working_session.py").read_text(encoding="utf-8")
+        self.assertIn("/api/institutional-working-session",media)
+        self.assertIn("institutional_working_session.snapshot",media)
+        self.assertIn('"readOnly":True',runtime)
+        self.assertIn('"externalParticipationAcceptance":"GATED"',runtime)
+        self.assertNotIn("INSERT ",runtime)
+        self.assertNotIn("UPDATE ",runtime)
+        self.assertNotIn("DELETE ",runtime)
 
     def test_institutional_data_room_is_guarded_and_read_only(self):
         media=(APP/"media_reads.py").read_text(encoding="utf-8")

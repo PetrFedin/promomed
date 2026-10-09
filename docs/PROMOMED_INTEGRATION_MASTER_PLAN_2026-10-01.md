@@ -2858,3 +2858,37 @@ Commercial consequence:
 Promomed can support a real first diligence/working session without turning workshop UX into hidden governance or synthetic traction.
 
 **Next dependency after green merge/live proof:** use the Data Room in an actual institutional conversation; only real observed workflow friction may justify persistent meeting notes, formal approval objects or canonical participation acceptance.
+
+
+### Institutional Working Session Usability v1 — implementation candidate 2026-10-08
+
+Repository base: `main@27dd76cd00836f8cac1edc9250d32654f248bf81`.
+
+Purpose:
+
+turn the read-only Procurement Data Room into a usable first institutional diligence session.
+
+Added:
+
+- participant-role map;
+- document request checklist;
+- due-diligence question routing;
+- evidence-gap ownership;
+- ordered session agenda;
+- deterministic session export.
+
+Hard boundaries:
+
+- every participant role has `canApprove=false`;
+- document receipt is not persisted;
+- question answers are not persisted;
+- gap ownership is not acceptance;
+- approvals are not persisted;
+- External Participation Acceptance remains `GATED`;
+- no contract, revenue, accreditation or real-pilot claim is created.
+
+Commercial consequence:
+
+the team can run a real institutional meeting with one operational screen and leave with a precise follow-up ownership map, without confusing workshop actions with legal/governance acceptance.
+
+**Next dependency after green merge/live proof:** use the session surface with a real external institution and capture only observed usability friction; persistent notes/approvals remain blocked until their authority model is explicitly designed.

@@ -1,6 +1,6 @@
 from urllib.parse import parse_qs, urlparse
 
-from app import db, delivery_protocol, federated_trust, federation_interop, pilot_workspace, institutional_onboarding, institutional_data_room, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network, trust_bundle
+from app import db, delivery_protocol, federated_trust, federation_interop, pilot_workspace, institutional_onboarding, institutional_data_room, institutional_working_session, transcript_intelligence, evidence_graph, change_impact, evidence_monitor, reviewer_authority, evidence_seal, evidence_checkpoint, evidence_interchange, syndication_network, trust_bundle
 
 
 PUBLIC_EVIDENCE_ROUTES=(
@@ -45,6 +45,7 @@ def serve(raw_path, role):
         "/api/institutional-pilot-readiness",
         "/api/institutional-onboarding-room",
         "/api/institutional-data-room",
+        "/api/institutional-working-session",
         *PUBLIC_EVIDENCE_ROUTES,
     ):
         return None
@@ -145,6 +146,17 @@ def serve(raw_path, role):
                 return {"data":federated_trust.signed_receipt_document(c,receipt_id)},200
             except ValueError as exc:
                 return {"error":str(exc)},404
+
+        if parsed.path=="/api/institutional-working-session":
+            if role not in ("governance","editor","sales"):
+                return {"error":"forbidden"},403
+            organization_id=(q.get("organization_id") or [""])[0][:100]
+            if not organization_id:
+                return {"error":"organization_id_required"},422
+            try:
+                return {"data":institutional_working_session.snapshot(c,organization_id)},200
+            except ValueError as exc:
+                return {"error":str(exc)},404 if str(exc)=="organization_not_found" else 422
 
         if parsed.path=="/api/institutional-data-room":
             if role not in ("governance","editor","sales"):
