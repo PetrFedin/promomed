@@ -2892,3 +2892,44 @@ Commercial consequence:
 the team can run a real institutional meeting with one operational screen and leave with a precise follow-up ownership map, without confusing workshop actions with legal/governance acceptance.
 
 **Next dependency after green merge/live proof:** use the session surface with a real external institution and capture only observed usability friction; persistent notes/approvals remain blocked until their authority model is explicitly designed.
+
+
+### Institutional Diligence Follow-up Board v1 — implementation candidate 2026-10-09
+
+Repository base: `main@75cbe93d872a93bed14f3093b79878bcb006df34`.
+
+Purpose:
+
+preserve diligence follow-up between the institutional working session and contract without introducing hidden approval/governance authority.
+
+Board states:
+
+`REQUESTED -> RECEIVED -> UNDER_REVIEW -> GAP -> READY_FOR_DECISION`.
+
+Critical invariant:
+
+`READY_FOR_DECISION != APPROVED`.
+
+Implementation boundary:
+
+- board is a read-only projection over working-session, readiness and procurement evidence;
+- each item exposes owner, due class, pilot-blocking flag, next owner, evidence reference and rationale;
+- unresolved canonical evidence becomes `GAP`;
+- required items without a matching unresolved gap may be `READY_FOR_DECISION`, but only for routing to an external/governance authority;
+- `RECEIVED` is reserved for future canonical receipt evidence;
+- `UNDER_REVIEW` is reserved for future canonical review-disposition evidence;
+- board cannot mark receipt, start review or approve anything;
+- no actual contractual due dates are invented in v1;
+- External Participation Acceptance remains `GATED`.
+
+Manual mutation flags remain false:
+
+- `canMarkReceivedHere=false`;
+- `canStartReviewHere=false`;
+- `canApproveHere=false`.
+
+Commercial consequence:
+
+Promomed can now carry the operational work from diligence meeting to procurement/legal handoff without losing gap ownership or falsely implying agreement.
+
+**Next dependency after green merge/live proof:** use the follow-up board with a real non-demo institution. Only observed real workflow may justify canonical document-receipt, review-disposition or participation-acceptance authority.
