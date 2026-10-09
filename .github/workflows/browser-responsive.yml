@@ -40,7 +40,9 @@ jobs:
         env:
           PROMOMED_BASE_URL: http://127.0.0.1:10000
           PROMOMED_SCREENSHOT_DIR: artifacts/browser-qa
-        run: python tests/test_browser_responsive.py
+        run: |
+          python tests/test_browser_responsive.py
+          python tests/test_command_center_browser.py
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v4
