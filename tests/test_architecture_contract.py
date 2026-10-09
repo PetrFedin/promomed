@@ -328,6 +328,17 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertNotIn("UPDATE ",runtime)
         self.assertNotIn("DELETE ",runtime)
 
+    def test_institutional_evidence_export_is_guarded_and_read_only(self):
+        strategic=(APP/"strategic_reads.py").read_text(encoding="utf-8")
+        runtime=(APP/"institutional_evidence_export.py").read_text(encoding="utf-8")
+        self.assertIn("/api/institutional-evidence-export/",strategic)
+        self.assertIn("institutional_evidence_export.snapshot",strategic)
+        self.assertIn('"planningPackageOnly":True',runtime)
+        self.assertIn('"externalParticipationAcceptance":"GATED"',runtime)
+        self.assertNotIn("INSERT ",runtime)
+        self.assertNotIn("UPDATE ",runtime)
+        self.assertNotIn("DELETE ",runtime)
+
     def test_institutional_buyer_fit_is_guarded_and_read_only(self):
         strategic=(APP/"strategic_reads.py").read_text(encoding="utf-8")
         runtime=(APP/"institutional_buyer_fit.py").read_text(encoding="utf-8")
