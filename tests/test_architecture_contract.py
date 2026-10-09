@@ -57,6 +57,7 @@ MODULES = {
     "institutional_command_center.py",
     "institutional_pilot_proposal.py",
     "institutional_buyer_fit.py",
+    "institutional_outreach_pack.py",
 }
 
 
@@ -313,6 +314,19 @@ class ArchitectureContractTests(unittest.TestCase):
         ):
             self.assertIn(route,media)
         self.assertIn("/api/federation/discovery-bundle/verify-portable",commands)
+
+    def test_institutional_outreach_pack_is_guarded_and_read_only(self):
+        strategic=(APP/"strategic_reads.py").read_text(encoding="utf-8")
+        runtime=(APP/"institutional_outreach_pack.py").read_text(encoding="utf-8")
+        self.assertIn("/api/institutional-outreach-pack/",strategic)
+        self.assertIn("institutional_outreach_pack.snapshot",strategic)
+        self.assertIn('"meetingOccurredClaimed":False',runtime)
+        self.assertIn('"buyerInterestClaimed":False',runtime)
+        self.assertIn('"pipelineStageClaimed":False',runtime)
+        self.assertIn('"externalParticipationAcceptance":"GATED"',runtime)
+        self.assertNotIn("INSERT ",runtime)
+        self.assertNotIn("UPDATE ",runtime)
+        self.assertNotIn("DELETE ",runtime)
 
     def test_institutional_buyer_fit_is_guarded_and_read_only(self):
         strategic=(APP/"strategic_reads.py").read_text(encoding="utf-8")
