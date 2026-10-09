@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07111c">
+<title>СОСТОЯНИЕ · Institutional Pilot Proposal Studio</title>
+<style>
+:root{--bg:#07111c;--s:#0d1c2b;--s2:#13263a;--line:#23415d;--text:#f4f8fc;--muted:#9eb2c5;--blue:#8edcff;--green:#9be7bc;--amber:#ffd58a;--red:#ff9b9b}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#07111c,#0b1724 45%,#07111c);color:var(--text);font:15px/1.48 Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select{font:inherit}.shell{width:min(1440px,100%);margin:auto;padding:24px clamp(16px,3vw,42px) 70px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.brand,.ey{font-size:11px;font-weight:900;letter-spacing:.11em;color:var(--blue)}h1{font-size:clamp(30px,4vw,54px);line-height:1.03;margin:7px 0}.lead,.muted{color:var(--muted)}.truth{max-width:370px;border:1px solid #744d27;background:#281b10;color:#ffd7a1;padding:13px 15px;border-radius:16px}.panel{background:rgba(13,28,43,.94);border:1px solid var(--line);border-radius:20px;padding:17px;margin-top:15px}.auth{display:grid;grid-template-columns:1.2fr 1fr 1.1fr auto;gap:10px;align-items:end}.field label{display:block;font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.08em;margin-bottom:5px}.field input,.field select{width:100%;min-height:46px;border:1px solid #31506d;border-radius:12px;background:#07131f;color:#fff;padding:11px 12px}.btn{min-height:46px;border:0;border-radius:12px;padding:11px 16px;background:var(--blue);color:#032033;font-weight:900;cursor:pointer}.hidden{display:none!important}.summary{display:grid;grid-template-columns:2fr repeat(4,1fr);gap:10px;margin-top:15px}.hero,.metric,.card{background:#0b1927;border:1px solid var(--line);border-radius:16px;padding:14px}.hero{grid-row:span 2}.hero h2{font-size:clamp(22px,3vw,36px);margin:6px 0}.metric strong{display:block;font-size:27px}.metric span{font-size:10px;color:var(--muted);font-weight:900;letter-spacing:.07em}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:13px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.list{display:grid;gap:8px}.row{border:1px solid #1e3951;background:#091724;border-radius:13px;padding:11px}.row b{display:block}.small{font-size:12px;color:var(--muted)}.badge{display:inline-flex;padding:4px 8px;border:1px solid #496987;border-radius:999px;font-size:10px;font-weight:900}.gated{color:var(--red);border-color:#744040}.ready{color:var(--green);border-color:#397057}.warn{color:var(--amber);border-color:#715729}.footer{border:1px solid #744d27;background:#24190f;color:#ffd7a1;border-radius:15px;padding:13px;margin-top:15px}.status{margin-top:8px;font-size:12px;color:var(--muted)}
+@media(max-width:1000px){.auth{grid-template-columns:1fr 1fr}.summary{grid-template-columns:2fr repeat(2,1fr)}.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:700px){.shell{padding:15px 12px 45px}.top{display:block}.truth{max-width:none;margin-top:12px}.auth,.summary,.grid2,.grid3{grid-template-columns:1fr}.hero{grid-row:auto}.panel{padding:14px}}
+</style>
+</head>
+<body><main class="shell">
+<header class="top"><div><div class="brand">СОСТОЯНИЕ · INSTITUTIONAL SALES</div><h1>Institutional Pilot Proposal Studio</h1><p class="lead">Собирает честное pre-pilot предложение по типу институции: value hypothesis, scope, customer inputs, success criteria и procurement prerequisites — без выдуманного клиента, цены, срока или согласия.</p></div><div class="truth"><b>Truth boundary</b><br>PROPOSAL ≠ COMMITMENT.<br>TO AGREE остаётся TO AGREE.<br>Participation Acceptance = GATED.</div></header>
+<section class="panel"><div class="auth">
+<div class="field"><label>EMAIL</label><input id="email" type="email" value="sales@demo.ru" autocomplete="username"></div>
+<div class="field"><label>PASSWORD</label><input id="password" type="password" placeholder="demo password" autocomplete="current-password"></div>
+<div class="field"><label>PARTNER ARCHETYPE</label><select id="archetype"><option value="clinic">Clinic / healthcare provider</option><option value="university">University / education institution</option><option value="medical_society">Medical / scientific society</option><option value="pharma">Pharma / biopharma partner</option><option value="knowledge_provider">Knowledge / content provider</option><option value="strategic_partner">Strategic / ecosystem partner</option></select></div>
+<button id="load" class="btn">Собрать предложение</button>
+</div><div id="status" class="status">Нужна роль organizer / partner / sales. Пароль намеренно не подставляется.</div></section>
+<div id="content" class="hidden">
+<section class="summary">
+<article class="hero"><div class="ey">PROPOSAL POSITIONING</div><h2 id="label">—</h2><p id="headline" class="muted"></p></article>
+<article class="metric"><span>OBJECTIVES</span><strong id="objectiveCount">0</strong></article>
+<article class="metric"><span>USE CASES</span><strong id="useCaseCount">0</strong></article>
+<article class="metric"><span>STAKEHOLDERS</span><strong id="stakeholderCount">0</strong></article>
+<article class="metric"><span>PRICING</span><strong id="pricing">—</strong></article>
+</section>
+<section class="grid2">
+<article class="panel"><div class="ey">BUSINESS OBJECTIVES</div><h2>Что предлагаем проверить</h2><div id="objectives" class="list"></div></article>
+<article class="panel"><div class="ey">USE CASES</div><h2>Возможные пилотные сценарии</h2><div id="useCases" class="list"></div></article>
+</section>
+<section class="panel"><div class="ey">PILOT SCOPE OPTIONS</div><h2>Из чего может состоять пилот</h2><div id="scope" class="grid3"></div></section>
+<section class="grid2">
+<article class="panel"><div class="ey">CUSTOMER INPUTS REQUIRED</div><h2>Что должен предоставить реальный партнёр</h2><div id="inputs" class="list"></div></article>
+<article class="panel"><div class="ey">STAKEHOLDERS</div><h2>Кого нужно привести к столу</h2><div id="stakeholders" class="list"></div></article>
+</section>
+<section class="panel"><div class="ey">SUCCESS CRITERIA</div><h2>Формулы есть — targets не выдумываем</h2><div id="criteria" class="grid3"></div></section>
+<section class="panel"><div class="ey">PROCUREMENT / LEGAL PREREQUISITES</div><h2>Что остаётся согласовать</h2><div id="prerequisites" class="list"></div></section>
+<section class="grid2">
+<article class="panel"><div class="ey">COMMERCIAL BOUNDARY</div><h2>Что пока не является оффером</h2><div id="commercial" class="list"></div></article>
+<article class="panel"><div class="ey">CURRENT PRODUCT EVIDENCE</div><h2>Что можно заявить сегодня</h2><div id="evidence" class="list"></div></article>
+</section>
+<div class="footer"><b>Pre-pilot projection only.</b> Никакой real customer, pilot acceptance, price, duration, signed contract, PO или revenue не создаются. <span id="sha"></span></div>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let token=sessionStorage.getItem('promomedProposalToken')||'';
+async function api(path,opt={}){const h={'Content-Type':'application/json',...(opt.headers||{})};if(token)h.Authorization='Bearer '+token;const r=await fetch(path,{...opt,headers:h});let d={};try{d=await r.json()}catch(_){d={error:'invalid_json'}}if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d}
+function rows(items,fn){return (items||[]).map(fn).join('')}
+function render(d){
+ $('label').textContent=d.archetypeLabel||d.archetype;$('headline').textContent=d.positioning?.headline||'';
+ $('objectiveCount').textContent=(d.positioning?.businessObjectives||[]).length;$('useCaseCount').textContent=(d.positioning?.useCases||[]).length;$('stakeholderCount').textContent=(d.stakeholders||[]).length;$('pricing').textContent=d.commercial?.pricing||'TO_PRICE';
+ $('objectives').innerHTML=rows(d.positioning?.businessObjectives,x=>'<div class="row">'+esc(x)+'</div>');
+ $('useCases').innerHTML=rows(d.positioning?.useCases,x=>'<div class="row">'+esc(x)+'</div>');
+ $('scope').innerHTML=rows(d.scopeOptions,x=>'<article class="card"><span class="badge warn">'+esc(x.status)+'</span><h3>'+esc(x.title)+'</h3><div class="small">'+esc((x.includes||[]).join(' · '))+'</div></article>');
+ $('inputs').innerHTML=rows(d.customerInputsRequired,x=>'<div class="row">'+esc(x)+'</div>');
+ $('stakeholders').innerHTML=rows(d.stakeholders,x=>'<div class="row">'+esc(x)+'</div>');
+ $('criteria').innerHTML=rows(d.successCriteria,x=>'<article class="card"><span class="badge warn">'+esc(x.target)+'</span><h3>'+esc(x.metric)+'</h3><div class="small">'+esc(x.formula)+'</div></article>');
+ $('prerequisites').innerHTML=rows(d.prerequisites,x=>'<div class="row"><b>'+esc(x.title)+'</b><span class="badge '+(x.state==='GATED'?'gated':'warn')+'">'+esc(x.state)+'</span><div class="small">'+esc(x.evidenceRequired)+'</div></div>');
+ $('commercial').innerHTML=Object.entries(d.commercial||{}).map(([k,v])=>'<div class="row"><b>'+esc(k)+'</b><span class="small">'+esc(v)+'</span></div>').join('');
+ $('evidence').innerHTML=Object.entries(d.currentProductEvidence||{}).map(([k,v])=>'<div class="row"><b>'+esc(k)+'</b><span class="badge '+(v===true?'ready':v===false?'gated':'warn')+'">'+esc(v)+'</span></div>').join('');
+ $('sha').textContent='Export SHA-256: '+(d.export?.sha256||'—');$('content').classList.remove('hidden');
+}
+async function load(){
+ try{
+  $('status').textContent='Загрузка...';
+  if(!token){const login=await api('/api/login',{method:'POST',body:JSON.stringify({email:$('email').value.trim(),password:$('password').value})});token=login.token;sessionStorage.setItem('promomedProposalToken',token)}
+  const d=await api('/api/institutional-pilot-proposal/'+encodeURIComponent($('archetype').value));render(d);$('status').textContent='Proposal projection loaded. Никаких approvals не создано.';
+ }catch(e){$('status').textContent='Ошибка: '+e.message;$('content').classList.add('hidden')}
+}
+$('load').addEventListener('click',load);
+</script>
+</body></html>

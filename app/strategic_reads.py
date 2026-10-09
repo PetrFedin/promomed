@@ -1,6 +1,6 @@
 from urllib.parse import unquote
 
-from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center
+from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal
 
 
 ROUTES = {
@@ -16,9 +16,21 @@ ROUTES = {
     "/api/investment-proof-system",
 }
 COMMAND_CENTER_PREFIX = "/api/institutional-command-center/"
+PILOT_PROPOSAL_PREFIX = "/api/institutional-pilot-proposal/"
 
 
 def read(c, path, role):
+    if path.startswith(PILOT_PROPOSAL_PREFIX):
+        if role not in ("organizer", "partner", "sales"):
+            return {"error": "forbidden"}, 403
+        archetype = unquote(path[len(PILOT_PROPOSAL_PREFIX):]).strip()[:80]
+        if not archetype:
+            return {"error": "archetype_required"}, 422
+        try:
+            return institutional_pilot_proposal.snapshot(c, archetype), 200
+        except ValueError as exc:
+            return {"error": str(exc)}, 422
+
     if path.startswith(COMMAND_CENTER_PREFIX):
         if role not in ("organizer", "partner", "sales"):
             return {"error": "forbidden"}, 403
