@@ -299,3 +299,61 @@ Phase 1 remains gated. External durable PostgreSQL source + restore capacity rem
 The first live-proof failure was a provider deployment-handoff timing condition, not a runtime-readiness failure. The proof workflow is hardened in the following security-readiness wave to distinguish `DEPLOY_HANDOFF_TIMEOUT` from bad application readiness.
 
 Executive / CVC current demo decision remains `CONTROLLED PILOT ONLY`.
+
+
+## Verified current live and external-evidence gate — 2026-10-11
+
+**Scope:** operational correction to the deployment ledger; no runtime, persistence, commercial or governance authority change.
+
+### Repository and deployment evidence
+
+- Repository: `PetrFedin/promomed`.
+- Exact `main` SHA verified by a direct `main` versus SHA comparison: `ae5303b3d4f28d558cf4cf35b9927da88653b4ed`.
+- Institutional Evidence Export Pack v1: PR [#58](https://github.com/PetrFedin/promomed/pull/58), merged.
+- Institutional Presentation System v1: PR [#59](https://github.com/PetrFedin/promomed/pull/59), merged.
+- Institutional Accessibility & Performance Hardening v1: PR [#60](https://github.com/PetrFedin/promomed/pull/60), merged following browser accessibility FAIL, fix and full exact-head requalification.
+- Current public Render service: `sostoyanie-promomed-live`, ID `srv-daug7pnlot8c73b1aja0`.
+- Latest public deploy: `dep-db4nva7lk1mc73fd0uh0`, exact commit `ae5303b3d4f28d558cf4cf35b9927da88653b4ed`, Render status `live` (completed 2026-10-09 23:59:15 UTC).
+- The deploy logs record `Build successful`, `Your service is live`, and `GET / HTTP/1.1 200`.
+- Current service configuration: free Python service in Frankfurt, build command `python -m py_compile server.py`, start command `python server.py`, **empty `healthCheckPath`**.
+- Newly deployed process logs: `SOSTOYANIE v1.8 persistence admission sqlite listening 10000`. This is the current demo/runtime boundary, **not durable production PostgreSQL**.
+- A fresh public HTTP response-body / exact-SHA `/health` verification was **not obtained in this checkpoint**. Render's deploy-to-commit evidence and previous CI are not substituted for an independent live-response proof.
+
+### Dedicated PostgreSQL admission service
+
+- Existing service: `sostoyanie-promomed-pg-admission` (ID `srv-davsqk942hec73e1vcr0`).
+- Current deploy reported by Render: `dep-db2caec9v7es73dt4arg`, commit `657fc948ce58ba8044b652756dbe37911d2e4f2c` (2026-10-06), status `live`.
+- Auto-deploy is disabled; its exact deploy SHA is **not** current main.
+- Its build command **does** install `requirements.txt`; `healthCheckPath` is empty.
+- Service existence or `live` status is not evidence of PostgreSQL admission or `production_ready=true`.
+
+### Verified no-cost infrastructure boundary
+
+- Render workspace `ME` (`tea-dagitrp5efls73apuv50`) currently lists one PostgreSQL instance: `mfw-postgres` (`dpg-daugci8jo6nc738akc10-a`), PostgreSQL 17, free, Frankfurt.
+- This instance belongs to **MFW**, not Promomed. Its reported free-instance expiration is 2026-10-30. **Never reuse, migrate or delete it for Promomed.**
+- No dedicated Promomed PostgreSQL source/restore pair has been identified **in this Render workspace**.
+- Other providers/accounts were not revalidated in this checkpoint; do not infer absence of capacity elsewhere.
+- The existing repository runbook `docs/PHASE0_POSTGRES_ADMISSION.md` remains the authoritative procedure for source/restore isolation, migration checksum verification, backup/restore, production account bootstrap and exact-SHA `/ready` proof.
+
+### Two independent gates remain closed
+
+**Phase 0 production persistence admission — OPEN / NOT COMPLETE**
+
+1. Obtain a dedicated, isolated PostgreSQL source and independent restore target without sharing another project's database.
+2. Execute the repository's admission and backup/restore proof workflows.
+3. Reconcile web-service dependency installation, `DATABASE_URL`, `PROMOMED_REQUIRE_POSTGRES=true`, and `PROMOMED_SEED_DEMO=false` only after successful database admission.
+4. Verify exact `main` SHA in the live `/health` response and `backend=postgres`, `demo_accounts=0`, `production_ready=true` in `/ready`.
+5. Execute authenticated smoke with a deliberately provisioned non-demo operator; keep all credentials out of Git and logs.
+
+**External Institutional Participation — GATED / NO REAL-PARTY EVIDENCE**
+
+1. A non-demo institution must identify an authorised contact and purpose, with its own attributable identity/authority evidence.
+2. First institutional session may use the existing read-only Commercial Workspace, Buyer Fit, Proposal, Outreach and Evidence Export as **planning material only**.
+3. Obtain permission before recording attributable observations; capture only minimum necessary non-sensitive session feedback outside the demo app.
+4. Distinguish observed usability friction, customer-supplied inputs and external decisions. None can be inferred from an archetype or sample data.
+5. Do not implement canonical Document Receipt, Review Disposition or Participation Acceptance without observed workflow requirements, explicit owner/authority and relevant real-party evidence.
+6. Do not claim contract, pilot, pipeline, pricing agreement, purchase order, revenue or institutional adoption.
+
+**Release rule:** a Render `live` deploy and a `/ready` HTTP 200 are insufficient by themselves. The `ready` and `production_ready` fields have different semantics in `app/db.py`; production admission requires the latter to be true.
+
+**Next admissible work without a real external institution:** remedy verified defects, accessibility, performance or editorial issues only. Do not add synthetic sales/governance authority.
