@@ -113,7 +113,7 @@ def main(argv=None):
     if a.report_json:
         target = Path(a.report_json)
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+        target.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print("RENDER_CONFIG_FAIL" if fail else "RENDER_CONFIG_PASS (not PostgreSQL readiness)")
     return 1 if fail else 0
 
