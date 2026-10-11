@@ -27,7 +27,7 @@ def check(actual, role):
     sid, name, deploy = SERVICES[role]
     mode = actual.get("autoDeployTrigger") or {"yes": "commit", "no": "off"}.get(actual.get("autoDeploy"))
     compact = lambda value: re.sub(r"\s+", " ", value.strip()) if isinstance(value, str) else ""
-    repo = lambda value: (value or "").rstrip("/").removesuffix(".git").lower()
+    repo = lambda value: value.strip().rstrip("/").removesuffix(".git").lower() if isinstance(value, str) else ""
     rules = {
         "ID": actual.get("id") == sid,
         "NAME": actual.get("name") == name,
@@ -78,6 +78,7 @@ def main(argv=None):
     source.add_argument("--live-api", action="store_true")
     source.add_argument("--snapshot-dir")
     parser.add_argument("--expected-sha")
+    parser.add_argument("--report-json", help="Write redacted evidence (no payloads or tokens)")
     a = parser.parse_args(argv)
     blueprint = (Path(__file__).resolve().parents[1] / "render.yaml").read_text(encoding="utf-8")
     if not all(x in blueprint for x in ("buildCommand: " + BUILD, "startCommand: " + START, "healthCheckPath: /health", "plan: free")):
@@ -88,6 +89,8 @@ def main(argv=None):
         print("RENDER_CONFIG_BLOCKED: missing RENDER_API_KEY")
         return 2
     fail = False
+    report = {"schema_version": 1, "kind": "render_config_audit",
+              "exact_sha_checked": bool(a.expected_sha), "services": []}
     for role in (SERVICES if a.target == "both" else (a.target,)):
         sid = SERVICES[role][0]
         try:
@@ -101,7 +104,16 @@ def main(argv=None):
         except (RuntimeError, OSError, ValueError):
             errors = ["READ_FAILURE"]
         fail = fail or bool(errors)
+        report["services"].append({"role": role, "service_id": sid,
+                                   "status": "FAIL" if errors else "PASS",
+                                   "codes": errors})
         print(role + ": " + (", ".join(errors) if errors else "CONFIG_PASS"))
+    report["status"] = "FAIL" if fail else "PASS"
+    report["postgres_admission_proven"] = False
+    if a.report_json:
+        target = Path(a.report_json)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
     print("RENDER_CONFIG_FAIL" if fail else "RENDER_CONFIG_PASS (not PostgreSQL readiness)")
     return 1 if fail else 0
 
