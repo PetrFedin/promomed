@@ -47,7 +47,7 @@ jobs:
           APPLY: ${{ inputs.apply }}
         run: |
           if [ "$APPLY" = "true" ]; then
-            python ops/render_existing_service_reconcile.py --target "$TARGET" --apply
+            python ops/render_existing_service_reconcile.py --target "$TARGET" --apply --confirm PROMOMED_FREE_EXISTING_ONLY
           else
             python ops/render_existing_service_reconcile.py --target "$TARGET"
           fi
