@@ -10,6 +10,7 @@ jobs:
     env:
       DATABASE_URL: ${{ secrets.PROMOMED_ADMISSION_DATABASE_URL }}
       RESTORE_DATABASE_URL: ${{ secrets.PROMOMED_ADMISSION_RESTORE_DATABASE_URL }}
+      PROMOMED_CONFIRM_EMPTY_RESTORE: "true"
       PROMOMED_REQUIRE_POSTGRES: "true"
       PROMOMED_SEED_DEMO: "false"
     steps:
@@ -47,6 +48,8 @@ jobs:
         run: python ops/db_backup_restore.py backup --output /tmp/promomed-phase0.dump
 
       - name: Restore into isolated restore target
+        env:
+          PROMOMED_CONFIRM_EMPTY_RESTORE: "true"
         run: python ops/db_backup_restore.py restore --input /tmp/promomed-phase0.dump
 
       - name: Admit restored PostgreSQL

@@ -26,7 +26,7 @@ jobs:
         env:
           SQLITE_PATH: /tmp/promomed-phase0.sqlite
           PROMOMED_SEED_DEMO: "true"
-        run: python -m unittest -v tests/test_persistence_contract.py
+        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py
       - name: Prove SQLite backup and restore
         env:
           SQLITE_PATH: /tmp/promomed-phase0.sqlite
@@ -80,7 +80,7 @@ jobs:
           sudo apt-get install -y postgresql-client-17
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
       - name: Run real PostgreSQL migration and API-state contract
-        run: python -m unittest -v tests/test_persistence_contract.py
+        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py
       - name: Prove PostgreSQL backup and restore
         env:
           PGPASSWORD: promomed
@@ -88,7 +88,7 @@ jobs:
           python ops/db_backup_restore.py backup --output /tmp/promomed-phase0.dump
           psql -h 127.0.0.1 -U promomed -d postgres -c "DROP DATABASE IF EXISTS promomed_restore;"
           psql -h 127.0.0.1 -U promomed -d postgres -c "CREATE DATABASE promomed_restore;"
-          RESTORE_DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore python ops/db_backup_restore.py restore --input /tmp/promomed-phase0.dump
+          PROMOMED_CONFIRM_EMPTY_RESTORE=true RESTORE_DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore python ops/db_backup_restore.py restore --input /tmp/promomed-phase0.dump
           DATABASE_URL=postgresql://promomed:promomed@127.0.0.1:5432/promomed_restore PROMOMED_REQUIRE_POSTGRES=true PROMOMED_SEED_DEMO=false python - <<'PY'
           from app import db
           c=db.connect()
@@ -198,6 +198,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission
           RESTORE_DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_admission_restore
+          PROMOMED_CONFIRM_EMPTY_RESTORE: "true"
           PROMOMED_REQUIRE_POSTGRES: "true"
           PROMOMED_SEED_DEMO: "false"
         run: python ops/db_backup_restore.py restore --input /tmp/promomed-admission.dump
