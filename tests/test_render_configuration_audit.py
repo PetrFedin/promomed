@@ -45,6 +45,33 @@ class RenderAuditTest(unittest.TestCase):
         self.assertEqual(a.check_deploy(x, "def"), ["DEPLOY_SHA_MISMATCH"])
         self.assertEqual(a.check_deploy([], "abc"), ["MISSING_DEPLOY"])
 
+    def test_malformed_repository_fails_closed(self):
+        x = service("public")
+        x["repo"] = {"unexpected": "object"}
+        self.assertIn("REPOSITORY", a.check(x, "public"))
+
+    def test_redacted_evidence_and_failure_exit(self):
+        import json
+        import tempfile
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as folder:
+            from pathlib import Path
+            snapshots = Path(folder) / "snapshots"
+            snapshots.mkdir()
+            bad = service("public")
+            bad["serviceDetails"]["healthCheckPath"] = ""
+            bad["envVars"] = [{"key": "DATABASE_URL", "value": "super-secret"}]
+            (snapshots / "public.json").write_text(json.dumps(bad))
+            result = Path(folder) / "evidence.json"
+            code = a.main(["--snapshot-dir", str(snapshots), "--target", "public",
+                           "--report-json", str(result)])
+            self.assertEqual(code, 1)
+            payload = json.loads(result.read_text())
+            self.assertEqual(payload["status"], "FAIL")
+            self.assertEqual(payload["services"][0]["codes"], ["HEALTH"])
+            self.assertFalse(payload["postgres_admission_proven"])
+            self.assertNotIn("super-secret", result.read_text())
+
     def test_secret_fields_not_inspected(self):
         x = service("public")
         x["envVars"] = [{"key": "DATABASE_URL", "value": "secret"}]
