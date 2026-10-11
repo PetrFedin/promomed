@@ -14,6 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app import db
+from ops.postgres_restore_guard import require_empty_isolated_restore_target
 
 
 def sha256_file(path):
@@ -92,8 +93,8 @@ def backup_postgres(output, database_url):
 def restore_postgres(input_path, database_url):
     cmd = [
         require_binary("pg_restore"),
-        "--clean",
-        "--if-exists",
+        "--single-transaction",
+        "--exit-on-error",
         "--no-owner",
         "--no-privileges",
         "--dbname",
@@ -136,6 +137,12 @@ def main():
         target = args.database_url or os.environ.get("RESTORE_DATABASE_URL", "")
         if not target.startswith(("postgres://", "postgresql://")):
             raise SystemExit("PostgreSQL restore requires --database-url or RESTORE_DATABASE_URL")
+        source = db.DATABASE_URL
+        if not source.startswith(("postgres://", "postgresql://")):
+            raise SystemExit("PostgreSQL restore requires an explicit source DATABASE_URL")
+        if os.environ.get("PROMOMED_CONFIRM_EMPTY_RESTORE") != "true":
+            raise SystemExit("Explicit PROMOMED_CONFIRM_EMPTY_RESTORE=true required")
+        require_empty_isolated_restore_target(source, target)
         restore_postgres(input_path, target)
     elif backend == "sqlite":
         target = args.sqlite_path or os.environ.get("RESTORE_SQLITE_PATH", "")
