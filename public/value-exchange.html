@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#092b35">
+<meta name="description" content="СОСТОЯНИЕ: интерактивный маршрут для участников, партнёров и инвесторов. Возможности платформы, сценарии и проверяемые ограничения.">
+<title>СОСТОЯНИЕ — центр взаимодействия</title>
+<link rel="stylesheet" href="/value-exchange.css">
+<script defer src="/value-exchange.js"></script>
+</head>
+<body>
+<a class="skip" href="#experience">К основному содержимому</a>
+<header class="siteHeader">
+  <a class="wordmark" href="/" aria-label="СОСТОЯНИЕ — на главную"><span class="brandMark">с.</span><span>СОСТОЯНИЕ</span></a>
+  <nav class="headerNav" aria-label="Разделы платформы">
+    <a href="/?screen=events">События</a>
+    <a href="/?screen=commercial">Партнёрство</a>
+    <a href="/institutional-commercial-workspace.html">Institutional</a>
+  </nav>
+  <span class="edition">КОНЦЕПТ / ДЕМО</span>
+</header>
+<main id="experience">
+<section class="hero" aria-labelledby="hero-title">
+  <div class="heroText">
+    <p class="eyebrow">СОСТОЯНИЕ × ПРОМОМЕД <span class="dividerDot">•</span> PLATFORM EXPERIENCE</p>
+    <h1 id="hero-title">Одна платформа.<br><em>Три точки входа.</em><br>Много способов создавать ценность.</h1>
+    <p class="heroLead">Посмотрите не на перечень функций, а на последовательность действий: как человек получает полезный опыт, партнёр — управляемое взаимодействие, а инвестор — прозрачную модель потенциала.</p>
+    <a class="heroJump" href="#routes">Выбрать свой маршрут <span aria-hidden="true">↘</span></a>
+    <p class="heroFootnote">Демонстрационная среда. Коммерческий спрос, сделки, медицинские результаты и окупаемость не заявляются.</p>
+  </div>
+  <div class="heroMap" aria-label="Путь создания ценности">
+    <div class="mapCaption">VALUE CREATION LOOP <span>01 / 03</span></div>
+    <div class="mapNode mainNode"><span class="tinyLabel">PLATFORM CORE</span><strong>СОСТОЯНИЕ</strong><small>Content · Event · Experience · Evidence</small></div>
+    <div class="mapEdge" aria-hidden="true"></div>
+    <div class="mapNodes">
+      <div class="mapNode"><span class="mapIndex">01</span><strong>Человек</strong><small>Узнаёт → участвует → возвращается</small></div>
+      <div class="mapNode"><span class="mapIndex">02</span><strong>Партнёр</strong><small>Создаёт формат → получает отклик</small></div>
+      <div class="mapNode"><span class="mapIndex">03</span><strong>Инвестор</strong><small>Оценивает модель → проверяет доказательства</small></div>
+    </div>
+    <p class="mapDisclaimer">Общая схема возможностей, а не подтверждённый коммерческий цикл.</p>
+  </div>
+</section>
+
+<section class="sectionIntro" id="routes">
+  <p class="eyebrow darkEyebrow">01 / DISCOVER</p>
+  <div class="introGrid"><h2>С чего вы хотите начать?</h2><p>Каждый маршрут ведёт в уже существующие разделы платформы. Там, где необходимы авторизация или отдельный допуск, это указано до перехода.</p></div>
+</section>
+<div class="rolePicker" role="tablist" aria-label="Выберите свою роль">
+  <button type="button" role="tab" id="role-participant" aria-selected="true" aria-controls="role-content" tabindex="0" data-audience="participant"><span class="roleNumber">01</span><span><strong>Я участник</strong><small>Контент, события, мой маршрут</small></span><span class="roleArrow" aria-hidden="true">↗</span></button>
+  <button type="button" role="tab" id="role-partner" aria-selected="false" aria-controls="role-content" tabindex="-1" data-audience="partner"><span class="roleNumber">02</span><span><strong>Я партнёр</strong><small>Форматы, аудитория, совместная работа</small></span><span class="roleArrow" aria-hidden="true">↗</span></button>
+  <button type="button" role="tab" id="role-investor" aria-selected="false" aria-controls="role-content" tabindex="-1" data-audience="investor"><span class="roleNumber">03</span><span><strong>Я инвестор</strong><small>Бизнес-модель, риск, evidence</small></span><span class="roleArrow" aria-hidden="true">↗</span></button>
+</div>
+<section class="routeWorkspace" role="tabpanel" id="role-content" aria-labelledby="role-participant" tabindex="0">
+  <div class="workspaceHeader">
+    <div><p class="eyebrow darkEyebrow" id="route-kicker">PARTICIPANT JOURNEY</p><h2 id="route-title">От интереса к полезному действию</h2><p id="route-description">Маршрут человека: материал, событие, участие и продолжение. Без диагноза и скрытой передачи данных.</p></div>
+    <span class="statusTag" id="route-status">DEMO JOURNEY</span>
+  </div>
+  <div class="stepGrid" id="route-steps" aria-live="polite"></div>
+  <div class="workspaceBottom">
+    <p id="route-guardrail">Записи и персональные действия требуют авторизации; открытые материалы доступны гостю.</p>
+    <button type="button" class="textAction" id="copy-route">Скопировать маршрут <span aria-hidden="true">↗</span></button>
+  </div>
+  <p id="copy-status" class="feedback" role="status" aria-live="polite"></p>
+  <textarea id="copy-fallback" class="copyFallback" readonly aria-label="Текст маршрута для копирования" hidden></textarea>
+</section>
+
+<section class="sectionIntro proofIntro" id="proof">
+  <p class="eyebrow darkEyebrow">02 / CHECK THE PRODUCT</p>
+  <div class="introGrid"><h2>Никаких придуманных достижений.</h2><p>Данные берутся из открытых read-only API текущего экземпляра. Демонстрационный каталог не равен посещаемости, выручке или подтверждённым партнёрствам.</p></div>
+</section>
+<div class="proofGrid">
+  <article class="proofCard"><div class="proofMeta">Состояние контура <span>01</span></div><div class="proofValue" id="runtime-state" aria-live="polite">Проверяем…</div><p id="runtime-detail">Проверка /health и /ready</p></article>
+  <article class="proofCard"><div class="proofMeta">События в demo-данных <span>02</span></div><div class="proofValue" id="program-count">—</div><p>Записи каталога, не фактические визиты</p></article>
+  <article class="proofCard"><div class="proofMeta">Партнёрские форматы <span>03</span></div><div class="proofValue" id="package-count">—</div><p>Пакеты в demo-каталоге, не контракты</p></article>
+  <article class="proofCard"><div class="proofMeta">Стадия коммерции <span>04</span></div><div class="proofValue">НЕ ДОКАЗАНА</div><p>Нет подтверждённого ARR, подписанных пилотов и внешней adoption</p></article>
+</div>
+<div class="proofFooter"><span id="api-proof-message" role="status" aria-live="polite">Источник: локальные read-only API приложения</span><a href="/institutional-evidence-export.html">Открыть evidence pack <span aria-hidden="true">↗</span></a></div>
+
+<section class="scenarioArea" id="model">
+  <div class="scenarioHeader"><div><p class="eyebrow">03 / EXPLORE AN ASSUMPTION</p><h2>Как измерять ценность партнёрского контакта</h2><p>Введите собственные допущения о коммуникации. Система покажет только математическую воронку без выдуманной выручки, стоимости лида или обещаний конверсии.</p></div><span class="scenarioLabel">WHAT-IF · NOT FORECAST</span></div>
+  <div class="scenarioBody">
+    <form id="funnel-form" novalidate>
+      <div class="field"><label for="audience">Доступная аудитория, человек</label><input id="audience" name="audience" type="number" min="0" max="100000000" step="1" inputmode="numeric" placeholder="Введите число" autocomplete="off"><small>Не реальная аудитория платформы</small></div>
+      <div class="field"><label for="reach">Контакт с форматом, %</label><input id="reach" name="reach" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="0–100" autocomplete="off"><small>От введённой аудитории</small></div>
+      <div class="field"><label for="optin">Добровольное согласие, %</label><input id="optin" name="optin" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="0–100" autocomplete="off"><small>От тех, кто увидел формат</small></div>
+      <div class="field"><label for="return">Повторное взаимодействие, %</label><input id="return" name="return" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="0–100" autocomplete="off"><small>От давших согласие</small></div>
+    </form>
+    <div class="funnelResults" id="funnel-results" aria-live="polite">
+      <div class="resultHead">Сценарий по вашим данным <span>ОЦЕНКА / НЕ ПРОГНОЗ</span></div>
+      <p class="initialState" id="funnel-message">Заполните четыре поля. До этого момента числовой результат отсутствует.</p>
+      <div class="resultNumbers" id="funnel-numbers" hidden>
+        <div><span>Увидят формат</span><strong id="result-reach">—</strong></div>
+        <div><span>Дадут согласие</span><strong id="result-optin">—</strong></div>
+        <div><span>Вернутся</span><strong id="result-return">—</strong></div>
+      </div>
+      <p class="formula">Округление до человека: аудитория × контакт% → увидят; увидят × согласие% → opt-in; opt-in × возврат% → повторные взаимодействия.</p>
+      <p class="formula strongLine">Согласие обязательно индивидуальное, конкретное и отзывное. Расчёт не даёт партнёру доступ к данным участников.</p>
+      <a class="formulaLink" href="/?presentation=investor">Инвестиционные сценарии и экономика платформы ↗</a>
+    </div>
+  </div>
+</section>
+
+<section class="sectionIntro nextIntro">
+  <p class="eyebrow darkEyebrow">04 / NEXT ACTION</p>
+  <div class="introGrid"><h2>Обсуждение должно закончиться решением о следующей проверке.</h2><p>Ни один из переходов ниже не оформляет договор, не запускает платёж и не создаёт заявку от лица реальной организации.</p></div>
+</section>
+<div class="nextGrid">
+  <a href="/?screen=events" class="nextCard"><span class="nextIcon">01</span><div><h3>Прожить опыт участника</h3><p>Открыть программу, личный маршрут и доступные взаимодействия.</p></div><span class="nextArrow" aria-hidden="true">↗</span></a>
+  <a href="/institutional-commercial-workspace.html" class="nextCard"><span class="nextIcon">02</span><div><h3>Собрать партнёрский пилот</h3><p>Buyer Fit → Proposal → Outreach → diligence без ложного pipeline.</p></div><span class="nextArrow" aria-hidden="true">↗</span></a>
+  <a href="/?presentation=executive" class="nextCard"><span class="nextIcon">03</span><div><h3>Оценить инвестиционный рубеж</h3><p>Риски, readiness, этапы финансирования и критерии доказательств.</p></div><span class="nextArrow" aria-hidden="true">↗</span></a>
+</div>
+</main>
+<footer class="siteFooter"><span class="wordmark"><span class="brandMark">с.</span> СОСТОЯНИЕ</span><p>Продуктовая концепция. Не медицинская консультация, не инвестиционное предложение, не договор или подтверждение выручки.</p><a href="/">На главную ↗</a></footer>
+</body></html>
