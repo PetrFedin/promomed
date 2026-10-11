@@ -1,0 +1,48 @@
+name: Promomed Render configuration contract
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      exact_sha:
+        description: "Compare latest Render deploy with workflow SHA"
+        type: boolean
+        default: false
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  static-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest -v tests/test_render_configuration_audit.py
+
+  remote-readonly-audit:
+    if: github.event_name == 'workflow_dispatch'
+    needs: static-contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Read current Render configuration without changing services
+        env:
+          RENDER_API_KEY: ${{ secrets.PROMOMED_RENDER_AUDIT_API_KEY }}
+          EXPECTED_SHA: ${{ github.sha }}
+          VERIFY_SHA: ${{ inputs.exact_sha }}
+        run: |
+          if [ "$VERIFY_SHA" = "true" ]; then
+            python ops/render_configuration_audit.py --live-api --expected-sha "$EXPECTED_SHA"
+          else
+            python ops/render_configuration_audit.py --live-api
+          fi
