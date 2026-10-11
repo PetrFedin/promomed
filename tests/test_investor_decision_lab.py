@@ -28,7 +28,7 @@ class InvestorDecisionLabTests(unittest.TestCase):
         self.assertNotIn("new WebSocket", JS)
         self.assertIn("USER ASSUMPTIONS ONLY", HTML)
         self.assertIn("Не подтверждён", HTML)
-        self.assertIn("не прогноз", HTML.lower())
+        self.assertIn("не финансовый прогноз", HTML.lower())
 
     def test_error_safe_numbers_and_zero_contribution(self):
         self.assertIn("Number.isFinite(n)", JS)
