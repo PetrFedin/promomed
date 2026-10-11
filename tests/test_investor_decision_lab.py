@@ -19,7 +19,7 @@ class InvestorDecisionLabTests(unittest.TestCase):
         self.assertIn('id="metricPayback"', HTML)
 
     def test_source_of_truth_is_read_only_and_no_artificial_numbers(self):
-        self.assertIn('fetch("/health")', JS)
+        self.assertIn('get("/health")', JS)
         self.assertIn('get("/ready")', JS)
         self.assertIn('get("/api/product-quality-proof")', JS)
         self.assertNotIn("localStorage", JS)
