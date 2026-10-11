@@ -1,0 +1,53 @@
+name: Promomed existing Render service reconcile
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Existing service(s)"
+        required: true
+        default: both
+        type: choice
+        options: [both, admission, public]
+      apply:
+        description: "Explicitly apply scoped settings PATCH (no deployment)"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest -v tests/test_render_configuration_audit.py tests/test_render_existing_service_reconcile.py
+  reconcile:
+    if: github.event_name == 'workflow_dispatch'
+    needs: contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Scoped Render reconciliation
+        env:
+          RENDER_API_KEY: ${{ secrets.PROMOMED_RENDER_CONFIG_API_KEY }}
+          TARGET: ${{ inputs.target }}
+          APPLY: ${{ inputs.apply }}
+        run: |
+          if [ "$APPLY" = "true" ]; then
+            python ops/render_existing_service_reconcile.py --target "$TARGET" --apply
+          else
+            python ops/render_existing_service_reconcile.py --target "$TARGET"
+          fi
