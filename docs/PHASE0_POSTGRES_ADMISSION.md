@@ -30,6 +30,27 @@ The workflow is provider-neutral. The current master plan names Neon Free in Fra
 
 Do not reuse MFW, Antiqua or FLASHIN databases.
 
+## Restore fail-closed gate (P0 safety hardening)
+
+Before `pg_restore`, `ops/db_backup_restore.py` now requires an explicit
+`PROMOMED_CONFIRM_EMPTY_RESTORE=true`. The guard inspects the destination
+through a read-only PostgreSQL connection, confirms the actual database name,
+requires a name beginning with `promomed` and ending with `restore`, and
+rejects targets containing non-extension user tables, views, sequences,
+functions or custom schemas. Source and destination URLs must be distinct.
+
+The actual restore uses `--single-transaction --exit-on-error`; it does not
+use `--clean` or `--if-exists`. The source/restore workflows set the explicit
+confirmation only on the isolated CI/Phase 0 restore target. Tests are in
+`tests/test_postgres_restore_guard.py`.
+
+**Limits:** these checks cannot establish organisational ownership of a
+database or prevent an external concurrent writer between inspection and
+restore. An operator must verify dedicated Promomed ownership, separate
+credentials and isolation before setting the flag. Do not reuse or overwrite
+MFW, Antiqua, FLASHIN or another project's database. A guard pass is not
+Phase 0 production admission.
+
 ## Required databases
 
 Use two isolated PostgreSQL databases:
