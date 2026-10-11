@@ -14,7 +14,7 @@ def main():
                 errors=[]
                 page.on("pageerror",lambda e:errors.append(str(e)))
                 page.goto(BASE+"/value-exchange.html",wait_until="domcontentloaded")
-                expect(page.locator("#role-title")).to_contain_text("От интереса")
+                expect(page.locator("#route-title")).to_contain_text("От интереса")
                 expect(page.locator("#route-steps .stepCard")).to_have_count(3)
                 page.locator("#role-partner").click()
                 expect(page.locator("#route-title")).to_contain_text("совместный формат")
