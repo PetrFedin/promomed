@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority
+from app import partner_collaboration, corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
@@ -203,6 +203,16 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
+  if p=="/api/partner-collaboration":
+   if not a:return self.out({"error":"unauthorized"},401)
+   from urllib.parse import parse_qs
+   project_id=parse_qs(urlparse(self.path).query).get("project_id",[None])[0]
+   c=conn()
+   try:
+    try:return self.out(partner_collaboration.snapshot(c,a[0],a[2],project_id))
+    except PermissionError:return self.out({"error":"forbidden"},403)
+    except LookupError:return self.out({"error":"project_not_found"},404)
+   finally:c.close()
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
@@ -383,6 +393,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
     if outcome is None: outcome=handle_programme_command(c,p,role,email,data)
     if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
+    if outcome is None: outcome=partner_collaboration.handle_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
     if outcome is None: outcome=handle_institutional_command(c,p,role,email,data)
