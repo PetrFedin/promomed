@@ -2059,5 +2059,14 @@ function applyPresentationDeepLink(){
  const launcher=document.getElementById('presentationLauncher');if(launcher)launcher.style.display='block';
  setTimeout(()=>runPresentationMode(mode),350)
 }
+function applyStakeholderDeepLink(){
+ const target=new URLSearchParams(location.search).get('screen');
+ const allowed=new Set(['media','events','commercial','studio','community','me','partnerDash','investorProof']);
+ if(!allowed.has(target))return;
+ if(target==='partnerDash'&&!apiToken){openSheet('login');return}
+ if(target==='investorProof'){showInvestorProof();return}
+ show(target);
+}
+setTimeout(applyStakeholderDeepLink,850);
 setTimeout(applyPresentationDeepLink,900);
 </script></body></html>
