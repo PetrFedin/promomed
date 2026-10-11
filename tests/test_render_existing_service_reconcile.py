@@ -10,7 +10,7 @@ import render_existing_service_reconcile as m
 
 def fixture(role):
     id_, name, deploy = m.SERVICES[role]
-    return {"id": id_, "name": name, "repo": "https://github.com/PetrFedin/promomed",
+    return {"ownerId": m.EXPECTED_WORKSPACE, "id": id_, "name": name, "repo": "https://github.com/PetrFedin/promomed",
             "type": "web_service", "branch": "main", "autoDeployTrigger": deploy,
             "serviceDetails": {"plan": "free", "region": "frankfurt",
                                "healthCheckPath": "",
@@ -43,6 +43,26 @@ class ReconcileTest(unittest.TestCase):
             x["repo"] = "https://github.com/PetrFedin/mfw"
             with self.assertRaises(m.ReconcileError):
                 m.plan_change(role, x)
+
+    def test_wrong_workspace_refused(self):
+        x = fixture("admission")
+        x["ownerId"] = "other"
+        with self.assertRaisesRegex(m.ReconcileError, "WRONG_RENDER_WORKSPACE"):
+            m.plan_change("admission", x)
+
+    def test_patch_endpoint_and_field_allowlist(self):
+        for payload in ({"serviceDetails": {"plan": "starter"}},
+                        {"serviceDetails": {"envSpecificDetails": {"buildCommand": "echo bad"}}}):
+            with self.assertRaises(m.ReconcileError):
+                m.request_json("PATCH", "services/" + m.SERVICES["admission"][0], "token", payload)
+        with self.assertRaises(m.ReconcileError):
+            m.request_json("PATCH", "services/not-our-service", "token", {"serviceDetails": {"healthCheckPath": "/health"}})
+
+    def test_reject_unconfirmed_bulk_apply(self):
+        from unittest.mock import patch
+        with patch.dict("os.environ", {"RENDER_API_KEY": "mock"}):
+            self.assertEqual(m.main(["--apply", "--target", "both", "--confirm", m.APPLY_CONFIRMATION]), 2)
+            self.assertEqual(m.main(["--apply", "--target", "public"]), 2)
 
     def test_reject_unexpected_commands(self):
         x = fixture("public")
