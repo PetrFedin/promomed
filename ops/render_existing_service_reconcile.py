@@ -13,6 +13,9 @@ import urllib.request
 from render_configuration_audit import BUILD, SERVICES, check
 
 API_BASE = "https://api.render.com/v1/"
+EXPECTED_WORKSPACE = "tea-dagitrp5efls73apuv50"
+APPLY_CONFIRMATION = "PROMOMED_FREE_EXISTING_ONLY"
+
 LEGACY_PUBLIC_BUILD = "python -m py_compile server.py"
 TARGET_HEALTH = "/health"
 ALLOWED_HEALTH = ("", TARGET_HEALTH)
@@ -23,12 +26,24 @@ class ReconcileError(Exception):
 
 
 def request_json(method, path, token, payload=None, opener=None):
-    if not path.startswith("services/") or not token:
+    allowed_paths = {"services/" + sid for sid, _, _ in SERVICES.values()}
+    if (path.split("?")[0].removesuffix("/deploys") not in allowed_paths
+            or not token or not isinstance(token, str)):
         raise ReconcileError("RENDER_API_NOT_AUTHORIZED")
     if method not in ("GET", "PATCH"):
         raise ReconcileError("UNSUPPORTED_METHOD")
-    if method == "PATCH" and not isinstance(payload, dict):
-        raise ReconcileError("INVALID_PATCH")
+    if method == "PATCH":
+        if path not in allowed_paths or not isinstance(payload, dict):
+            raise ReconcileError("INVALID_PATCH")
+        if set(payload) != {"serviceDetails"} or not isinstance(payload["serviceDetails"], dict):
+            raise ReconcileError("INVALID_PATCH_FIELDS")
+        details = payload["serviceDetails"]
+        if not details or set(details) - {"healthCheckPath", "envSpecificDetails"}:
+            raise ReconcileError("INVALID_PATCH_FIELDS")
+        if details.get("healthCheckPath", TARGET_HEALTH) != TARGET_HEALTH:
+            raise ReconcileError("INVALID_PATCH_HEALTH")
+        if "envSpecificDetails" in details and details["envSpecificDetails"] != {"buildCommand": BUILD}:
+            raise ReconcileError("INVALID_PATCH_BUILD")
     body = None if payload is None else json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(
         API_BASE + path, data=body, method=method,
@@ -50,6 +65,8 @@ def plan_change(role, service):
         raise ReconcileError("UNKNOWN_ROLE")
     if not isinstance(service, dict):
         raise ReconcileError("MALFORMED_SERVICE")
+    if service.get("ownerId") != EXPECTED_WORKSPACE:
+        raise ReconcileError("WRONG_RENDER_WORKSPACE")
     errors = check(service, role)
     unexpected = [e for e in errors if e not in ("BUILD", "HEALTH")]
     if unexpected:
@@ -113,7 +130,11 @@ def main(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--target", choices=("admission", "public", "both"), default="both")
     parser.add_argument("--apply", action="store_true", help="Mutate existing service config; no deploy")
+    parser.add_argument("--confirm", default="", help="Explicit Promomed-only confirmation for one target")
     args = parser.parse_args(argv)
+    if args.apply and (args.target == "both" or args.confirm != APPLY_CONFIRMATION):
+        print("RENDER_RECONCILE_BLOCKED: apply requires single target and exact confirmation")
+        return 2
     token = os.getenv("RENDER_API_KEY", "")
     if not token:
         print("RENDER_RECONCILE_BLOCKED: no scoped RENDER_API_KEY")
