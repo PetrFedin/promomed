@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#071524">
+  <meta name="description" content="СОСТОЯНИЕ — интерактивная инвестиционная модель, маршрут пилота и условия доказательной коммерциализации без выдуманной выручки.">
+  <title>СОСТОЯНИЕ — Investor Decision Lab</title>
+  <link rel="stylesheet" href="/investor-decision-lab.css">
+</head>
+<body>
+<a class="skip" href="#scenarioLab">Перейти к финансовой модели</a>
+<div class="page">
+  <header class="topbar">
+    <a class="wordmark" href="/" aria-label="СОСТОЯНИЕ — главная">СОСТОЯНИЕ<span class="wordmark-dot">.</span></a>
+    <nav class="topnav" aria-label="Навигация по проекту">
+      <a href="#proof">Доказательства</a>
+      <a href="#route">Маршрут</a>
+      <a href="#scenarioLab">Экономика</a>
+      <a href="/institutional-commercial-workspace.html" class="nav-cta">Партнёрам ↗</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="mainTitle">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="eyebrow-dot"></span> INVESTOR DECISION LAB <span class="eyebrow-separator">/</span> EXPLORABLE MODEL V1</p>
+        <h1 id="mainTitle">От работающего пилота — <em>к повторяемой выручке.</em></h1>
+        <p class="lead">Проверьте продукт, настройте экономическую модель и посмотрите, какие подтверждения нужны для следующего инвестиционного решения. Здесь не подменяют намерения клиента подписанным контрактом.</p>
+        <div class="hero-actions">
+          <a class="button primary" href="#scenarioLab">Исследовать экономику <span aria-hidden="true">↗</span></a>
+          <a class="button secondary" href="#route">Посмотреть доказательный маршрут <span aria-hidden="true">→</span></a>
+        </div>
+        <p class="hero-note">Вводимые числа — только ваши гипотезы. Никакие допущения не отправляются на сервер и не сохраняются.</p>
+      </div>
+      <div class="hero-card" aria-label="Схема пути к принятому экономическому результату">
+        <p class="card-eyebrow">VALUE CREATION ENGINE</p>
+        <div class="vertical-path">
+          <div><span>01</span><strong>Контент + событие</strong><small>Исполнимый продукт</small></div>
+          <div><span>02</span><strong>Партнёр + участник</strong><small>Согласие и действие</small></div>
+          <div><span>03</span><strong>Поставка + подтверждение</strong><small>Проверяемая доставка ценности</small></div>
+          <div><span>04</span><strong>Finance acceptance</strong><small>Решение по фактам</small></div>
+        </div>
+        <div class="hero-card-foot"><span class="signal"></span> CAPITAL RELEASE ≠ DEMO ACCEPTANCE</div>
+      </div>
+    </section>
+
+    <section id="proof" class="section proof-panel" aria-labelledby="proofTitle">
+      <div class="section-header">
+        <div><p class="eyebrow dark">01 / RUNTIME & PRODUCT EVIDENCE</p><h2 id="proofTitle">Что можно подтвердить сейчас</h2></div>
+        <div id="runtimeStatus" class="runtime-tag" role="status" aria-live="polite">Проверяем runtime…</div>
+      </div>
+      <div class="proof-grid" aria-label="Контрольные метрики демонстрационного каталога">
+        <div class="proof-stat"><span>Программа</span><strong id="liveProgram">—</strong><small>сессий в текущем каталоге · не посещений</small></div>
+        <div class="proof-stat"><span>Медиа</span><strong id="liveMedia">—</strong><small>единиц контента · не аудитория</small></div>
+        <div class="proof-stat"><span>Партнёрские пакеты</span><strong id="livePackages">—</strong><small>элементов каталога · не контрактов</small></div>
+        <div class="proof-stat evidence-stat"><span>Код сервиса</span><strong id="liveSha">Не подтверждён</strong><small id="runtimeNote">Нет независимого доказательства опубликованной версии</small></div>
+      </div>
+      <p class="disclosure">Источник: read-only endpoints сервиса <code>/health</code>, <code>/ready</code> и <code>/api/product-quality-proof</code>. Числа каталога — технический состав демонстрации, не коммерческая активность, прибыль или медицинский результат. Если endpoint недоступен, отображается «—».</p>
+    </section>
+
+    <section id="route" class="section" aria-labelledby="routeTitle">
+      <div class="section-header">
+        <div><p class="eyebrow dark">02 / EXPLORE THE EXECUTION PATH</p><h2 id="routeTitle">Пять этапов. Один проверяемый маршрут.</h2></div>
+        <p class="section-aside">Выберите этап, чтобы увидеть рабочий модуль, ответственного и критерии допуска.</p>
+      </div>
+      <div class="stage-picker" role="group" aria-label="Этапы инвестиционного маршрута">
+        <button type="button" class="stage-button selected" aria-pressed="true" data-stage="product"><span>01</span>Продукт</button>
+        <button type="button" class="stage-button" aria-pressed="false" data-stage="pilot"><span>02</span>Пилот</button>
+        <button type="button" class="stage-button" aria-pressed="false" data-stage="delivery"><span>03</span>Исполнение</button>
+        <button type="button" class="stage-button" aria-pressed="false" data-stage="finance"><span>04</span>Экономика</button>
+        <button type="button" class="stage-button" aria-pressed="false" data-stage="capital"><span>05</span>Капитал</button>
+      </div>
+      <div class="stage-detail" id="stageDetail" aria-live="polite">
+        <div>
+          <p class="card-eyebrow" id="stageStatus">CODE / DEMO · NOT PRODUCTION</p>
+          <h3 id="stageTitle">Взаимодействие с продуктом</h3>
+          <p id="stageDescription">Участник может исследовать темы, события, материалы и активности в демонстрационной среде.</p>
+          <a class="stage-link" id="stageLink" href="/">Открыть работающий продукт <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="stage-evidence"><p class="card-eyebrow">ЧТО НУЖНО ДОКАЗАТЬ</p><ul id="stageChecklist"><li>Проверить маршрут участника и адаптивный интерфейс</li></ul><div id="stageOwner" class="owner">Ответственный: Product / Engineering</div></div>
+      </div>
+    </section>
+
+    <section id="scenarioLab" class="section lab" aria-labelledby="labTitle">
+      <div class="section-header">
+        <div><p class="eyebrow light">03 / THREE-SCENARIO UNIT ECONOMICS</p><h2 id="labTitle">Экономика, которую можно оспорить числами</h2></div>
+        <span class="input-only">USER ASSUMPTIONS ONLY</span>
+      </div>
+      <p class="lab-lead">Заполните самостоятельные консервативный, базовый и оптимистичный сценарии. Мы не подставляем «рыночные» цены, клиентов или темпы роста без подтверждённого источника.</p>
+      <div class="scenario-switch" role="group" aria-label="Выбор расчётного сценария">
+        <button type="button" data-scenario="conservative" aria-pressed="false">Консервативный</button>
+        <button type="button" data-scenario="base" aria-pressed="true" class="active">Базовый</button>
+        <button type="button" data-scenario="optimistic" aria-pressed="false">Оптимистичный</button>
+      </div>
+      <form id="scenarioForm" class="input-grid" autocomplete="off" novalidate>
+        <label>Платящих организаций, шт.
+          <input id="clients" name="clients" type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="Введите число" required>
+        </label>
+        <label>Годовая лицензия на организацию, ₽
+          <input id="feeAnnual" name="feeAnnual" type="number" min="0" max="100000000000" step="1" inputmode="decimal" placeholder="Введите сумму" required>
+        </label>
+        <label>Мероприятий в год, шт.
+          <input id="events" name="events" type="number" min="0" max="100000" step="1" inputmode="numeric" placeholder="Введите число" required>
+        </label>
+        <label>Выручка за мероприятие, ₽
+          <input id="eventFee" name="eventFee" type="number" min="0" max="100000000000" step="1" inputmode="decimal" placeholder="Введите сумму" required>
+        </label>
+        <label>Прямые затраты, % выручки
+          <input id="variablePct" name="variablePct" type="number" min="0" max="100" step="0.1" inputmode="decimal" placeholder="0–100" required>
+        </label>
+        <label>Постоянные годовые расходы, ₽
+          <input id="fixedCost" name="fixedCost" type="number" min="0" max="1000000000000" step="1" inputmode="decimal" placeholder="Введите сумму" required>
+        </label>
+        <label>Первоначальные вложения, ₽
+          <input id="investment" name="investment" type="number" min="0" max="1000000000000" step="1" inputmode="decimal" placeholder="Введите сумму" required>
+        </label>
+      </form>
+      <p class="form-note" id="scenarioMessage" role="status" aria-live="polite">Чтобы увидеть результат, заполните все семь полей выбранного сценария.</p>
+      <div class="model-metrics" aria-label="Результаты выбранного расчётного сценария">
+        <div><small>Годовая модельная выручка</small><strong id="metricRevenue">—</strong></div>
+        <div><small>Операционный результат в год</small><strong id="metricOperating">—</strong></div>
+        <div><small>Маржа после всех указанных расходов</small><strong id="metricMargin">—</strong></div>
+        <div><small>Организаций для операционной безубыточности</small><strong id="metricBreakeven">—</strong></div>
+        <div><small>Простой расчётный срок покрытия вложений</small><strong id="metricPayback">—</strong></div>
+      </div>
+      <div class="comparison-head"><h3>Сравнение трёх сценариев</h3><button id="downloadCsv" type="button" disabled>Экспорт CSV ↓</button></div>
+      <div class="compare-grid">
+        <article class="compare-card" data-case="conservative"><div class="comparison-label">Консервативный</div><div class="compare-state" data-case-status="conservative">Нет данных</div><strong data-case-value="conservative">—</strong><small>Операционный результат, ₽/год</small></article>
+        <article class="compare-card base-card" data-case="base"><div class="comparison-label">Базовый</div><div class="compare-state" data-case-status="base">Нет данных</div><strong data-case-value="base">—</strong><small>Операционный результат, ₽/год</small></article>
+        <article class="compare-card" data-case="optimistic"><div class="comparison-label">Оптимистичный</div><div class="compare-state" data-case-status="optimistic">Нет данных</div><strong data-case-value="optimistic">—</strong><small>Операционный результат, ₽/год</small></article>
+      </div>
+      <div class="method">
+        <strong>Методика</strong>
+        <p>Годовая выручка = платящие организации × годовая лицензия + мероприятия × выручка мероприятия. Операционный результат = выручка × (1 − доля прямых затрат) − постоянные расходы. Точка операционной безубыточности — минимальное целое число организаций при фиксированных мероприятиях и остальных допущениях.</p>
+        <p>Простой срок = первоначальные вложения / положительный годовой операционный результат × 12 месяцев. Это <strong>не DCF, не финансовый прогноз, не EBITDA, не оценка компании и не обещание окупаемости</strong>: налоги, оборотный капитал, сезонность, финансирование, изменение цен и churn не моделируются. Разные источники дохода нельзя считать дважды.</p>
+      </div>
+    </section>
+
+    <section class="section decision" aria-labelledby="decisionTitle">
+      <div class="section-header">
+        <div><p class="eyebrow dark">04 / GO · ITERATE · STOP</p><h2 id="decisionTitle">Когда можно говорить о масштабировании</h2></div>
+        <div class="gate-flag">CURRENT GATE · NOT APPROVED</div>
+      </div>
+      <div class="gate-grid">
+        <div><span>01</span><h3>Инфраструктура</h3><p>Независимо доказанные PostgreSQL, восстановление, отсутствие demo identities, точный live SHA.</p><small>Зависимость: Phase 0</small></div>
+        <div><span>02</span><h3>Реальный пилот</h3><p>Согласованы заказчик, контракт, метрики до запуска, политика данных и документы исполнения.</p><small>Зависимость: External Acceptance</small></div>
+        <div><span>03</span><h3>Финансовое признание</h3><p>Finance проверяет базу сравнения, фактические расходы, одноразовый учёт эффектов и источники.</p><small>Зависимость: Finance Evidence</small></div>
+        <div><span>04</span><h3>Транш</h3><p>Инвесткомитет принимает отдельное решение. Положительный сценарий сам по себе ничего не разблокирует.</p><small>Зависимость: Capital Authority</small></div>
+      </div>
+    </section>
+
+    <section class="closing">
+      <p class="eyebrow">FROM A PRODUCT DEMO TO DILIGENCE</p>
+      <h2>Открыть следующий уровень продукта</h2>
+      <p>Выбирайте не слайды, а рабочие пространства: коммерческую гипотезу, проект пилота, запрос доказательств и контроль исполнения.</p>
+      <div class="closing-links">
+        <a href="/institutional-buyer-fit.html">Buyer Fit Matrix ↗</a>
+        <a href="/institutional-pilot-proposal.html">Pilot Proposal Studio ↗</a>
+        <a href="/institutional-command-center.html">Diligence Command Center ↗</a>
+        <a href="/institutional-commercial-workspace.html">Partner Workspace ↗</a>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer"><span>© СОСТОЯНИЕ · Investor Decision Lab</span><span>Read-only · user-input only · not an offer, valuation or medical advice</span></footer>
+</div>
+<script src="/investor-decision-lab.js" defer></script>
+</body>
+</html>
