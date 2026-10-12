@@ -7,6 +7,7 @@ demo Deal Room, programme counts or technical delivery acknowledgements.
 import hashlib
 import json
 import re
+import time
 
 VERSION = "promomed-pilot-to-revenue-evidence-ladder-v1"
 
@@ -78,6 +79,30 @@ def _canonical(value):
     return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 
 
+def _require_member(c, organization_id, actor_email):
+    # Resolve organization identity only after verifying scoped membership.
+    # Unknown and unauthorized organizations have the SAME external result.
+    actor_email = str(actor_email or "").strip().lower()
+    if not actor_email or len(actor_email) > 254:
+        raise ValueError("organization_not_found")
+    now = int(time.time())
+    authorized = c.execute(
+        """SELECT 1 FROM institutional_memberships m
+           JOIN institutional_organizations o ON o.id=m.organization_id
+           WHERE m.organization_id=? AND m.account_email=?
+             AND m.member_role IN ('administrator','operator')
+             AND m.status='active'
+             AND m.effective_at<=?
+             AND (m.expires_at IS NULL OR m.expires_at>?)
+             AND m.demo_only=o.demo_only
+             AND o.status='active'
+           LIMIT 1""",
+        (organization_id, actor_email, now, now),
+    ).fetchone()
+    if authorized is None:
+        raise ValueError("organization_not_found")
+
+
 def _source_facts(c, organization_id):
     # Never query global commercial/demo records. Every fact has an exact
     # organization_id predicate, and facts are metadata, not accepted deals.
@@ -107,11 +132,12 @@ def _source_facts(c, organization_id):
     )
 
 
-def snapshot(c, organization_id):
+def snapshot(c, organization_id, *, actor_email=None):
     organization_id = str(organization_id or "").strip()
     if not IDENTIFIER.fullmatch(organization_id):
         raise ValueError("organization_id_invalid" if organization_id else "organization_id_required")
 
+    _require_member(c, organization_id, actor_email)
     organization, signals = _source_facts(c, organization_id)
     # No source in the currently admitted Promomed schema records independently
     # validated counterpart sign-off, invoice, bank reconciliation, finance
