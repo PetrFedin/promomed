@@ -33,7 +33,7 @@ def transition(c, role, email, data, operation_id, now):
     tid = _field(data.get("task_id"), 100)
     action = data.get("action")
     version = data.get("expected_version")
-    if action not in ACTIONS or not pid or not tid or type(version) is not int or version < 1:
+    if not isinstance(action, str) or action not in ACTIONS or not pid or not tid or type(version) is not int or version < 1:
         return error("invalid_execution_request", 422)
 
     project = c.execute(
