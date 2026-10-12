@@ -206,8 +206,8 @@ def record_contract(
     previous_contract_id=None,
 ):
     _begin(c)
-    org = _org(c, organization_id)
     actor = _member(c, organization_id, actor)
+    org = _org(c, organization_id)
     _candidate_authority(c, org)
     _org_lock(c, organization_id)
     external_ref = _txt(external_ref, field="external_ref")
@@ -328,9 +328,17 @@ def _constraints(c, contract, typ, amount, tax, parent, related, replace):
         if current + amount > parent["amount_minor"]:
             raise ValueError("invoice_exceeds_delivery")
     if typ == "credit_note":
-        used = _sum(rows, "credit_note", ("parent_event_id", parent["id"]))
-        if used + amount + tax > parent["amount_minor"] + parent["tax_minor"]:
+        existing = [r for r in rows if r["event_type"] == "credit_note"
+                    and r["parent_event_id"] == parent["id"]]
+        net = sum(r["amount_minor"] for r in existing)
+        vat = sum(r["tax_minor"] for r in existing)
+        if net + amount > parent["amount_minor"] or vat + tax > parent["tax_minor"]:
             raise ValueError("credit_exceeds_invoice")
+        if _sum(rows, "recognition", ("parent_event_id", parent["id"])):
+            raise ValueError("credit_requires_recognition_reversal")
+        allocated = _sum(rows, "allocation", ("parent_event_id", parent["id"]))
+        if allocated > parent["amount_minor"] + parent["tax_minor"] - net - vat - amount - tax:
+            raise ValueError("credit_requires_cash_reallocation")
     if typ == "allocation":
         invoice_gross = parent["amount_minor"] + parent["tax_minor"]
         credited_gross = sum(
@@ -374,8 +382,8 @@ def record_event(
     related_event_id=None, replaces_event_id=None, decision=None,
 ):
     _begin(c)
-    org = _org(c, organization_id)
     actor = _member(c, organization_id, actor)
+    org = _org(c, organization_id)
     _candidate_authority(c, org)
     _org_lock(c, organization_id)
     contract = _contract(c, organization_id, _txt(contract_id, field="contract_id"))
@@ -455,8 +463,8 @@ def record_event(
 
 
 def snapshot(c, organization_id, *, actor):
-    org = _org(c, organization_id)
     _member(c, organization_id, actor)
+    org = _org(c, organization_id)
     rows = list(c.execute(
         "SELECT * FROM commercial_contract_versions WHERE organization_id=? ORDER BY external_ref,version",
         (organization_id,),
@@ -492,8 +500,8 @@ def snapshot(c, organization_id, *, actor):
 
 
 def verify_chain(c, organization_id, *, actor):
-    _org(c, organization_id)
     _member(c, organization_id, actor)
+    _org(c, organization_id)
     rows = list(c.execute(
         "SELECT * FROM commercial_evidence_audit WHERE organization_id=? ORDER BY entry_no",
         (organization_id,)
