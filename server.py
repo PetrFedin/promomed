@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from app import partner_collaboration, corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority
+from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority, partner_collaboration
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
@@ -203,16 +203,7 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
-  if p=="/api/partner-collaboration":
-   if not a:return self.out({"error":"unauthorized"},401)
-   from urllib.parse import parse_qs
-   project_id=parse_qs(urlparse(self.path).query).get("project_id",[None])[0]
-   c=conn()
-   try:
-    try:return self.out(partner_collaboration.snapshot(c,a[0],a[2],project_id))
-    except PermissionError:return self.out({"error":"forbidden"},403)
-    except LookupError:return self.out({"error":"project_not_found"},404)
-   finally:c.close()
+  if p=="/api/partner-collaboration": return self.out(*partner_collaboration.read_result(urlparse(self.path).query,a,conn))
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
@@ -410,6 +401,5 @@ class H(SimpleHTTPRequestHandler):
     return self.out(payload,outcome.status)
    finally: c.close()
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
-
 if __name__=="__main__":
  init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.8 persistence admission",db.backend_name(),"listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
