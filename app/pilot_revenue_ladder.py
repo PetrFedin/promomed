@@ -95,6 +95,7 @@ def _require_member(c, organization_id, actor_email):
              AND m.effective_at<=?
              AND (m.expires_at IS NULL OR m.expires_at>?)
              AND m.demo_only=o.demo_only
+             AND (o.demo_only=1 OR m.account_email NOT LIKE '%@demo.ru')
              AND o.status='active'
            LIMIT 1""",
         (organization_id, actor_email, now, now),
