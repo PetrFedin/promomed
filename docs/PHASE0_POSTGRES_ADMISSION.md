@@ -176,3 +176,29 @@ Update `docs/DEPLOYMENT_STATE.md` with:
 - live `/ready` proof.
 
 Only after this evidence exists may Phase 0 be marked COMPLETE and PROMO-INT-02 begin.
+
+
+## Admission evidence truth boundary (2026-10-13)
+
+The manual source/restore workflow now emits a **repository-only** evidence
+manifest through `ops/phase0_evidence_manifest.py`. It validates PostgreSQL
+fingerprints and records backup/restore equivalence without inferring the
+status of either Render service.
+
+Its evidence explicitly reports:
+
+- `proof_kind=repository_postgres_source_restore_only`;
+- `backup_restore=pass` and `catalog_equivalence=pass` only after the
+  preceding workflow steps succeed and the fingerprints match;
+- `source_and_restore_ownership=requires_independent_operator_verification`;
+- `render_deployment_sha=not_verified`;
+- `live_health=not_verified`;
+- `live_ready=not_verified`;
+- `live_production_ready=not_verified`;
+- `phase0_end_to_end=not_complete`.
+
+Do **not** translate a green GitHub workflow, or the source database's
+`db.readiness().production_ready`, into the public or admission Render
+service's `/ready.production_ready=true`. That final claim requires a fresh,
+independent live HTTP proof on the exact deployed SHA with zero demo accounts.
+No database connection URL or row-level data belongs in the manifest.
