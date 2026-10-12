@@ -50,6 +50,32 @@ def main():
             expect(organizer.locator("#history")).to_contain_text("status_internally_reviewed")
             organizer.screenshot(path=str(OUT/"organizer-review.png"),full_page=True)
 
+            # Partner now performs an internally reviewed task and submits a
+            # reference + synthetic digest, NOT an uploaded artifact.
+            page.get_by_role("button",name="Обновить").click()
+            page.locator(".projectButton").filter(has_text="Studio pilot QA isolated").click()
+            expect(page.locator("#projectStatus")).to_have_text("internally_reviewed")
+            own_task=page.locator(".task").filter(has_text="Prepare partner content for review")
+            own_task.get_by_role("button",name="Начать исполнение").click()
+            expect(own_task).to_contain_text("in_progress")
+            own_task.get_by_role("button",name="Передать результат").click()
+            own_task.locator(".subform input").nth(0).fill("demo:studio-brief-qa")
+            own_task.locator(".subform input").nth(1).fill("a"*64)
+            own_task.get_by_role("button",name="Отправить на внутреннюю проверку").click()
+            expect(own_task).to_contain_text("submitted")
+            page.screenshot(path=str(OUT/"partner-submitted.png"),full_page=True)
+
+            organizer.get_by_role("button",name="Обновить").click()
+            organizer.locator(".projectButton").filter(has_text="Studio pilot QA isolated").click()
+            review_task=organizer.locator(".task").filter(has_text="Prepare partner content for review")
+            expect(review_task).to_contain_text("submitted")
+            review_task.get_by_role("button",name="Принять работу").click()
+            review_task.locator(".subform textarea").fill("Accepted for INTERNAL demo review only")
+            review_task.get_by_role("button",name="Принять внутренний результат").click()
+            expect(review_task).to_contain_text("accepted")
+            expect(organizer.locator("#receipts")).to_contain_text("accept")
+            organizer.screenshot(path=str(OUT/"organizer-accepted-task.png"),full_page=True)
+
             # Participant never gets partner/organizer work records by any project identifier.
             response=page.request.post(BASE+"/api/login",data={"email":"participant@demo.ru","password":"demo2027"})
             assert response.status==200
