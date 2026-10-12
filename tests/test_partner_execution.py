@@ -154,6 +154,17 @@ class PartnerExecutionTests(unittest.TestCase):
         self.assertEqual(self.c.execute(
              "SELECT COUNT(*) n FROM partner_collab_task_receipts").fetchone()["n"],before)
 
+    def test_malformed_json_shape_and_weak_artifact_hash_fail_closed(self):
+        pid,tid=self.project_and_task()
+        self.approve_project(pid)
+        bad=self.do_task(pid,tid,["start"],1)
+        self.assertEqual(bad.status,422)
+        self.assertEqual(self.do_task(pid,tid,"start",1).status,200)
+        weak=self.do_task(pid,tid,"submit",2,evidence_ref="demo:brief",
+                          evidence_sha256="not-sha256")
+        self.assertEqual(weak.status,422)
+        self.assertEqual(self.c.execute("SELECT COUNT(*) n FROM partner_collab_task_receipts").fetchone()["n"],1)
+
     def test_idempotent_no_duplicate_receipts_and_version_cas(self):
         pid,tid=self.project_and_task()
         self.approve_project(pid)
