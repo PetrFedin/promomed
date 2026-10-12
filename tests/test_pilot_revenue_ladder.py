@@ -127,5 +127,43 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
         self.assertEqual(doc["acceptanceSummary"]["decision"], "HOLD_EXTERNAL_PILOT_AND_FINANCE_GATES")
 
 
+class LadderUIContractTests(unittest.TestCase):
+    def test_page_and_navigation_are_connected(self):
+        root = Path(__file__).resolve().parents[1]
+        html = (root / "public" / "pilot-revenue-ladder.html").read_text(encoding="utf-8")
+        js = (root / "public" / "pilot-revenue-ladder.js").read_text(encoding="utf-8")
+        css = (root / "public" / "pilot-revenue-ladder.css").read_text(encoding="utf-8")
+        nav = (root / "public" / "institutional-shell.js").read_text(encoding="utf-8")
+        self.assertIn("pilot-revenue-ladder.html", nav)
+        self.assertIn("institutional-shell.js", html)
+        self.assertEqual(html.count('class="stage-control'), 7)
+        for role in ("pilot_acceptance","contract","delivery","invoice","cash","finance","renewal"):
+            self.assertIn('data-step="' + role + '"', html)
+        self.assertIn('id="metricRevenue"', html)
+        self.assertIn('id="scopedProof" hidden', html)
+        self.assertIn("Organization ID", html.replace("ORGANIZATION ID", "Organization ID"))
+        self.assertIn("@media(max-width:650px)", css)
+        self.assertIn("@media(prefers-reduced-motion:reduce)", css)
+        self.assertNotIn(".innerHTML", js)
+        self.assertNotIn("localStorage", js)
+        self.assertNotIn("sessionStorage", js)
+        self.assertIn('credentials:"omit"', js)
+        self.assertIn('auth.role!=="organizer"', js)
+        self.assertIn('state:"GATED"', js)
+        self.assertIn("revenue", js.lower())
+
+    def test_schema_remains_25_migrations_no_unverified_finance_ledger(self):
+        root = Path(__file__).resolve().parents[1]
+        postgres = sorted((root / "migrations" / "postgres").glob("*.sql"))
+        sqlite = sorted((root / "migrations" / "sqlite").glob("*.sql"))
+        self.assertEqual(len(postgres), 25)
+        self.assertEqual(len(sqlite), 25)
+        ladder = (root / "app" / "pilot_revenue_ladder.py").read_text(encoding="utf-8")
+        self.assertNotIn("INSERT INTO", ladder)
+        self.assertNotIn("UPDATE institutional_", ladder)
+        self.assertIn("organization_id=?", ladder)
+        self.assertIn("NO_ACCEPTED_COMMERCIAL_AUTHORITY", ladder)
+
+
 if __name__ == "__main__":
     unittest.main()
