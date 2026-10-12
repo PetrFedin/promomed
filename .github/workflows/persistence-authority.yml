@@ -81,6 +81,9 @@ jobs:
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
       - name: Run real PostgreSQL migration and API-state contract
         run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py tests/test_commercial_evidence_ledger.py
+      - name: Verify candidate contract-to-cash on real PostgreSQL 17
+        run: python -m unittest -v tests/test_commercial_evidence_ledger_postgres.py
+
       - name: Prove PostgreSQL backup and restore
         env:
           PGPASSWORD: promomed
