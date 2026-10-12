@@ -66,6 +66,7 @@
       ...options,
       credentials:"omit",
       cache:"no-store",
+      signal: typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(10000) : undefined,
       headers:{"Accept":"application/json",...(options.headers||{})}
     });
     if(!response.ok) {
@@ -83,6 +84,7 @@
        || data.acceptanceSummary?.financeAccepted!==false
        || data.truthBoundary?.readOnly!==true
        || !Array.isArray(data.stages) || data.stages.length!==STAGES.length
+       || new Set(data.stages.map(s => s.id)).size!==STAGES.length
        || data.stages.some(s => !IDS.has(s.id) || s.state!=="GATED")) {
       throw new Error("INVALID_PROOF_BOUNDARY");
     }
