@@ -123,11 +123,30 @@ def _source_facts(c, organization_id):
         "WHERE organization_id=? AND status='acknowledged' AND demo_only=0 AND acknowledged_at IS NOT NULL AND withdrawn_at IS NULL",
         (organization_id,)
     ).fetchone()
+    # Migration 026 records candidate documents only. No money is recognized.
+    contracts = c.execute(
+        "SELECT COUNT(*) n FROM commercial_contract_versions WHERE organization_id=? AND state='candidate'",
+        (organization_id,)
+    ).fetchone()
+    documents = c.execute(
+        "SELECT COUNT(*) n FROM commercial_evidence_events WHERE organization_id=? AND state='candidate'",
+        (organization_id,)
+    ).fetchone()
+    audit_tail = c.execute(
+        "SELECT entry_no,entry_sha256 FROM commercial_evidence_audit "
+        "WHERE organization_id=? ORDER BY entry_no DESC LIMIT 1",
+        (organization_id,)
+    ).fetchone()
     return (
         {"id": org["id"], "name": org["name"], "type": org["organization_type"],
          "demoOnly": bool(org["demo_only"])},
         {"nonDemoIdentityMetadata": bool(attributable),
          "technicalEvidenceAcknowledgements": int(transport["n"]),
+         "candidateContractVersions": int(contracts["n"]),
+         "candidateDocumentVersions": int(documents["n"]),
+         "candidateAuditRecords": int(audit_tail["entry_no"]) if audit_tail else 0,
+         "candidateAuditTailSha256": audit_tail["entry_sha256"] if audit_tail else None,
+         "candidateDocumentsAreNotActuals": True,
          "identityIsNotSignedPilot": True,
          "technicalAckIsNotCommercialAcceptance": True},
     )
