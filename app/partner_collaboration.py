@@ -5,12 +5,13 @@ import secrets
 import time
 
 from app.commanding import custom, error
+from app import partner_execution
 from app.core import audit
 
-ROUTES={"/api/partner-collaboration/create","/api/partner-collaboration/project","/api/partner-collaboration/task"}
+ROUTES={"/api/partner-collaboration/create","/api/partner-collaboration/project","/api/partner-collaboration/task","/api/partner-collaboration/execute"}
 FORMATS={"event","studio","content","learning","experience"}
 STATES={"draft","review_requested","changes_requested","internally_reviewed","archived"}
-TASK_STATES={"todo","in_progress","done"}
+TASK_STATES={"todo","in_progress","submitted","changes_requested","accepted"}
 
 def _hash(data):
     return hashlib.sha256(json.dumps(data,sort_keys=True,separators=(",",":"),ensure_ascii=False).encode()).hexdigest()
@@ -34,9 +35,19 @@ def snapshot(c,role,email,project_id=None):
     if project_id:
         p=_project(c,project_id,role,email)
         if p is None:raise LookupError("project_not_found")
-        tasks=[dict(x) for x in c.execute("SELECT id,title,lane,status,version,updated_at FROM partner_collab_tasks WHERE project_id=? ORDER BY created_at,id",(project_id,))]
+        tasks=[dict(x) for x in c.execute("""SELECT t.id,t.title,t.lane,
+              COALESCE(x.status,t.status) status,t.version,t.updated_at,
+              x.submitted_role,x.evidence_ref,x.evidence_ref_sha256,
+              x.reviewed_role,x.decision_note
+           FROM partner_collab_tasks t
+           LEFT JOIN partner_collab_task_execution x ON x.task_id=t.id
+           WHERE t.project_id=? ORDER BY t.created_at,t.id""",(project_id,))]
         history=[dict(x) for x in c.execute("SELECT kind,actor_role,created_at FROM partner_collab_events WHERE project_id=? ORDER BY created_at,id",(project_id,))]
-        return {"project":p,"tasks":tasks,"events":history,"truthBoundary":"internal_planning_only","contractAccepted":False,"revenueClaimed":False}
+        receipts=[dict(x) for x in c.execute("""SELECT id,task_id,action,actor_role,
+                 previous_status,next_status,task_version,evidence_ref_sha256,
+                 decision_note,created_at FROM partner_collab_task_receipts
+                 WHERE project_id=? ORDER BY created_at,id""",(project_id,))]
+        return {"project":p,"tasks":tasks,"events":history,"receipts":receipts,"truthBoundary":"internal_task_review_only","contractAccepted":False,"revenueClaimed":False,"artifactIntegrityIndependentlyVerified":False}
     if role=="organizer":rows=c.execute("SELECT id,owner_email,title,objective,format,status,version,demo_only,created_at,updated_at FROM partner_collab_projects ORDER BY updated_at DESC LIMIT 100")
     else:rows=c.execute("SELECT id,owner_email,title,objective,format,status,version,demo_only,created_at,updated_at FROM partner_collab_projects WHERE owner_email=? ORDER BY updated_at DESC LIMIT 100",(email,))
     return {"projects":[dict(x) for x in rows],"truthBoundary":"internal_planning_only","contractAccepted":False}
@@ -53,7 +64,10 @@ def handle_command(c,route,role,email,data):
         if prior["route"]!=route or prior["request_sha256"]!=digest:return error("idempotency_conflict",409)
         return custom(json.loads(prior["result_json"]))
     now=int(time.time())
-    if route=="/api/partner-collaboration/create":
+    if route=="/api/partner-collaboration/execute":
+        result=partner_execution.transition(c,role,email,data,operation,now)
+        if not isinstance(result,dict):return result
+    elif route=="/api/partner-collaboration/create":
         if role!="partner":return error("forbidden",403)
         title=_text(data.get("title"),140);objective=_text(data.get("objective"),1200)
         fmt=data.get("format")
