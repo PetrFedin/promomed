@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS commercial_evidence_events(
  contract_id TEXT NOT NULL,
  event_type TEXT NOT NULL CHECK(event_type IN (
    'obligation','delivery','invoice','credit_note','settlement',
-   'allocation','direct_cost','recognition','finance_review','renewal')),
+   'allocation','refund','direct_cost','recognition','finance_review','renewal')),
  external_ref TEXT NOT NULL,
  version INTEGER NOT NULL CHECK(version>0),
  replaces_event_id TEXT,
@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS commercial_evidence_events(
  currency_code TEXT NOT NULL CHECK(LENGTH(currency_code)=3),
  accounting_period TEXT,
  decision TEXT,
+ CHECK (
+   (event_type='finance_review' AND decision IN ('hold','request_changes','rejected'))
+   OR (event_type<>'finance_review' AND decision IS NULL)
+ ),
  source_ref TEXT NOT NULL,
  evidence_sha256 TEXT NOT NULL CHECK(LENGTH(evidence_sha256)=64),
  state TEXT NOT NULL DEFAULT 'candidate' CHECK(state='candidate'),
