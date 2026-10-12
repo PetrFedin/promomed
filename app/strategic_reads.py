@@ -23,7 +23,7 @@ EVIDENCE_EXPORT_PREFIX = "/api/institutional-evidence-export/"
 PILOT_REVENUE_PREFIX = "/api/pilot-revenue-ladder/"
 
 
-def read(c, path, role):
+def read(c, path, role, actor_email=None):
     if path.startswith(PILOT_REVENUE_PREFIX):
         # Organizational finance metadata is NOT available to sales, partners or
         # participants without a verified tenant-scoped assignment. Internal
@@ -35,7 +35,7 @@ def read(c, path, role):
         if not organization_id:
             return {"error": "organization_id_required"}, 422
         try:
-            return pilot_revenue_ladder.snapshot(c, organization_id), 200
+            return pilot_revenue_ladder.snapshot(c, organization_id, actor_email=actor_email), 200
         except ValueError as exc:
             return {"error": str(exc)}, 404 if str(exc) == "organization_not_found" else 422
 
