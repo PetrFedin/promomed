@@ -157,7 +157,7 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
         self.assertEqual(x["evidenceRequestPack"]["sha256"], y["evidenceRequestPack"]["sha256"])
         self.assertEqual(len(x["evidenceRequestPack"]["sha256"]), 64)
         doc = x["evidenceRequestPack"]["document"]
-        self.assertFalse(doc["truthBoundary"]["noPaymentOrContractAuthority"] is False)
+        self.assertTrue(doc["truthBoundary"]["noPaymentOrContractAuthority"])
         self.assertEqual(doc["acceptanceSummary"]["decision"], "HOLD_EXTERNAL_PILOT_AND_FINANCE_GATES")
 
 
@@ -190,8 +190,8 @@ class LadderUIContractTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         postgres = sorted((root / "migrations" / "postgres").glob("*.sql"))
         sqlite = sorted((root / "migrations" / "sqlite").glob("*.sql"))
-        self.assertEqual(len(postgres), 25)
-        self.assertEqual(len(sqlite), 25)
+        self.assertGreaterEqual(len(postgres), 25)
+        self.assertEqual([p.name for p in postgres], [p.name for p in sqlite])
         ladder = (root / "app" / "pilot_revenue_ladder.py").read_text(encoding="utf-8")
         self.assertNotIn("INSERT INTO", ladder)
         self.assertNotIn("UPDATE institutional_", ladder)
