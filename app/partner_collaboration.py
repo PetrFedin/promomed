@@ -46,7 +46,7 @@ def snapshot(c,role,email,project_id=None):
         receipts=[dict(x) for x in c.execute("""SELECT id,task_id,action,actor_role,
                  previous_status,next_status,task_version,evidence_ref_sha256,
                  decision_note,created_at FROM partner_collab_task_receipts
-                 WHERE project_id=? ORDER BY created_at,id""",(project_id,))]
+                 WHERE project_id=? ORDER BY created_at,task_id,task_version,id""",(project_id,))]
         return {"project":p,"tasks":tasks,"events":history,"receipts":receipts,"truthBoundary":"internal_task_review_only","contractAccepted":False,"revenueClaimed":False,"artifactIntegrityIndependentlyVerified":False}
     if role=="organizer":rows=c.execute("SELECT id,owner_email,title,objective,format,status,version,demo_only,created_at,updated_at FROM partner_collab_projects ORDER BY updated_at DESC LIMIT 100")
     else:rows=c.execute("SELECT id,owner_email,title,objective,format,status,version,demo_only,created_at,updated_at FROM partner_collab_projects WHERE owner_email=? ORDER BY updated_at DESC LIMIT 100",(email,))
