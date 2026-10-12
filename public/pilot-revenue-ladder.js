@@ -100,7 +100,13 @@
       (signal.nonDemoIdentityMetadata ? "есть (не контракт)" : "не подтверждена")+
       " · Технических acknowledgement: "+(Number.isSafeInteger(signal.technicalEvidenceAcknowledgements)
           ? signal.technicalEvidenceAcknowledgements : "—")+
-      " (не коммерческие приёмки)");
+      " (не коммерческие приёмки) · Версий договоров-кандидатов: "+
+      (Number.isSafeInteger(signal.candidateContractVersions) ? signal.candidateContractVersions : "—")+
+      " · Документов-кандидатов: "+
+      (Number.isSafeInteger(signal.candidateDocumentVersions) ? signal.candidateDocumentVersions : "—")+
+      " · Записей внутреннего аудита: "+
+      (Number.isSafeInteger(signal.candidateAuditRecords) ? signal.candidateAuditRecords : "—")+
+      " (не признанная выручка и не внешнее подтверждение)");
     showText("acceptanceStatus",String(data.acceptanceSummary.acceptedStages)+
       " / "+String(data.acceptanceSummary.totalStages)+" ACCEPTED · CAPITAL: HOLD");
     showText("packHash","Evidence-request SHA-256: "+String(data.evidenceRequestPack?.sha256||"—"));
