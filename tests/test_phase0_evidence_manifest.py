@@ -43,6 +43,12 @@ class Phase0EvidenceTruthTests(unittest.TestCase):
         with self.assertRaisesRegex(InvalidAdmissionEvidence, "mismatch"):
             build_manifest(fingerprint(), restored, SHA)
 
+    def test_forged_but_matching_fingerprint_is_rejected(self):
+        forged = fingerprint()
+        forged["catalog_sha256"] = "a" * 64
+        with self.assertRaisesRegex(InvalidAdmissionEvidence, "fingerprint_content_mismatch"):
+            build_manifest(forged, forged, SHA)
+
     def test_fingerprint_and_sha_are_validated(self):
         bad = fingerprint()
         bad["catalog_sha256"] = "invalid"
