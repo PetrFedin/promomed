@@ -138,6 +138,21 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "organization_not_found"):
             pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001")
 
+    def test_demo_login_cannot_enter_non_demo_even_if_membership_is_misconfigured(self):
+        self.c.execute(
+            """INSERT INTO institutional_memberships
+               (id,organization_id,account_email,member_role,status,effective_at,
+                expires_at,verified_by,verification_ref,demo_only)
+               VALUES(?,?,?,'administrator','active',1,NULL,'test','invalid admin assignment',0)""",
+            ("bad-demo-member", "INST-LADDER-A-001", "demo-organizer@demo.ru"),
+        )
+        self.c.commit()
+        payload, status = strategic_reads.read(
+            self.c, "/api/pilot-revenue-ladder/INST-LADDER-A-001",
+            "organizer", actor_email="demo-organizer@demo.ru",
+        )
+        self.assertEqual((payload, status), ({"error": "organization_not_found"}, 404))
+
     def test_suspended_membership_denied(self):
         self.c.execute(
             "UPDATE institutional_memberships SET status='suspended' "
