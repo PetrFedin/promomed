@@ -30,7 +30,7 @@ Existing project evidence establishes planning and demonstration features: Propo
 
 ## Security and correctness
 
-- Route: `GET /api/pilot-revenue-ladder/<organization-id>` through `strategic_reads.read`, authenticated `organizer` role **only**. Sales and partner requests return forbidden before an existence lookup; do not open external access without a tenant-scoped commercial role authority.
+- Route: `GET /api/pilot-revenue-ladder/<organization-id>` through `strategic_reads.read`, authenticated `organizer` role **only**, AND a current `institutional_memberships` record for that exact organization as an active administrator/operator, matching demo boundary and valid effective/expiration timestamps. Sales and partner requests return forbidden before lookup; organizers without membership receive the same `organization_not_found` response as an unknown organization. Existing bearer sessions supply email to the route. Do not open external access without an independently reviewed commercial access policy.
 - Strict `[A-Za-z0-9:_-]` identifier, maximum 100 chars, and exact SQL `organization_id=?` predicates.
 - No new SQL migrations, financial mutation commands, payment routes, customer contact imports, HTTP POST to finance or automatic capital release.
 - UI authentication only through existing `/api/login`; bearer token resides in memory, not web storage; local JSON exports are manual.
