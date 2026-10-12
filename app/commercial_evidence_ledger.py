@@ -263,12 +263,11 @@ def record_contract(
 
 
 def _current(event, current):
-    return all(
-        item["id"] != event["id"]
-        for item in current
-        if item["event_type"] == event["event_type"]
+    return not any(
+        item["event_type"] == event["event_type"]
         and item["external_ref"] == event["external_ref"]
         and item["version"] > event["version"]
+        for item in current
     )
 
 
