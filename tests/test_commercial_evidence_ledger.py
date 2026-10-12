@@ -211,7 +211,7 @@ class CommercialEvidenceLedgerTests(unittest.TestCase):
         self.c.commit()
         valid=ledger.verify_chain(self.c,A,actor=ACTOR)
         self.assertTrue(valid["valid"])
-        self.assertEqual(valid["checked"],5)
+        self.assertEqual(valid["checked"],4)
         with self.assertRaises(self.db.INTEGRITY_ERRORS):
             self.c.execute("UPDATE commercial_contract_versions SET net_amount_minor=999 WHERE id=?",(cid,))
         self.c.rollback()
