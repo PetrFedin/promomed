@@ -119,7 +119,7 @@ def _source_facts(c, organization_id):
     )
     transport = c.execute(
         "SELECT COUNT(*) n FROM evidence_exchange_deliveries "
-        "WHERE organization_id=? AND demo_only=0 AND acknowledged_at IS NOT NULL AND withdrawn_at IS NULL",
+        "WHERE organization_id=? AND status='acknowledged' AND demo_only=0 AND acknowledged_at IS NOT NULL AND withdrawn_at IS NULL",
         (organization_id,)
     ).fetchone()
     return (
