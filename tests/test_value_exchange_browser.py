@@ -40,7 +40,12 @@ def main():
                 expect(page.locator("#runtime-state")).not_to_have_text("Проверяем…",timeout=12000)
                 page.screenshot(path=str(OUT/(name+".png")),full_page=True)
                 overflow=page.evaluate("document.documentElement.scrollWidth-document.documentElement.clientWidth")
-                assert overflow<=1,(name,overflow)
+                if overflow>1:
+                    offenders=page.evaluate("""() => [...document.querySelectorAll('body *')].map(e => {
+                        const r=e.getBoundingClientRect(),s=getComputedStyle(e);
+                        return {tag:e.tagName,id:e.id,cls:typeof e.className==='string'?e.className:'',x:Math.round(r.x),right:Math.round(r.right),width:Math.round(r.width),scrollWidth:e.scrollWidth,overflowX:s.overflowX};
+                    }).filter(x=>x.width>0 && x.right>document.documentElement.clientWidth+1).sort((a,b)=>b.right-a.right).slice(0,12)""")
+                    raise AssertionError(f"{name}: horizontal overflow {overflow}px; offenders={offenders}")
                 assert not errors,errors
                 page.close()
         finally:browser.close()
