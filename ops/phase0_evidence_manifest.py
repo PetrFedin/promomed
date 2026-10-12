@@ -1,5 +1,6 @@
 """Repository-only Phase 0 proof. Deliberately not a live Render admission verdict."""
 
+import hashlib
 import json
 import os
 import re
@@ -34,6 +35,12 @@ def build_manifest(source, restored, git_sha):
             not isinstance(v, str) or not v for v in versions
         ):
             raise InvalidAdmissionEvidence(f"{name}_invalid_migrations")
+        canonical = json.dumps(
+            {"counts": counts, "migration_versions": versions},
+            sort_keys=True, separators=(",", ":"),
+        ).encode("utf-8")
+        if hashlib.sha256(canonical).hexdigest() != record["catalog_sha256"]:
+            raise InvalidAdmissionEvidence(f"{name}_fingerprint_content_mismatch")
 
     for key in ("catalog_sha256", "counts", "migration_versions"):
         if source[key] != restored[key]:
