@@ -42,8 +42,7 @@ CREATE TABLE IF NOT EXISTS commercial_evidence_events(
  tax_minor BIGINT NOT NULL DEFAULT 0 CHECK(tax_minor>=0),
  currency_code TEXT NOT NULL CHECK(LENGTH(currency_code)=3),
  accounting_period TEXT,
- decision TEXT,
- CHECK (
+ decision TEXT CHECK (
    (event_type='finance_review' AND decision IN ('hold','request_changes','rejected'))
    OR (event_type<>'finance_review' AND decision IS NULL)
  ),
