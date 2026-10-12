@@ -38,6 +38,15 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
             external_ref="urn:demo:institution", credential_source="demo fixture",
             demo_only=True,
         )
+        for org, demo in (("INST-LADDER-A-001", 0), ("INST-LADDER-B-001", 0),
+                          ("INST-LADDER-DEMO", 1)):
+            self.c.execute(
+                """INSERT INTO institutional_memberships
+                   (id,organization_id,account_email,member_role,status,effective_at,
+                    expires_at,verified_by,verification_ref,demo_only)
+                   VALUES(?,?,?,'administrator','active',1,NULL,'test','synthetic membership fixture',?)""",
+                ("test-member:"+org, org, "scoped-organizer@example.test", demo),
+            )
         self.c.commit()
 
     def tearDown(self):
@@ -46,7 +55,7 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_absent_financial_evidence_is_null_not_zero(self):
-        d = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001")
+        d = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001", actor_email="scoped-organizer@example.test")
         self.assertEqual(d["version"], pilot_revenue_ladder.VERSION)
         self.assertEqual(len(d["stages"]), 7)
         self.assertTrue(all(x["state"] == "GATED" for x in d["stages"]))
@@ -73,8 +82,8 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
              "test", 0),
         )
         self.c.commit()
-        a = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001")
-        b = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-B-001")
+        a = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001", actor_email="scoped-organizer@example.test")
+        b = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-B-001", actor_email="scoped-organizer@example.test")
         self.assertEqual(a["sourceSignals"]["technicalEvidenceAcknowledgements"], 1)
         self.assertEqual(b["sourceSignals"]["technicalEvidenceAcknowledgements"], 0)
         for s in a["stages"]:
@@ -83,7 +92,7 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
         self.assertFalse(a["acceptanceSummary"]["capitalReleaseAuthorized"])
 
     def test_demo_metadata_not_promoted_to_real_identity(self):
-        d = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-DEMO")
+        d = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-DEMO", actor_email="scoped-organizer@example.test")
         self.assertTrue(d["organization"]["demoOnly"])
         self.assertFalse(d["sourceSignals"]["nonDemoIdentityMetadata"])
         self.assertFalse(d["acceptanceSummary"]["externalParticipationAccepted"])
@@ -92,34 +101,59 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
         for bad in ("", "../INST-LADDER-A-001", "INST/LADDER",
                     " " * 4, "a" * 101, "org%2FA"):
             with self.assertRaises(ValueError):
-                pilot_revenue_ladder.snapshot(self.c, bad)
+                pilot_revenue_ladder.snapshot(self.c, bad, actor_email="scoped-organizer@example.test")
         with self.assertRaisesRegex(ValueError, "organization_not_found"):
-            pilot_revenue_ladder.snapshot(self.c, "UNKNOWN-INSTITUTION")
+            pilot_revenue_ladder.snapshot(self.c, "UNKNOWN-INSTITUTION", actor_email="scoped-organizer@example.test")
 
     def test_read_route_is_organizer_only_and_no_existence_leak(self):
         path = "/api/pilot-revenue-ladder/INST-LADDER-A-001"
         for role in ("participant", "partner", "sales", "staff", "editor"):
-            payload, status = strategic_reads.read(self.c, path, role)
+            payload, status = strategic_reads.read(self.c, path, role, actor_email="scoped-organizer@example.test")
             self.assertEqual((payload, status), ({"error": "forbidden"}, 403))
             missing, missing_status = strategic_reads.read(
-                self.c, "/api/pilot-revenue-ladder/UNKNOWN-INSTITUTION", role
+                self.c, "/api/pilot-revenue-ladder/UNKNOWN-INSTITUTION", role,
+                actor_email="scoped-organizer@example.test"
             )
             self.assertEqual((missing, missing_status), ({"error": "forbidden"}, 403))
-        data, status = strategic_reads.read(self.c, path, "organizer")
+        data, status = strategic_reads.read(self.c, path, "organizer", actor_email="scoped-organizer@example.test")
         self.assertEqual(status, 200)
         self.assertEqual(data["organization"]["id"], "INST-LADDER-A-001")
         bad, bad_status = strategic_reads.read(
-            self.c, "/api/pilot-revenue-ladder/UNKNOWN-INSTITUTION", "organizer"
+            self.c, "/api/pilot-revenue-ladder/UNKNOWN-INSTITUTION", "organizer",
+            actor_email="scoped-organizer@example.test"
         )
         self.assertEqual((bad, bad_status), ({"error": "organization_not_found"}, 404))
         invalid, invalid_status = strategic_reads.read(
-            self.c, "/api/pilot-revenue-ladder/INST%2FLADDER", "organizer"
+            self.c, "/api/pilot-revenue-ladder/INST%2FLADDER", "organizer",
+            actor_email="scoped-organizer@example.test"
         )
         self.assertEqual(invalid_status, 422)
 
+    def test_membership_denial_does_not_reveal_organization_existence(self):
+        route = "/api/pilot-revenue-ladder/INST-LADDER-A-001"
+        for account in ("unbound@example.test", "", "scoped-organizer@demo.ru"):
+            d, status = strategic_reads.read(
+                self.c, route, "organizer", actor_email=account)
+            self.assertEqual((d, status), ({"error": "organization_not_found"}, 404))
+        with self.assertRaisesRegex(ValueError, "organization_not_found"):
+            pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001")
+
+    def test_suspended_membership_denied(self):
+        self.c.execute(
+            "UPDATE institutional_memberships SET status='suspended' "
+            "WHERE organization_id=? AND account_email=?",
+            ("INST-LADDER-A-001", "scoped-organizer@example.test"),
+        )
+        self.c.commit()
+        denied, status = strategic_reads.read(
+            self.c, "/api/pilot-revenue-ladder/INST-LADDER-A-001",
+            "organizer", actor_email="scoped-organizer@example.test",
+        )
+        self.assertEqual((denied, status), ({"error": "organization_not_found"}, 404))
+
     def test_evidence_request_export_is_deterministic_and_not_signature(self):
-        x = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001")
-        y = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001")
+        x = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001", actor_email="scoped-organizer@example.test")
+        y = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001", actor_email="scoped-organizer@example.test")
         self.assertEqual(x["evidenceRequestPack"]["sha256"], y["evidenceRequestPack"]["sha256"])
         self.assertEqual(len(x["evidenceRequestPack"]["sha256"]), 64)
         doc = x["evidenceRequestPack"]["document"]
