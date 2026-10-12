@@ -546,3 +546,7 @@ Implemented in repository scope:
 - browser QA for focus lifecycle.
 
 Boundary: no business or authority semantics changed.
+
+## Stakeholder Value Exchange v1 (PR branch; not live)
+
+New `/value-exchange.html` provides three role-specific navigational journeys (participant, partner, investor), read-only runtime/catalog evidence, and an explicit user-input what-if opt-in funnel. No new mutable authority or commercial/medical claims. See `docs/STAKEHOLDER_VALUE_EXCHANGE_V1.md`. CI and production publication are separate gates.
