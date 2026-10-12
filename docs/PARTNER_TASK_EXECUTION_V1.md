@@ -54,3 +54,15 @@ No external paid service or new infrastructure created by this change. Uses only
 ### Next engineering wave (only after gates)
 
 Verified organization memberships, scoped per-organization partner admin rights, real read-only evidence download/checksum verification, immutable financial acceptance distinct from delivery review, consent revocation and participant own-data journey. Issue #76 and #74–75 track this work.
+
+## GitHub execution tracker
+
+- Parent integration: [PR #73](https://github.com/PetrFedin/promomed/pull/73), Draft.
+- This implementation: [PR #79](https://github.com/PetrFedin/promomed/pull/79), Draft.
+- Product acceptance backlog: [Issue #76](https://github.com/PetrFedin/promomed/issues/76).
+- Production blockers: [Issue #64](https://github.com/PetrFedin/promomed/issues/64) and [Issue #65](https://github.com/PetrFedin/promomed/issues/65).
+
+When PR #73 is integrated by the owner, review/rebase this PR against the new main.
+GitHub Actions that run on `main` PRs do not run automatically against a
+non-main stacked PR base; the PR currently targets `main` for CI while
+remaining strictly Draft / do-not-merge.
