@@ -1,6 +1,6 @@
 from urllib.parse import unquote
 
-from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal, institutional_buyer_fit, institutional_outreach_pack, institutional_evidence_export
+from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal, institutional_buyer_fit, institutional_outreach_pack, institutional_evidence_export, pilot_revenue_ladder
 
 
 ROUTES = {
@@ -20,9 +20,25 @@ PILOT_PROPOSAL_PREFIX = "/api/institutional-pilot-proposal/"
 BUYER_FIT_ROUTE = "/api/institutional-buyer-fit-matrix"
 OUTREACH_PREFIX = "/api/institutional-outreach-pack/"
 EVIDENCE_EXPORT_PREFIX = "/api/institutional-evidence-export/"
+PILOT_REVENUE_PREFIX = "/api/pilot-revenue-ladder/"
 
 
 def read(c, path, role):
+    if path.startswith(PILOT_REVENUE_PREFIX):
+        # Organizational finance metadata is NOT available to sales, partners or
+        # participants without a verified tenant-scoped assignment. Internal
+        # organizer-only read until a production membership authority exists.
+        if role != "organizer":
+            return {"error": "forbidden"}, 403
+        raw = path[len(PILOT_REVENUE_PREFIX):]
+        organization_id = unquote(raw).strip()
+        if not organization_id:
+            return {"error": "organization_id_required"}, 422
+        try:
+            return pilot_revenue_ladder.snapshot(c, organization_id), 200
+        except ValueError as exc:
+            return {"error": str(exc)}, 404 if str(exc) == "organization_not_found" else 422
+
     if path.startswith(EVIDENCE_EXPORT_PREFIX):
         if role not in ("organizer", "partner", "sales"):
             return {"error": "forbidden"}, 403
