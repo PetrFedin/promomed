@@ -92,3 +92,26 @@ def handle_command(c,route,role,email,data):
     c.execute("INSERT INTO partner_collab_operations(actor_email,operation_id,route,request_sha256,result_json,created_at) VALUES(?,?,?,?,?,?)",(email,operation,route,digest,json.dumps(result,sort_keys=True),now))
     audit(c,"partner_collaboration",email,{"route":route,"project_id":result.get("project_id"),"operation_id":operation})
     return custom(result,201 if route.endswith(("/create","/task")) else 200)
+
+def read_result(query, actor, connect):
+    """Read-only authenticated projection; never reveal a foreign project."""
+    from urllib.parse import parse_qs
+    if not actor:
+        return {"error": "unauthorized"}, 401
+    args = parse_qs(query, keep_blank_values=True)
+    project_ids = args.get("project_id", [])
+    if len(project_ids) > 1:
+        return {"error": "invalid_project_id"}, 422
+    pid = project_ids[0] if project_ids else None
+    if pid is not None and (not pid or len(pid) > 100):
+        return {"error": "invalid_project_id"}, 422
+    c = connect()
+    try:
+        try:
+            return snapshot(c, actor[0], actor[2], pid), 200
+        except PermissionError:
+            return {"error": "forbidden"}, 403
+        except LookupError:
+            return {"error": "project_not_found"}, 404
+    finally:
+        c.close()
