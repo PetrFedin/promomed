@@ -3,6 +3,7 @@ import re
 import secrets
 
 from app.commanding import error
+from app import partner_org_scope
 
 ACTIONS = {
     "start": ("todo", "changes_requested"),
@@ -40,7 +41,7 @@ def transition(c, role, email, data, operation_id, now):
         "SELECT id,owner_email,status,demo_only FROM partner_collab_projects WHERE id=?",
         (pid,),
     ).fetchone()
-    if not project or (role == "partner" and project["owner_email"] != email):
+    if not partner_org_scope.accessible_project(c,project,role,email):
         return error("project_not_found", 404)
     if project["status"] != "internally_reviewed":
         return error("project_not_reviewed_for_execution", 409)
