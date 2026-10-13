@@ -1,5 +1,5 @@
 -- Candidate document custody only. No verified revenue is created by this migration.
--- The financial authority is external; all records have candidate status.
+-- The financial authority is external. All records have candidate status.
 CREATE TABLE IF NOT EXISTS commercial_contract_versions(
  id TEXT PRIMARY KEY,
  organization_id TEXT NOT NULL,
