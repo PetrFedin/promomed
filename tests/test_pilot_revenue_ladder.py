@@ -1,11 +1,12 @@
 import importlib
+import hashlib
 import os
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app import evidence_interchange, pilot_revenue_ladder, strategic_reads
+from app import evidence_interchange, pilot_revenue_ladder, strategic_reads, commercial_evidence_ledger
 
 
 class PilotRevenueEvidenceLadderTests(unittest.TestCase):
@@ -53,6 +54,68 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
         self.c.close()
         self.env.stop()
         self.tmp.cleanup()
+
+    def _record_candidate(self, ref, amount=20000):
+        return commercial_evidence_ledger.record_contract(
+            self.c, organization_id="INST-LADDER-DEMO",
+            actor="scoped-organizer@example.test",
+            external_ref=ref, version=1, currency_code="RUB",
+            net_amount_minor=amount, source_ref="fixture:"+ref,
+            source_sha256=hashlib.sha256(ref.encode("utf-8")).hexdigest(),
+            idempotency_key="candidate:"+ref,
+        )["id"]
+
+    def test_candidate_document_coverage_is_metadata_not_finance(self):
+        cid=self._record_candidate("candidate-coverage-a")
+        commercial_evidence_ledger.record_event(
+            self.c,organization_id="INST-LADDER-DEMO",
+            actor="scoped-organizer@example.test",contract_id=cid,
+            event_type="obligation",external_ref="ob-a",version=1,
+            amount_minor=5000,source_ref="fixture:ob",
+            source_sha256=hashlib.sha256(b"ob-a").hexdigest(),
+            idempotency_key="candidate:ob-a",
+        )
+        self.c.commit()
+        scoped=pilot_revenue_ladder.snapshot(
+            self.c,"INST-LADDER-DEMO",actor_email="scoped-organizer@example.test")
+        candidate=scoped["candidatePortfolio"]
+        self.assertEqual(candidate["scope"],"EXACT_ORGANIZATION")
+        self.assertEqual(candidate["version"],"candidate-custody-summary-v1")
+        self.assertTrue(candidate["eventCountsAreVersions"])
+        self.assertEqual(candidate["sourceState"],"CANDIDATE_ONLY")
+        self.assertEqual(candidate["financialAuthority"],"NONE")
+        self.assertFalse(candidate["truncated"])
+        self.assertEqual(candidate["displayed"],1)
+        self.assertEqual(candidate["items"][0]["contractDocumentId"],cid)
+        self.assertEqual(candidate["items"][0]["eventVersions"]["obligation"],1)
+        self.assertEqual(candidate["items"][0]["eventVersions"]["invoice"],0)
+        self.assertIsNone(candidate["items"][0]["financialActuals"])
+        self.assertFalse(candidate["items"][0]["signedContractVerified"])
+        self.assertEqual(scoped["acceptanceSummary"]["acceptedStages"],0)
+        self.assertIsNone(scoped["economics"]["contractedRub"])
+        self.assertEqual(scoped["sourceSignals"]["candidateContractVersions"],1)
+        self.assertEqual(scoped["sourceSignals"]["candidateDocumentVersions"],1)
+        other=pilot_revenue_ladder.snapshot(
+            self.c,"INST-LADDER-A-001",actor_email="scoped-organizer@example.test")
+        self.assertEqual(other["candidatePortfolio"]["items"],[])
+        self.assertEqual(other["sourceSignals"]["candidateDocumentVersions"],0)
+
+    def test_candidate_list_is_bounded_and_does_not_leak_unapproved_money(self):
+        for n in range(22):
+            self._record_candidate("many-"+str(n))
+        result=pilot_revenue_ladder.snapshot(
+            self.c,"INST-LADDER-DEMO",actor_email="scoped-organizer@example.test")
+        visible=result["candidatePortfolio"]
+        self.assertEqual(visible["displayed"],20)
+        self.assertEqual(len(visible["items"]),20)
+        self.assertTrue(visible["truncated"])
+        self.assertEqual(
+            len({x["contractDocumentId"] for x in visible["items"]}),20)
+        self.assertIsNone(result["economics"]["invoicedRub"])
+        self.assertFalse(result["acceptanceSummary"]["capitalReleaseAuthorized"])
+        with self.assertRaisesRegex(ValueError,"organization_not_found"):
+            pilot_revenue_ladder.snapshot(
+                self.c,"INST-LADDER-DEMO",actor_email="not-member@example.test")
 
     def test_absent_financial_evidence_is_null_not_zero(self):
         d = pilot_revenue_ladder.snapshot(self.c, "INST-LADDER-A-001", actor_email="scoped-organizer@example.test")
@@ -200,6 +263,12 @@ class LadderUIContractTests(unittest.TestCase):
         self.assertIn('auth.role!=="organizer"', js)
         self.assertIn('state:"GATED"', js)
         self.assertIn("revenue", js.lower())
+        self.assertIn('id="candidateCards"', html)
+        self.assertIn('id="candidateStatus"', html)
+        self.assertIn("candidate-custody-summary-v1", js)
+        self.assertIn("renderCandidatePortfolio(data.candidatePortfolio)", js)
+        self.assertIn("candidate-card", css)
+        self.assertIn("candidatePortfolio", (root / "app" / "pilot_revenue_ladder.py").read_text(encoding="utf-8"))
 
     def test_schema_remains_25_migrations_no_unverified_finance_ledger(self):
         root = Path(__file__).resolve().parents[1]
