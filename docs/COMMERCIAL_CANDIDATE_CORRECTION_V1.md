@@ -1,0 +1,5 @@
+# Candidate Correction Versions v1 — Promomed
+Status: Draft PR #87. This feature is stacked on #84 → #80 → #77. This is **not** a bank adjustment, posted GL reversal, finance approval or real payment.
+For internal candidate records only, a new immutable vN event can set `amount_minor=0` on allocation or recognition, while preserving the same original contract, invoice, settlement reference and recognition accounting period. Existing rows and audit remain immutable. The corrected latest version no longer consumes the candidate invoice/settlement or recognition ceiling; the previous version remains visible in full history and the hash chain.
+Forbidden: changing linked parent/related evidence, altering the recognition period on the same external source ID, directly updating/deleting history, or approving capital from candidate values.
+Tests validate total capacity after corrections and rejection of lineage changes. Production and real finance remain HOLD pending #64/#65, external signatures, bank receipts, journal policy, counterparty validation, independent reviewer and exact-head CI.
