@@ -1,6 +1,6 @@
 -- Scope partner demo planning to governance-registered institutions.
 -- Project 026 and task execution 027 migrations MUST remain checksum-stable.
--- Immutable scope: never silently transfer one partner's project to another institution.
+-- Immutable scope: never silently transfer an existing partner project to another institution.
 CREATE TABLE IF NOT EXISTS partner_collab_project_scopes (
   project_id TEXT PRIMARY KEY REFERENCES partner_collab_projects(id),
   organization_id TEXT NOT NULL REFERENCES institutional_organizations(id),
