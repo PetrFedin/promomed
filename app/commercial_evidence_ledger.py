@@ -8,9 +8,11 @@ All money is integer minor units of ONE contract currency; taxes are separate.
 Cumulative checks apply to latest revisions, not superseded event versions.
 """
 import hashlib
+import itertools
 import json
 import re
 import time
+from functools import wraps
 
 from app import db, pilot_revenue_ladder
 
@@ -201,12 +203,44 @@ def _org_lock(c, organization_id):
         c.execute("SELECT pg_advisory_xact_lock(hashtext(?))", (organization_id,))
 
 
+_candidate_savepoint_ids = itertools.count(1)
+
+
+def _atomic_candidate_write(fn):
+    """Protect the document AND its audit record with one database savepoint.
+
+    The caller owns COMMIT or ROLLBACK of the outer transaction. On any
+    exception, including an SQL error that aborts a PostgreSQL subtransaction,
+    the savepoint is rolled back before the exception escapes. No partial
+    candidate document or orphaned audit record may be committed by a caller
+    who catches the error and subsequently commits their outer transaction.
+    """
+    @wraps(fn)
+    def wrapped(c, *args, **kwargs):
+        _begin(c)
+        savepoint = "promomed_candidate_" + str(next(_candidate_savepoint_ids))
+        c.execute("SAVEPOINT " + savepoint)
+        try:
+            result = fn(c, *args, **kwargs)
+            c.execute("RELEASE SAVEPOINT " + savepoint)
+            return result
+        except BaseException:
+            try:
+                c.execute("ROLLBACK TO SAVEPOINT " + savepoint)
+            finally:
+                # If the outer connection has become unusable, this also
+                # fails rather than allowing a partial commit to look valid.
+                c.execute("RELEASE SAVEPOINT " + savepoint)
+            raise
+    return wrapped
+
+
+@_atomic_candidate_write
 def record_contract(
     c, *, organization_id, actor, external_ref, version, currency_code,
     net_amount_minor, source_ref, source_sha256, idempotency_key,
     previous_contract_id=None,
 ):
-    _begin(c)
     actor = _member(c, organization_id, actor)
     org = _org(c, organization_id)
     _candidate_authority(c, org)
@@ -378,13 +412,13 @@ def _constraints(c, contract, typ, amount, tax, parent, related, replace):
             raise ValueError("revision_has_downstream_evidence")
 
 
+@_atomic_candidate_write
 def record_event(
     c, *, organization_id, actor, contract_id, event_type, external_ref,
     amount_minor, source_ref, source_sha256, idempotency_key, version=1,
     tax_minor=0, accounting_period=None, parent_event_id=None,
     related_event_id=None, replaces_event_id=None, decision=None,
 ):
-    _begin(c)
     actor = _member(c, organization_id, actor)
     org = _org(c, organization_id)
     _candidate_authority(c, org)
