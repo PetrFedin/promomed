@@ -180,45 +180,119 @@ def _migration_files():
 
 
 def _split_postgres_script(sql_text):
-    statements=[]
-    buf=[]
-    quote=None
-    dollar_tag=None
-    i=0
-    while i < len(sql_text):
+    """Split PostgreSQL migration SQL at *top-level* statement terminators.
+
+    A semicolon in a quoted literal/identifier, dollar quote, line comment,
+    or nested /* ... */ comment is not a statement terminator. Comments are
+    discarded, with whitespace retained so adjacent SQL tokens do not join.
+    Unterminated quotes and comments fail closed before SQL is executed.
+    """
+    statements = []
+    buf = []
+    n = len(sql_text)
+    i = 0
+    quote = None
+    escape_string = False
+    dollar_tag = None
+    block_depth = 0
+
+    while i < n:
+        ch = sql_text[i]
+        next_ch = sql_text[i + 1] if i + 1 < n else ""
+
         if dollar_tag is not None:
-            if sql_text.startswith(dollar_tag,i):
+            if sql_text.startswith(dollar_tag, i):
                 buf.append(dollar_tag)
-                i+=len(dollar_tag)
-                dollar_tag=None
-                continue
-            buf.append(sql_text[i]); i+=1; continue
-        ch=sql_text[i]
+                i += len(dollar_tag)
+                dollar_tag = None
+            else:
+                buf.append(ch)
+                i += 1
+            continue
+
         if quote is not None:
             buf.append(ch)
-            if ch==quote:
-                if i+1 < len(sql_text) and sql_text[i+1]==quote:
-                    buf.append(sql_text[i+1]); i+=2; continue
-                quote=None
-            i+=1; continue
-        if ch in ("'", '"'):
-            quote=ch; buf.append(ch); i+=1; continue
-        if ch=="$":
-            m=re.match(r"\$[A-Za-z_][A-Za-z0-9_]*\$|\$\$",sql_text[i:])
-            if m:
-                dollar_tag=m.group(0)
-                buf.append(dollar_tag)
-                i+=len(dollar_tag)
+            if escape_string and ch == "\\" and next_ch:
+                # E'...' strings may contain backslash-escaped single quotes.
+                buf.append(next_ch)
+                i += 2
                 continue
-        if ch==";":
-            statement="".join(buf).strip()
-            if statement: statements.append(statement)
-            buf=[]; i+=1; continue
-        buf.append(ch); i+=1
-    tail="".join(buf).strip()
-    if tail: statements.append(tail)
-    if quote is not None or dollar_tag is not None:
-        raise RuntimeError("Unterminated PostgreSQL migration quote")
+            if ch == quote:
+                if next_ch == quote:
+                    buf.append(next_ch)
+                    i += 2
+                    continue
+                quote = None
+                escape_string = False
+            i += 1
+            continue
+
+        if block_depth:
+            if ch == "/" and next_ch == "*":
+                block_depth += 1
+                i += 2
+            elif ch == "*" and next_ch == "/":
+                block_depth -= 1
+                i += 2
+            else:
+                if ch == "\n":
+                    buf.append("\n")
+                i += 1
+            continue
+
+        if ch == "-" and next_ch == "-":
+            # Keep a newline separator, even when a line comment follows SQL.
+            buf.append(" ")
+            i += 2
+            while i < n and sql_text[i] not in "\r\n":
+                i += 1
+            continue
+
+        if ch == "/" and next_ch == "*":
+            buf.append(" ")
+            block_depth = 1
+            i += 2
+            continue
+
+        if ch in ("'", '"'):
+            quote = ch
+            # PostgreSQL E'...' backslash escapes. Plain string literals do
+            # not interpret a backslash under standard_conforming_strings.
+            escape_string = (
+                ch == "'"
+                and i > 0
+                and sql_text[i - 1] in "eE"
+                and (i < 2 or not (sql_text[i - 2].isalnum() or
+                                    sql_text[i - 2] in "_$"))
+            )
+            buf.append(ch)
+            i += 1
+            continue
+
+        if ch == "$":
+            match = re.match(r"\$[A-Za-z_][A-Za-z0-9_]*\$|\$\$", sql_text[i:])
+            if match:
+                dollar_tag = match.group(0)
+                buf.append(dollar_tag)
+                i += len(dollar_tag)
+                continue
+
+        if ch == ";":
+            statement = "".join(buf).strip()
+            if statement:
+                statements.append(statement)
+            buf = []
+            i += 1
+            continue
+
+        buf.append(ch)
+        i += 1
+
+    if quote is not None or dollar_tag is not None or block_depth:
+        raise RuntimeError("Unterminated PostgreSQL migration literal or comment")
+    tail = "".join(buf).strip()
+    if tail:
+        statements.append(tail)
     return statements
 
 
