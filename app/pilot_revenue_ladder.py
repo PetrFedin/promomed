@@ -152,6 +152,61 @@ def _source_facts(c, organization_id):
     )
 
 
+CANDIDATE_PAGE_LIMIT = 20
+CANDIDATE_EVENT_TYPES = (
+    "obligation", "delivery", "invoice", "credit_note", "settlement",
+    "allocation", "refund", "direct_cost", "recognition",
+    "finance_review", "renewal",
+)
+
+
+def _candidate_portfolio(c, organization_id):
+    """Bounded per-organization metadata: never amounts, approvals or signatures."""
+    rows = list(c.execute(
+        """SELECT id,version,demo_only FROM commercial_contract_versions
+           WHERE organization_id=? AND state='candidate'
+           ORDER BY recorded_at DESC,id DESC LIMIT ?""",
+        (organization_id, CANDIDATE_PAGE_LIMIT + 1),
+    ))
+    visible = rows[:CANDIDATE_PAGE_LIMIT]
+    counts = {}
+    if visible:
+        placeholders = ",".join("?" for _ in visible)
+        for row in c.execute(
+            """SELECT contract_id,event_type,COUNT(*) n
+               FROM commercial_evidence_events
+               WHERE organization_id=? AND state='candidate'
+                 AND contract_id IN (""" + placeholders + """)
+               GROUP BY contract_id,event_type""",
+            (organization_id, *(r["id"] for r in visible)),
+        ):
+            counts.setdefault(row["contract_id"], {})[row["event_type"]] = int(row["n"])
+    items = []
+    for row in visible:
+        values = counts.get(row["id"], {})
+        items.append({
+            "contractDocumentId": row["id"],
+            "version": int(row["version"]),
+            "demoOnly": bool(row["demo_only"]),
+            "eventVersions": {key: int(values.get(key, 0)) for key in CANDIDATE_EVENT_TYPES},
+            "sourceState": "CANDIDATE_ONLY",
+            "signedContractVerified": False,
+            "externalCommercialAcceptance": False,
+            "financialActuals": None,
+        })
+    return {
+        "version": "candidate-custody-summary-v1",
+        "scope": "EXACT_ORGANIZATION",
+        "sourceState": "CANDIDATE_ONLY",
+        "financialAuthority": "NONE",
+        "approvalAuthority": "NONE",
+        "eventCountsAreVersions": True,
+        "displayed": len(items),
+        "truncated": len(rows) > CANDIDATE_PAGE_LIMIT,
+        "items": items,
+    }
+
+
 def snapshot(c, organization_id, *, actor_email=None):
     organization_id = str(organization_id or "").strip()
     if not IDENTIFIER.fullmatch(organization_id):
@@ -184,6 +239,7 @@ def snapshot(c, organization_id, *, actor_email=None):
     payload = {
         "version": VERSION, "organization": organization, "sourceSignals": signals,
         "stages": stages, "economics": economics,
+        "candidatePortfolio": _candidate_portfolio(c, organization_id),
         "acceptanceSummary": {
             "acceptedStages": 0, "totalStages": len(stages), "requiredEvidenceItems": required,
             "decision": "HOLD_EXTERNAL_PILOT_AND_FINANCE_GATES",
