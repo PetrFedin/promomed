@@ -327,6 +327,28 @@ class CommercialEvidenceLedgerTests(unittest.TestCase):
         self.c.rollback()
         self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
 
+    def test_successful_candidate_operations_do_not_implicitly_commit(self):
+        cid = self.contract(external="outer-transaction-only")["id"]
+        self.event(
+            "obligation", cid, amount=2000, ext="outer-obligation"
+        )
+        # The application must not commit behind the caller's back.
+        self.c.rollback()
+        contract_count = self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_contract_versions "
+            "WHERE organization_id=?", (A,),
+        ).fetchone()["n"]
+        event_count = self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_evidence_events "
+            "WHERE organization_id=?", (A,),
+        ).fetchone()["n"]
+        audit_count = self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_evidence_audit "
+            "WHERE organization_id=?", (A,),
+        ).fetchone()["n"]
+        self.assertEqual((contract_count, event_count, audit_count), (0, 0, 0))
+        self.assertTrue(ledger.verify_chain(self.c, A, actor=ACTOR)["valid"])
+
     def test_atomic_contract_and_audit_fail_together_with_outer_work_preserved(self):
         # Record marker in the *outer* transaction. An induced failure in the
         # audit insert must revert only the candidate operation, not unrelated
