@@ -103,6 +103,11 @@ class CommercialEvidencePostgresTests(unittest.TestCase):
             "EXECUTE FUNCTION " + func + "()"
         )
         self.c.commit()
+        installed = self.c.execute(
+            "SELECT COUNT(*) n FROM pg_trigger WHERE tgname=?",
+            (trigger,),
+        ).fetchone()["n"]
+        self.assertEqual(installed, 1, "PostgreSQL fault trigger was not installed")
         return (trigger, func)
 
     def _remove_rejection(self, trigger, func):
