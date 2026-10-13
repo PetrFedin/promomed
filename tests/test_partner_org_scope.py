@@ -133,6 +133,22 @@ class PartnerOrganizationScopeTests(unittest.TestCase):
         self.assertEqual(self.go(E,project_id=pid,task_id=tid,
                                  action="start",expected_version=1).status,404)
 
+    def test_account_role_changes_and_suspended_organizer_block_tenant_reads(self):
+        pid=self.create()
+        self.assertEqual(pc.snapshot(self.c,"organizer","organizer@demo.ru",pid)["project"]["id"],pid)
+        self.c.execute("UPDATE accounts SET role='participant' WHERE email='partner@demo.ru'")
+        self.c.commit()
+        with self.assertRaises(LookupError):
+            pc.snapshot(self.c,"partner","partner@demo.ru",pid)
+        self.assertEqual(pc.snapshot(self.c,"partner","partner@demo.ru")["projects"],[])
+        self.c.execute("UPDATE accounts SET role='partner' WHERE email='partner@demo.ru'")
+        self.c.execute("UPDATE accounts SET status='suspended' WHERE email='organizer@demo.ru'")
+        self.c.commit()
+        with self.assertRaises(LookupError):
+            pc.snapshot(self.c,"organizer","organizer@demo.ru",pid)
+        self.assertEqual(self.go(P,role="organizer",email="organizer@demo.ru",
+             project_id=pid,action="archive",expected_version=1).status,404)
+
     def test_unverified_membership_not_sufficient_and_unscoped_production_denied(self):
         self.c.execute("UPDATE institutional_memberships SET verification_ref='' WHERE organization_id='ORG-QA-A'")
         self.c.commit()
