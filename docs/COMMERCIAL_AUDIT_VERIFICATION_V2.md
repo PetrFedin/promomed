@@ -13,3 +13,5 @@ Limits: a privileged database operator may still rewrite and re-anchor a complet
 Dependency: PR #88 stacked after #87 → #84 → #80 → #77; no merge or deployment before exact-head CI and review. Render #64 and PostgreSQL #65 remain production blockers.
 
 Additional invariant: the canonical source payload binds recording actor and idempotency key, while the append-only audit timestamp must exactly equal the associated document timestamp. Privileged mutations of either field invalidate the verifier; no automatic external financial acceptance follows.
+
+Review gate: verify all five workflows on the exact head SHA, preserve stacked PR base after the CI trigger, and obtain independent approval before integration.
