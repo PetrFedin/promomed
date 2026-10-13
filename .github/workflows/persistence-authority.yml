@@ -26,7 +26,7 @@ jobs:
         env:
           SQLITE_PATH: /tmp/promomed-phase0.sqlite
           PROMOMED_SEED_DEMO: "true"
-        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py
+        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py tests/test_commercial_evidence_ledger.py
       - name: Prove SQLite backup and restore
         env:
           SQLITE_PATH: /tmp/promomed-phase0.sqlite
@@ -80,9 +80,12 @@ jobs:
           sudo apt-get install -y postgresql-client-17
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
       - name: Run real PostgreSQL migration and API-state contract
-        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py
+        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py tests/test_commercial_evidence_ledger.py
       - name: Verify task execution and receipt rollback on PostgreSQL 17
         run: python -m unittest -v tests/test_partner_execution_postgres.py
+
+      - name: Verify finance candidates on PostgreSQL 17
+        run: python -m unittest -v tests/test_commercial_evidence_ledger_postgres.py
 
       - name: Prove PostgreSQL backup and restore
         env:
