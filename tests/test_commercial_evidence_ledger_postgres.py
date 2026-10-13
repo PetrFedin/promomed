@@ -85,6 +85,123 @@ class CommercialEvidencePostgresTests(unittest.TestCase):
         self.c.rollback()
         assert ledger.verify_chain(self.c, self.org, actor=ACTOR)["valid"]
 
+    def _reject_audit_kind(self, kind):
+        # Test-only trigger: intercept the *second* INSERT in the candidate
+        # write. A PostgreSQL error would abort the outer transaction without
+        # the savepoint ROLLBACK/RELEASE used by the application.
+        func = "promomed_ci_reject_audit_" + kind
+        trigger = "promomed_ci_reject_audit_" + kind
+        self.c.execute(
+            "CREATE OR REPLACE FUNCTION " + func + "() RETURNS trigger AS $ "
+            "BEGIN RAISE EXCEPTION 'synthetic_pg_audit_failure'; END; "
+            "$ LANGUAGE plpgsql"
+        )
+        self.c.execute(
+            "CREATE TRIGGER " + trigger +
+            " BEFORE INSERT ON commercial_evidence_audit "
+            "FOR EACH ROW WHEN (NEW.entity_kind = '" + kind + "') "
+            "EXECUTE FUNCTION " + func + "()"
+        )
+        self.c.commit()
+        return (trigger, func)
+
+    def _remove_rejection(self, trigger, func):
+        self.c.rollback()
+        self.c.execute(
+            "DROP TRIGGER IF EXISTS " + trigger +
+            " ON commercial_evidence_audit"
+        )
+        self.c.execute("DROP FUNCTION IF EXISTS " + func + "()")
+        self.c.commit()
+
+    def test_postgres_failed_contract_audit_is_rolled_back_before_caller_commit(self):
+        trigger,func=self._reject_audit_kind("contract")
+        try:
+            with self.assertRaisesRegex(Exception,"synthetic_pg_audit_failure"):
+                ledger.record_contract(
+                    self.c,organization_id=self.org,actor=ACTOR,
+                    external_ref="pg-atomic-contract",version=1,
+                    currency_code="RUB",net_amount_minor=10000,
+                    source_ref="fixture:pg-atomic",
+                    source_sha256=source_sha("pg-atomic-contract"),
+                    idempotency_key="pg:atomic-contract"
+                )
+            # Calling COMMIT even after a handled exception must *not*
+            # persist half of a candidate document+audit operation.
+            self.c.execute("SELECT 1")
+            self.c.commit()
+            n=self.c.execute(
+                "SELECT COUNT(*) n FROM commercial_contract_versions WHERE organization_id=?",
+                (self.org,)
+            ).fetchone()["n"]
+            audit=self.c.execute(
+                "SELECT COUNT(*) n FROM commercial_evidence_audit WHERE organization_id=?",
+                (self.org,)
+            ).fetchone()["n"]
+            self.assertEqual((n,audit),(0,0))
+        finally:
+            self._remove_rejection(trigger,func)
+        r=ledger.record_contract(
+            self.c,organization_id=self.org,actor=ACTOR,
+            external_ref="pg-atomic-contract",version=1,
+            currency_code="RUB",net_amount_minor=10000,
+            source_ref="fixture:pg-atomic",
+            source_sha256=source_sha("pg-atomic-contract"),
+            idempotency_key="pg:atomic-contract"
+        )
+        self.assertTrue(r["created"])
+        self.c.commit()
+        self.assertTrue(ledger.verify_chain(self.c,self.org,actor=ACTOR)["valid"])
+
+    def test_postgres_failed_event_audit_is_rolled_back_before_caller_commit(self):
+        r=ledger.record_contract(
+            self.c,organization_id=self.org,actor=ACTOR,
+            external_ref="pg-atomic-parent",version=1,
+            currency_code="RUB",net_amount_minor=10000,
+            source_ref="fixture:pg-parent",
+            source_sha256=source_sha("pg-atomic-parent"),
+            idempotency_key="pg:atomic-parent"
+        )
+        cid=r["id"]
+        self.c.commit()
+        trigger,func=self._reject_audit_kind("event")
+        try:
+            with self.assertRaisesRegex(Exception,"synthetic_pg_audit_failure"):
+                ledger.record_event(
+                    self.c,organization_id=self.org,actor=ACTOR,
+                    contract_id=cid,event_type="obligation",
+                    external_ref="pg-atomic-obligation",
+                    amount_minor=7000,source_ref="fixture:pg-event",
+                    source_sha256=source_sha("pg-atomic-obligation"),
+                    idempotency_key="pg:atomic-obligation"
+                )
+            self.c.execute("SELECT 1")
+            self.c.commit()
+            n=self.c.execute(
+                "SELECT COUNT(*) n FROM commercial_evidence_events WHERE organization_id=?",
+                (self.org,)
+            ).fetchone()["n"]
+            self.assertEqual(n,0)
+            self.assertTrue(ledger.verify_chain(self.c,self.org,actor=ACTOR)["valid"])
+            self.assertEqual(
+                ledger.verify_chain(self.c,self.org,actor=ACTOR)["checked"],1
+            )
+        finally:
+            self._remove_rejection(trigger,func)
+        recovered=ledger.record_event(
+            self.c,organization_id=self.org,actor=ACTOR,
+            contract_id=cid,event_type="obligation",
+            external_ref="pg-atomic-obligation",
+            amount_minor=7000,source_ref="fixture:pg-event",
+            source_sha256=source_sha("pg-atomic-obligation"),
+            idempotency_key="pg:atomic-obligation"
+        )
+        self.assertTrue(recovered["created"])
+        self.c.commit()
+        self.assertEqual(
+            ledger.verify_chain(self.c,self.org,actor=ACTOR)["checked"],2
+        )
+
     def test_unverified_non_demo_postgres_remains_candidate_only(self):
         # Authenticated memberships are still required for non-demo sources,
         # and finance recognition is not offered as an approved state.
