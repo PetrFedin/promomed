@@ -80,6 +80,8 @@ class PilotRevenueEvidenceLadderTests(unittest.TestCase):
             self.c,"INST-LADDER-DEMO",actor_email="scoped-organizer@example.test")
         candidate=scoped["candidatePortfolio"]
         self.assertEqual(candidate["scope"],"EXACT_ORGANIZATION")
+        self.assertEqual(candidate["version"],"candidate-custody-summary-v1")
+        self.assertTrue(candidate["eventCountsAreVersions"])
         self.assertEqual(candidate["sourceState"],"CANDIDATE_ONLY")
         self.assertEqual(candidate["financialAuthority"],"NONE")
         self.assertFalse(candidate["truncated"])
