@@ -28,7 +28,7 @@ def member(c, organization_id, email):
            JOIN institutional_memberships m ON m.organization_id=o.id
            JOIN accounts a ON a.email=m.account_email
            WHERE o.id=? AND o.status='active'
-             AND m.account_email=? AND a.status='active'
+             AND m.account_email=? AND a.status='active' AND a.role='partner'
              AND m.status='active'
              AND m.member_role IN ('operator','administrator')
              AND m.effective_at<=?
@@ -57,7 +57,9 @@ def valid_scope(c, project_id, project_demo_only, role, email):
     if not org or org["status"]!="active" or int(org["demo_only"])!=int(s["demo_only"]) or int(org["demo_only"])!=int(project_demo_only):
         return False
     if role=="organizer":
-        return s["organization_id"]
+        authorized=c.execute("SELECT 1 FROM accounts WHERE email=? AND role='organizer' AND status='active'",
+                             (str(email or "").strip().lower(),)).fetchone()
+        return s["organization_id"] if authorized else False
     m=member(c,s["organization_id"],email)
     return s["organization_id"] if m and int(m["demo_only"])==int(project_demo_only) else False
 
@@ -81,7 +83,7 @@ def partner_organizations(c,email):
            FROM institutional_organizations o
            JOIN institutional_memberships m ON m.organization_id=o.id
            JOIN accounts a ON a.email=m.account_email
-           WHERE m.account_email=? AND a.status='active'
+           WHERE m.account_email=? AND a.status='active' AND a.role='partner'
              AND o.status='active' AND m.status='active'
              AND m.member_role IN ('operator','administrator')
              AND m.effective_at<=?
