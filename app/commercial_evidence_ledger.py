@@ -143,7 +143,7 @@ def _events(c, organization_id, contract_id):
     return list(grouped.values())
 
 
-def _audit(c, organization_id, actor, kind, entity_id, payload_sha256):
+def _audit(c, organization_id, actor, kind, entity_id, payload_sha256, *, recorded_at=None):
     last = c.execute(
         """SELECT entry_no,entry_sha256 FROM commercial_evidence_audit
            WHERE organization_id=? ORDER BY entry_no DESC LIMIT 1""",
@@ -151,7 +151,7 @@ def _audit(c, organization_id, actor, kind, entity_id, payload_sha256):
     ).fetchone()
     seq = int(last["entry_no"]) + 1 if last else 1
     previous = last["entry_sha256"] if last else None
-    recorded_at = int(time.time())
+    recorded_at = int(time.time()) if recorded_at is None else int(recorded_at)
     raw = {
         "organization": organization_id, "entryNo": seq,
         "previous": previous, "entityKind": kind,
@@ -233,6 +233,7 @@ def record_contract(
     elif previous and previous["external_ref"] == external_ref:
         raise ValueError("contract_new_version_required")
 
+    recorded_at = int(time.time())
     payload = {
         "organizationId": organization_id, "externalRef": external_ref,
         "version": version, "currency": currency_code,
@@ -240,6 +241,7 @@ def record_contract(
         "sourceSha256": evidence_sha256,
         "previousContractId": previous["id"] if previous else None,
         "demoOnly": bool(org["demo_only"]),
+        "recordedBy": actor, "idempotencyKey": key,
     }
     payload_hash = _digest(payload)
     existing = _existing_request(
@@ -256,10 +258,11 @@ def record_contract(
            VALUES(?,?,?,?,?,?,?,?,?,'candidate',?,?,?,?,?)""",
         (cid, organization_id, external_ref, version,
          previous["id"] if previous else None, currency_code, net_amount_minor,
-         source_ref, evidence_sha256, actor, int(time.time()),
+         source_ref, evidence_sha256, actor, recorded_at,
          int(bool(org["demo_only"])), key, payload_hash),
     )
-    audit_sha = _audit(c, organization_id, actor, "contract", cid, payload_hash)
+    audit_sha = _audit(c, organization_id, actor, "contract", cid, payload_hash,
+                       recorded_at=recorded_at)
     return {"id": cid, "created": True, "state": "candidate", "auditSha256": audit_sha}
 
 
@@ -450,6 +453,7 @@ def record_event(
             raise ValueError("event_revision_lineage_mismatch")
     _require_parent(typ, parent, related, contract)
 
+    recorded_at = int(time.time())
     payload = {
         "organizationId": organization_id, "contractId": contract_id,
         "eventType": typ, "externalRef": external_ref, "version": version,
@@ -459,6 +463,7 @@ def record_event(
         "replacesEventId": replace["id"] if replace else None,
         "sourceRef": source_ref, "sourceSha256": evidence_sha256,
         "decision": decision, "demoOnly": bool(org["demo_only"]),
+        "recordedBy": actor, "idempotencyKey": key,
     }
     digest = _digest(payload)
     existing = _existing_request(
@@ -479,9 +484,10 @@ def record_event(
          replace["id"] if replace else None, parent["id"] if parent else None,
          related["id"] if related else None, amount, tax, contract["currency_code"],
          period, decision, source_ref, evidence_sha256, actor,
-         int(time.time()), int(bool(org["demo_only"])), key, digest),
+         recorded_at, int(bool(org["demo_only"])), key, digest),
     )
-    chain_hash = _audit(c, organization_id, actor, "event", eid, digest)
+    chain_hash = _audit(c, organization_id, actor, "event", eid, digest,
+                        recorded_at=recorded_at)
     return {"id": eid, "created": True, "state": "candidate", "auditSha256": chain_hash}
 
 
@@ -543,6 +549,8 @@ def _stored_document_payload(kind, document):
             "sourceSha256": document["evidence_sha256"],
             "previousContractId": document["previous_contract_id"],
             "demoOnly": bool(document["demo_only"]),
+            "recordedBy": document["recorded_by"],
+            "idempotencyKey": document["idempotency_key"],
         }
     elif kind == "event":
         expected_id = "ce:" + _digest([
@@ -567,6 +575,8 @@ def _stored_document_payload(kind, document):
             "sourceSha256": document["evidence_sha256"],
             "decision": document["decision"],
             "demoOnly": bool(document["demo_only"]),
+            "recordedBy": document["recorded_by"],
+            "idempotencyKey": document["idempotency_key"],
         }
     else:
         return None
@@ -611,6 +621,9 @@ def verify_chain(c, organization_id, *, actor):
         if (bool(doc["demo_only"]) != bool(org["demo_only"])
                 or doc["recorded_by"] != row["recorded_by"]):
             return {"valid": False, "checked": idx - 1, "reason": "ACTOR_OR_SCOPE_MISMATCH"}
+        if doc["recorded_at"] != row["recorded_at"]:
+            return {"valid": False, "checked": idx - 1,
+                    "reason": "DOCUMENT_AUDIT_TIMESTAMP_MISMATCH"}
         payload = _stored_document_payload(kind, doc)
         if payload is None or _digest(payload) != doc["payload_sha256"]:
             return {"valid": False, "checked": idx - 1, "reason": "DOCUMENT_PAYLOAD_MISMATCH"}
