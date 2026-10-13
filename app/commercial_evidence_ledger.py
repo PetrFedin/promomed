@@ -37,6 +37,7 @@ PARENT_TYPE = {
 }
 RELATED_TYPE = {"allocation": "settlement", "renewal": "recognition"}
 ZERO_TYPES = {"finance_review", "renewal"}
+REVERSIBLE_CANDIDATE_TYPES = {"allocation", "recognition"}
 NONZERO_TYPES = set(ALLOWED_TYPES) - ZERO_TYPES
 MAX_MINOR = 9_000_000_000_000_000
 
@@ -395,14 +396,21 @@ def record_event(
     source_ref = _txt(source_ref, field="source_ref")
     key = _txt(idempotency_key, field="idempotency_key")
     evidence_sha256 = _hash(source_sha256)
-    amount = _minor(amount_minor, "amount_minor", allow_zero=typ in ZERO_TYPES)
+    if type(version) is not int or not 1 <= version <= 10000:
+        raise ValueError("event_version_invalid")
+    # Explicit immutable corrective version: a zero means withdrawn CANDIDATE
+    # amount, never a bank reversal or a posted GL adjustment. No changes to
+    # SQL rows or approved financial values are permitted.
+    corrective_version = typ in REVERSIBLE_CANDIDATE_TYPES and version > 1
+    amount = _minor(
+        amount_minor, "amount_minor",
+        allow_zero=typ in ZERO_TYPES or corrective_version,
+    )
     tax = _minor(tax_minor, "tax_minor", allow_zero=True)
     if typ in ZERO_TYPES and amount != 0:
         raise ValueError("zero_amount_event_required")
     if typ not in ("invoice", "credit_note") and tax != 0:
         raise ValueError("tax_not_applicable")
-    if type(version) is not int or not 1 <= version <= 10000:
-        raise ValueError("event_version_invalid")
     period = str(accounting_period or "").strip() or None
     if period is not None and not PERIOD.fullmatch(period):
         raise ValueError("accounting_period_invalid")
@@ -424,6 +432,22 @@ def record_event(
             raise ValueError("revision_parent_required")
     elif replace is not None:
         raise ValueError("initial_event_cannot_replace")
+    if replace is not None:
+        # Changing the invoice, settlement or GL period while retaining the
+        # same external source ID would silently reattribute a cash/recognition
+        # document. Require a new explicit source document instead.
+        lineage = (
+            replace["parent_event_id"],
+            replace["related_event_id"],
+            replace["accounting_period"],
+        )
+        corrected_lineage = (
+            parent["id"] if parent else None,
+            related["id"] if related else None,
+            period,
+        )
+        if lineage != corrected_lineage:
+            raise ValueError("event_revision_lineage_mismatch")
     _require_parent(typ, parent, related, contract)
 
     payload = {
