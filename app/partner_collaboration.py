@@ -5,7 +5,7 @@ import secrets
 import time
 
 from app.commanding import custom, error
-from app import partner_execution
+from app import partner_execution, partner_org_scope
 from app.core import audit
 
 ROUTES={"/api/partner-collaboration/create","/api/partner-collaboration/project","/api/partner-collaboration/task","/api/partner-collaboration/execute"}
@@ -27,8 +27,11 @@ def _events(c,pid,email,role,kind,detail):
 
 def _project(c,pid,role,email):
     row=c.execute("SELECT * FROM partner_collab_projects WHERE id=?",(pid,)).fetchone()
-    if not row or (role!="organizer" and row["owner_email"]!=email):return None
-    return dict(row)
+    if not partner_org_scope.accessible_project(c,row,role,email):return None
+    result=dict(row)
+    scope=c.execute("SELECT organization_id FROM partner_collab_project_scopes WHERE project_id=?",(pid,)).fetchone()
+    result["organization_id"]=scope["organization_id"] if scope else None
+    return result
 
 def snapshot(c,role,email,project_id=None):
     if role not in ("partner","organizer"):raise PermissionError("forbidden")
@@ -48,8 +51,39 @@ def snapshot(c,role,email,project_id=None):
                  decision_note,created_at FROM partner_collab_task_receipts
                  WHERE project_id=? ORDER BY created_at,task_id,task_version,id""",(project_id,))]
         return {"project":p,"tasks":tasks,"events":history,"receipts":receipts,"truthBoundary":"internal_task_review_only","contractAccepted":False,"revenueClaimed":False,"artifactIntegrityIndependentlyVerified":False}
-    if role=="organizer":rows=c.execute("SELECT id,owner_email,title,objective,format,status,version,demo_only,created_at,updated_at FROM partner_collab_projects ORDER BY updated_at DESC LIMIT 100")
-    else:rows=c.execute("SELECT id,owner_email,title,objective,format,status,version,demo_only,created_at,updated_at FROM partner_collab_projects WHERE owner_email=? ORDER BY updated_at DESC LIMIT 100",(email,))
+    if role=="organizer":
+        rows=c.execute("""SELECT p.id,p.owner_email,p.title,p.objective,p.format,p.status,
+                    p.version,p.demo_only,p.created_at,p.updated_at,s.organization_id
+                  FROM partner_collab_projects p
+                  LEFT JOIN partner_collab_project_scopes s ON s.project_id=p.id
+                  WHERE (s.project_id IS NOT NULL OR (?=1 AND p.demo_only=1))
+                  ORDER BY p.updated_at DESC,p.id LIMIT 100""",
+                  (int(partner_org_scope.legacy_demo_allowed()),))
+    else:
+        now=int(time.time())
+        rows=c.execute("""SELECT p.id,p.owner_email,p.title,p.objective,p.format,p.status,
+                    p.version,p.demo_only,p.created_at,p.updated_at,s.organization_id
+                  FROM partner_collab_projects p
+                  LEFT JOIN partner_collab_project_scopes s ON s.project_id=p.id
+                  WHERE (s.project_id IS NULL AND ?=1 AND p.demo_only=1
+                         AND p.owner_email=?)
+                  OR (s.project_id IS NOT NULL AND s.demo_only=p.demo_only
+                      AND EXISTS(
+                        SELECT 1 FROM institutional_organizations o
+                        JOIN institutional_memberships m ON m.organization_id=o.id
+                        JOIN accounts a ON a.email=m.account_email
+                        WHERE o.id=s.organization_id AND o.status='active'
+                          AND o.demo_only=s.demo_only AND m.demo_only=o.demo_only
+                          AND m.account_email=? AND a.status='active'
+                          AND m.status='active'
+                          AND m.member_role IN ('operator','administrator')
+                          AND m.effective_at<=?
+                          AND (m.expires_at IS NULL OR m.expires_at>?)
+                          AND LENGTH(TRIM(m.verification_ref))>0
+                          AND (o.demo_only=1 OR m.account_email NOT LIKE ?)
+                       ))
+                  ORDER BY p.updated_at DESC,p.id LIMIT 100""",
+                  (int(partner_org_scope.legacy_demo_allowed()),email,email,now,now,"%@demo.ru"))
     return {"projects":[dict(x) for x in rows],"truthBoundary":"internal_planning_only","contractAccepted":False}
 
 def handle_command(c,route,role,email,data):
