@@ -57,6 +57,8 @@
     showText("orgName","—");showText("orgId","—");
     showText("packHash","Evidence-request SHA: —");
     showText("techSignals","—");
+    el("candidateCards").replaceChildren();
+    showText("candidateStatus","Нет проверенного списка документов-кандидатов.");
     showText("acceptanceStatus","7 / 7 GATED");
     selectStage(activeStage);
   }
@@ -78,6 +80,69 @@
     return response.json();
   }
 
+  const evidenceLabels = {
+    obligation:"Обязательства", delivery:"Исполнение", invoice:"Счета",
+    credit_note:"Кредит-ноты", settlement:"Расчёты", allocation:"Распределения",
+    refund:"Возвраты", direct_cost:"Прямые затраты", recognition:"Признание (запрос)",
+    finance_review:"Финансовое ревью", renewal:"Продление (запрос)"
+  };
+  function renderCandidatePortfolio(candidate) {
+    const keys=Object.keys(evidenceLabels);
+    if(!candidate || candidate.version!=="candidate-custody-summary-v1"
+       || candidate.financialAuthority!=="NONE" || candidate.approvalAuthority!=="NONE"
+       || candidate.sourceState!=="CANDIDATE_ONLY" || candidate.eventCountsAreVersions!==true
+       || candidate.scope!=="EXACT_ORGANIZATION"
+       || !Array.isArray(candidate.items) || candidate.items.length>20
+       || candidate.displayed!==candidate.items.length
+       || typeof candidate.truncated!=="boolean") {
+      throw new Error("INVALID_CANDIDATE_PROOF");
+    }
+    const cards=[];
+    candidate.items.forEach(item=>{
+      if(!item || item.sourceState!=="CANDIDATE_ONLY"
+         || item.externalCommercialAcceptance!==false
+         || item.signedContractVerified!==false
+         || item.financialActuals!==null
+         || !Number.isSafeInteger(item.version) || item.version<1
+         || typeof item.contractDocumentId!=="string"
+         || !/^cc:[a-f0-9]{26}$/.test(item.contractDocumentId)
+         || !item.eventVersions || typeof item.eventVersions!=="object"
+         || !keys.every(k=>Number.isSafeInteger(item.eventVersions[k]) && item.eventVersions[k]>=0)) {
+        throw new Error("INVALID_CANDIDATE_ITEM");
+      }
+      const box=document.createElement("article");
+      box.className="candidate-card";
+      const title=document.createElement("h5");
+      title.textContent="Версия "+item.version+" · "+item.contractDocumentId;
+      const badge=document.createElement("span");
+      badge.className="state-badge";
+      badge.textContent=item.demoOnly ? "DEMO · CANDIDATE" : "UNVERIFIED · CANDIDATE";
+      const warning=document.createElement("p");
+      warning.className="tiny";
+      const present=keys.filter(k=>item.eventVersions[k]>0);
+      warning.textContent="Версий связанных записей: "+
+        keys.reduce((sum,k)=>sum+item.eventVersions[k],0)+
+        ". Виды документов с кандидатами: "+present.length+"/"+keys.length+
+        ". Коммерческая приёмка: НЕ ПОДТВЕРЖДЕНА.";
+      const details=document.createElement("div");
+      details.className="candidate-tags";
+      keys.forEach(k=>{
+        const tag=document.createElement("span");
+        tag.className="candidate-tag"+(item.eventVersions[k]>0?" has-candidate":"");
+        tag.textContent=evidenceLabels[k]+": "+item.eventVersions[k];
+        details.append(tag);
+      });
+      box.append(title,badge,warning,details);
+      cards.push(box);
+    });
+    el("candidateCards").replaceChildren(...cards);
+    showText("candidateStatus",
+      candidate.items.length===0 ? "В этой организации нет зарегистрированных документов-кандидатов. Это не означает отсутствие реальных договоров." :
+      "Отображено "+candidate.items.length+" версий договоров-кандидатов"+
+      (candidate.truncated ? " (показаны только первые 20)" : "")+
+      ". Наличие документов не открывает ни один финансовый этап.");
+  }
+
   function renderProof(data) {
     if(!data || data.version!=="promomed-pilot-to-revenue-evidence-ladder-v1"
        || data.acceptanceSummary?.capitalReleaseAuthorized!==false
@@ -88,6 +153,7 @@
        || data.stages.some(s => !IDS.has(s.id) || s.state!=="GATED")) {
       throw new Error("INVALID_PROOF_BOUNDARY");
     }
+    renderCandidatePortfolio(data.candidatePortfolio);
     proof=data;
     showText("orgName",data.organization?.name||"—");
     showText("orgId",data.organization?.id||"—");
