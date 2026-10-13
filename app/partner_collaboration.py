@@ -56,9 +56,17 @@ def snapshot(c,role,email,project_id=None):
                     p.version,p.demo_only,p.created_at,p.updated_at,s.organization_id
                   FROM partner_collab_projects p
                   LEFT JOIN partner_collab_project_scopes s ON s.project_id=p.id
-                  WHERE (s.project_id IS NOT NULL OR (?=1 AND p.demo_only=1))
+                  WHERE (s.project_id IS NULL AND ?=1 AND p.demo_only=1)
+                     OR (s.project_id IS NOT NULL AND s.demo_only=p.demo_only
+                         AND EXISTS(
+                           SELECT 1 FROM institutional_organizations o
+                           WHERE o.id=s.organization_id AND o.status='active'
+                             AND o.demo_only=s.demo_only)
+                         AND EXISTS(
+                           SELECT 1 FROM accounts a
+                           WHERE a.email=? AND a.role='organizer' AND a.status='active'))
                   ORDER BY p.updated_at DESC,p.id LIMIT 100""",
-                  (int(partner_org_scope.legacy_demo_allowed()),))
+                  (int(partner_org_scope.legacy_demo_allowed()),email))
     else:
         now=int(time.time())
         rows=c.execute("""SELECT p.id,p.owner_email,p.title,p.objective,p.format,p.status,
@@ -74,7 +82,7 @@ def snapshot(c,role,email,project_id=None):
                         JOIN accounts a ON a.email=m.account_email
                         WHERE o.id=s.organization_id AND o.status='active'
                           AND o.demo_only=s.demo_only AND m.demo_only=o.demo_only
-                          AND m.account_email=? AND a.status='active'
+                          AND m.account_email=? AND a.status='active' AND a.role='partner'
                           AND m.status='active'
                           AND m.member_role IN ('operator','administrator')
                           AND m.effective_at<=?
