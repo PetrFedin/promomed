@@ -308,7 +308,7 @@ class H(SimpleHTTPRequestHandler):
    return self.out(d)
   if a:
    c=conn()
-   try: strategic=read_strategic_projection(c,p,a[0])
+   try: strategic=read_strategic_projection(c,p,a[0],a[2])
    finally:c.close()
    if strategic is not None: return self.out(strategic[0],strategic[1])
   if p=="/api/corporate-readiness":
