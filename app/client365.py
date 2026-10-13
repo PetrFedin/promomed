@@ -248,3 +248,12 @@ def read(c, actor, raw_path):
         return {"error": "forbidden"}, 403
     except ValueError:
         return {"error": "invalid_identity"}, 422
+
+
+def serve(actor, raw_path):
+    """Open the source DB only for scoped read; never mutate a lifecycle row."""
+    c=db.connect()
+    try:
+        return read(c,actor,raw_path)
+    finally:
+        c.close()
