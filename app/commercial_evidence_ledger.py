@@ -222,14 +222,16 @@ def _atomic_candidate_write(fn):
         c.execute("SAVEPOINT " + savepoint)
         try:
             result = fn(c, *args, **kwargs)
+            c.execute("RELEASE SAVEPOINT " + savepoint)
+            return result
         except BaseException:
             try:
                 c.execute("ROLLBACK TO SAVEPOINT " + savepoint)
             finally:
+                # If the outer connection has become unusable, this also
+                # fails rather than allowing a partial commit to look valid.
                 c.execute("RELEASE SAVEPOINT " + savepoint)
             raise
-        c.execute("RELEASE SAVEPOINT " + savepoint)
-        return result
     return wrapped
 
 
