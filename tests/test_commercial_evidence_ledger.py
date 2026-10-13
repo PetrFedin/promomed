@@ -327,6 +327,75 @@ class CommercialEvidenceLedgerTests(unittest.TestCase):
         self.c.rollback()
         self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
 
+    def test_atomic_contract_and_audit_fail_together_with_outer_work_preserved(self):
+        # Record marker in the *outer* transaction. An induced failure in the
+        # audit insert must revert only the candidate operation, not unrelated
+        # work the caller will later commit.
+        self.c.execute("CREATE TABLE atomicity_marker(id TEXT PRIMARY KEY)")
+        self.c.execute(
+            """CREATE TRIGGER fixture_reject_contract_audit
+               BEFORE INSERT ON commercial_evidence_audit
+               WHEN NEW.organization_id='LEDGER-DEMO-A'
+                 AND NEW.entity_kind='contract'
+               BEGIN SELECT RAISE(ABORT,'synthetic_contract_audit_failure'); END"""
+        )
+        self.c.commit()
+        self.c.execute("INSERT INTO atomicity_marker(id) VALUES('unrelated')")
+        with self.assertRaisesRegex(self.db.INTEGRITY_ERRORS, "synthetic_contract_audit_failure"):
+            self.contract(external="atomic-contract",key="atomic-contract-request")
+        self.c.commit()
+        count=self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_contract_versions WHERE organization_id=?",
+            (A,),
+        ).fetchone()["n"]
+        audit=self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_evidence_audit WHERE organization_id=?",
+            (A,),
+        ).fetchone()["n"]
+        self.assertEqual((count,audit),(0,0))
+        self.assertEqual(self.c.execute(
+            "SELECT COUNT(*) n FROM atomicity_marker"
+        ).fetchone()["n"],1)
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+        self.c.execute("DROP TRIGGER fixture_reject_contract_audit")
+        created=self.contract(external="atomic-contract",key="atomic-contract-request")
+        self.assertTrue(created["created"])
+        self.c.commit()
+        self.assertEqual(ledger.verify_chain(self.c,A,actor=ACTOR)["checked"],1)
+
+    def test_atomic_event_and_audit_fail_together_reusing_idempotency_key(self):
+        cid=self.contract(external="atomic-event-contract")["id"]
+        self.c.commit()
+        self.c.execute(
+            """CREATE TRIGGER fixture_reject_event_audit
+               BEFORE INSERT ON commercial_evidence_audit
+               WHEN NEW.organization_id='LEDGER-DEMO-A'
+                 AND NEW.entity_kind='event'
+               BEGIN SELECT RAISE(ABORT,'synthetic_event_audit_failure'); END"""
+        )
+        self.c.commit()
+        with self.assertRaisesRegex(self.db.INTEGRITY_ERRORS, "synthetic_event_audit_failure"):
+            self.event("obligation",cid,amount=3000,
+                       ext="atomic-obligation",key="atomic-event-request")
+        # Deliberately COMMIT even though the caller caught the error.
+        # Without savepoint atomicity the event would survive without an audit.
+        self.c.commit()
+        count=self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_evidence_events WHERE organization_id=?",
+            (A,),
+        ).fetchone()["n"]
+        self.assertEqual(count,0)
+        proof=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertTrue(proof["valid"],proof)
+        self.assertEqual(proof["checked"],1)
+        self.c.execute("DROP TRIGGER fixture_reject_event_audit")
+        recovered=self.event("obligation",cid,amount=3000,
+                             ext="atomic-obligation",key="atomic-event-request")
+        self.assertTrue(recovered["created"])
+        self.c.commit()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+        self.assertEqual(ledger.snapshot(self.c,A,actor=ACTOR)["auditLength"],2)
+
     def test_non_demo_candidate_write_is_denied_in_sqlite(self):
         evidence_interchange.register_organization(
             self.c,organization_id="REAL-BOUNDARY",name="Non-demo fixture",
