@@ -10,6 +10,44 @@ E="/api/partner-collaboration/execute"
 
 
 class PostgresPartnerTaskContract(unittest.TestCase):
+    def test_postgres_scoped_membership_revocation(self):
+        """Synthetic institution is not a commercial counterparty acceptance."""
+        if db.backend_name()!="postgres":
+            self.skipTest("PostgreSQL CI job only")
+        from app import evidence_interchange, syndication_network
+        from app.auth import seed_demo_accounts
+        c=db.connect()
+        try:
+            db.migrate(c)
+            seed_demo_accounts(c)
+            org="ORG-POSTGRES-"+secrets.token_hex(5)
+            evidence_interchange.register_organization(
+                c,organization_id=org,name="Synthetic PG QA",
+                organization_type="strategic_partner",actor="governance@demo.ru",
+                external_ref="urn:synthetic:"+org,credential_source="synthetic-ci",
+                demo_only=True)
+            syndication_network.bind_member(
+                c,org,"partner@demo.ru","operator","governance@demo.ru",
+                "verified-demo-fixture",demo_only=True)
+            payload={"operation_id":"scope-"+secrets.token_hex(8),"organization_id":org,
+                     "title":"Scoped synthetic", "format":"studio"}
+            created=pc.handle_command(c,C,"partner","partner@demo.ru",payload)
+            self.assertEqual(created.status,201,created.payload)
+            pid=created.payload["project_id"]
+            self.assertEqual(pc.snapshot(c,"partner","partner@demo.ru",pid)["project"]["organization_id"],org)
+            self.assertFalse(pc.snapshot(c,"partner","participant@demo.ru")["projects"])
+            c.execute("UPDATE institutional_memberships SET status='revoked' "
+                      "WHERE organization_id=? AND account_email=?",(org,"partner@demo.ru"))
+            self.assertEqual(pc.handle_command(c,C,"partner","partner@demo.ru",payload).status,404)
+            with self.assertRaises(LookupError):
+                pc.snapshot(c,"partner","partner@demo.ru",pid)
+            self.assertEqual(pc.snapshot(c,"partner","partner@demo.ru")["projects"],[])
+            with self.assertRaises(Exception):
+                c.execute("DELETE FROM partner_collab_project_scopes WHERE project_id=?",(pid,))
+        finally:
+            c.rollback()
+            c.close()
+
     def test_postgres_workflow_rollback_and_immutable_receipt(self):
         if db.backend_name()!="postgres":
             self.skipTest("PostgreSQL CI job only")
