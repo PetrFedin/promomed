@@ -300,6 +300,33 @@ class CommercialEvidenceLedgerTests(unittest.TestCase):
         self.c.rollback()
         self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
 
+    def test_audit_detects_idempotency_key_tampering(self):
+        cid,_,_,_=self.pipeline()
+        self.c.commit()
+        self.c.execute("DROP TRIGGER commercial_contract_update_denied")
+        self.c.execute(
+            "UPDATE commercial_contract_versions SET idempotency_key=? WHERE id=?",
+            ("altered-request-key",cid),
+        )
+        invalid=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertEqual(invalid["reason"],"DOCUMENT_PAYLOAD_MISMATCH")
+        self.c.rollback()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_audit_detects_record_time_tampering(self):
+        cid,_,_,_=self.pipeline()
+        self.c.commit()
+        self.c.execute("DROP TRIGGER commercial_event_update_denied")
+        self.c.execute(
+            "UPDATE commercial_evidence_events SET recorded_at=recorded_at+60 "
+            "WHERE organization_id=? AND event_type='invoice'",
+            (A,),
+        )
+        invalid=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertEqual(invalid["reason"],"DOCUMENT_AUDIT_TIMESTAMP_MISMATCH")
+        self.c.rollback()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
     def test_non_demo_candidate_write_is_denied_in_sqlite(self):
         evidence_interchange.register_organization(
             self.c,organization_id="REAL-BOUNDARY",name="Non-demo fixture",
