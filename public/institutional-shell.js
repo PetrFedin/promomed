@@ -5,7 +5,8 @@
     {path:'/institutional-pilot-proposal.html',label:'Proposal',stage:'03 · Proposal'},
     {path:'/institutional-outreach-pack.html',label:'Outreach',stage:'04 · Meeting'},
     {path:'/institutional-evidence-export.html',label:'Export',stage:'05 · Pack'},
-    {path:'/institutional-command-center.html',label:'Command Center',stage:'06 · Diligence'}
+    {path:'/institutional-command-center.html',label:'Command Center',stage:'06 · Diligence'},
+    {path:'/pilot-revenue-ladder.html',label:'Revenue Proof',stage:'07 · Finance Gate'}
   ];
   const main=document.querySelector('main');
   if(main){

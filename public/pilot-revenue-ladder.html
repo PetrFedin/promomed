@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071624">
+<title>СОСТОЯНИЕ · Pilot-to-Revenue Evidence Ladder</title>
+<meta name="description" content="Проверяемый маршрут: пилот, контракт, поставка, счёт, деньги, признание выручки и продление. Отдельно: факты, гипотезы и пробелы.">
+<link rel="stylesheet" href="/institutional-shell.css">
+<link rel="stylesheet" href="/pilot-revenue-ladder.css">
+</head>
+<body>
+<main class="ladder-main">
+<header class="ladder-hero">
+  <div>
+    <p class="overline"><span class="pulse"></span> С О С Т О Я Н И Е · COMMERCIAL EVIDENCE</p>
+    <p class="hero-kicker">INVESTOR PROOF SYSTEM / 01—07</p>
+    <h1>От пилота к выручке.<br><em>Без недоказанных цифр.</em></h1>
+    <p class="lead">Единый маршрут коммерческого доказательства: кто подписал пилот, что действительно поставлено, какие счета выставлены, сколько денег получено и что принято финансовым контролёром.</p>
+    <div class="hero-ctas">
+      <a class="primary" href="#ladder">Исследовать 7 этапов <span aria-hidden="true">↘</span></a>
+      <a href="/institutional-command-center.html">Diligence Command Center ↗</a>
+    </div>
+  </div>
+  <aside class="hero-authority" aria-label="Правила признания результатов">
+    <div class="rule-marker">PROOF OVER PROMISE</div>
+    <div class="authority-row"><span>01</span><div><b>Proposal ≠ Contract</b><small>Подписанты и документ обязательны</small></div></div>
+    <div class="authority-row"><span>02</span><div><b>Invoice ≠ Cash</b><small>Банковское подтверждение отдельно</small></div></div>
+    <div class="authority-row"><span>03</span><div><b>Cash ≠ Revenue</b><small>Признание — отдельное решение Finance</small></div></div>
+    <div class="authority-row"><span>04</span><div><b>Demo ≠ Capital Authority</b><small>Никакой автоматической разблокировки транша</small></div></div>
+  </aside>
+</header>
+
+<section class="truth-strip" aria-label="Границы достоверности">
+  <strong>Сейчас: схема проверки, не реальная финансовая книга.</strong>
+  <span>Для подтверждения сделок нужны независимые документы, изолированная PostgreSQL, права по организациям и Finance acceptance.</span>
+</section>
+
+<section class="lab-section" id="ladder" aria-labelledby="ladderTitle">
+  <div class="section-heading">
+    <div><p class="section-index">01 / VERIFIED COMMERCIAL JOURNEY</p><h2 id="ladderTitle">Семь этапов доказательства</h2></div>
+    <span class="section-meta">Жизненный цикл сделки · факты по документам</span>
+  </div>
+  <div class="stage-rail" id="stageRail" role="group" aria-label="Выбрать этап цепочки">
+    <button type="button" class="stage-control active" aria-pressed="true" data-step="pilot_acceptance"><small>01</small><b>Пилот</b><span>GATED</span></button>
+    <button type="button" class="stage-control" aria-pressed="false" data-step="contract"><small>02</small><b>Договор</b><span>GATED</span></button>
+    <button type="button" class="stage-control" aria-pressed="false" data-step="delivery"><small>03</small><b>Исполнение</b><span>GATED</span></button>
+    <button type="button" class="stage-control" aria-pressed="false" data-step="invoice"><small>04</small><b>Счёт</b><span>GATED</span></button>
+    <button type="button" class="stage-control" aria-pressed="false" data-step="cash"><small>05</small><b>Оплата</b><span>GATED</span></button>
+    <button type="button" class="stage-control" aria-pressed="false" data-step="finance"><small>06</small><b>Finance</b><span>GATED</span></button>
+    <button type="button" class="stage-control" aria-pressed="false" data-step="renewal"><small>07</small><b>Продление</b><span>GATED</span></button>
+  </div>
+  <div class="stage-detail">
+    <div>
+      <div class="eyebrow">СТАТУС ЭТАПА <span id="stageBadge" class="state-badge">GATED</span></div>
+      <h3 id="stageTitle">01 · Accepted pilot</h3>
+      <p class="stage-why" id="stageWhy">Наличие карточки организации не означает подписанного пилота.</p>
+      <div class="next-owner">КТО ПРИНИМАЕТ <strong id="stageOwner">Institutional signatory + Governance</strong></div>
+      <a id="stageLink" class="stage-link" href="/institutional-command-center.html">Открыть рабочий модуль ↗</a>
+    </div>
+    <div class="requirements">
+      <p class="eyebrow">НЕОБХОДИМЫЕ ДОКАЗАТЕЛЬСТВА</p>
+      <ul id="requiredList">
+        <li>Подтверждённая non-demo организация</li><li>Подписанная версия условий</li><li>Независимая приёмка участия</li>
+      </ul>
+      <p class="tiny">Пункт в чек-листе — запрос доказательства, не отметка об исполнении.</p>
+    </div>
+  </div>
+</section>
+
+<section class="lab-section" id="readiness" aria-labelledby="readinessTitle">
+  <div class="section-heading">
+    <div><p class="section-index">02 / TENANT-SCOPED READ-ONLY PROOF</p><h2 id="readinessTitle">Проверить контур организации</h2></div>
+    <span class="section-meta">Только уполномоченный внутренний организатор</span>
+  </div>
+  <p class="section-lead">Введите точный ID организации и войдите через существующую авторизацию Promomed. Технический ответ сервиса не выдаёт денег, договоров или продлений без отдельного проверенного источника.</p>
+  <form id="proofForm" class="proof-form">
+    <label>EMAIL ОРГАНИЗАТОРА <input id="loginEmail" type="email" autocomplete="username" required placeholder="Служебный email"></label>
+    <label>ПАРОЛЬ <input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Пароль"></label>
+    <label>ORGANIZATION ID <input id="organizationId" name="organizationId" type="text" maxlength="100" required placeholder="Точный ID из реестра"></label>
+    <button class="load-button" type="submit">Авторизоваться и проверить →</button>
+  </form>
+  <div class="auth-actions"><button id="logoutButton" type="button" class="quiet-button">Очистить доступ</button><span id="proofStatus" role="status" aria-live="polite">Нет подтверждённого доступа к организации.</span></div>
+  <section class="scoped-proof" id="scopedProof" hidden aria-label="Проверенный контекст организации">
+    <header class="scoped-head"><div><span class="section-index">AUTHORITY RESPONSE</span><h3 id="orgName">—</h3><p id="orgId" class="tiny">—</p></div><span id="orgMode" class="state-badge">НЕ ПРОВЕРЕНО</span></header>
+    <div class="finance-metrics">
+      <div><small>Контракт</small><strong id="metricContract">—</strong></div>
+      <div><small>Выставлено</small><strong id="metricInvoice">—</strong></div>
+      <div><small>Поступило</small><strong id="metricCash">—</strong></div>
+      <div><small>Признанная выручка</small><strong id="metricRevenue">—</strong></div>
+      <div><small>Прямые затраты</small><strong id="metricCost">—</strong></div>
+      <div><small>Финансовый результат</small><strong id="metricContribution">—</strong></div>
+      <div><small>Продления</small><strong id="metricRenewal">—</strong></div>
+    </div>
+    <p class="null-note">«—» означает <strong>нет подтверждённых финансовых данных</strong>, а не нулевой оборот. Значения не вычисляются из демонстрационных событий.</p>
+    <div class="scoped-bottom">
+      <div><p class="eyebrow">TECHNICAL SIGNALS (NOT SALES)</p><p id="techSignals">—</p></div>
+      <div><p class="eyebrow">EXTERNAL EVIDENCE GATES</p><strong id="acceptanceStatus">7 / 7 GATED</strong><p id="packHash" class="tiny">Evidence-request SHA: —</p></div>
+    </div>
+    <div class="scoped-actions"><button type="button" id="exportEvidence" class="load-button">Скачать запрос доказательств JSON ↓</button><button id="printProof" type="button" class="quiet-button">Печать</button></div>
+  </section>
+</section>
+
+<section class="lab-section finance-boundary" aria-labelledby="logicTitle">
+  <div class="section-heading"><div><p class="section-index">03 / DECISION & VALUE CAPTURE</p><h2 id="logicTitle">Инвестор видит зависимость капитала от фактов</h2></div></div>
+  <div class="logic-grid">
+    <article><span>VALUE CAPTURE</span><h3>Стоимость контракта</h3><p>Подписанные условия и фактический объём обязательств. Ни предложение, ни пакет партнёра не превращаются в ARR.</p></article>
+    <article><span>FINANCE CONTROL</span><h3>Маржа после затрат</h3><p>Признанная выручка минус непосредственно относимые расходы с проверенным методом распределения. Никакого двойного учёта эффекта.</p></article>
+    <article><span>REPEATABILITY</span><h3>Повторный контракт</h3><p>Новый подписанный период и связанная выручка; повторные посещения или контентные подписки не считаются продлениями.</p></article>
+    <article><span>GOVERNANCE</span><h3>Решение по траншу</h3><p>Результат пилота и финансовая приёмка направляются ответственным лицам. Прототип не разрешает и не перечисляет капитал.</p></article>
+  </div>
+</section>
+<footer class="lab-footer"><span>СОСТОЯНИЕ · Pilot-to-Revenue Evidence Ladder v1</span><span>Planning / Read-only / No financial acceptance or automatic capital release</span></footer>
+</main>
+<script src="/pilot-revenue-ladder.js" defer></script>
+<script src="/institutional-shell.js" defer></script>
+</body>
+</html>
