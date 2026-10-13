@@ -92,9 +92,9 @@ class CommercialEvidencePostgresTests(unittest.TestCase):
         func = "promomed_ci_reject_audit_" + kind
         trigger = "promomed_ci_reject_audit_" + kind
         self.c.execute(
-            "CREATE OR REPLACE FUNCTION " + func + "() RETURNS trigger AS $ "
-            "BEGIN RAISE EXCEPTION 'synthetic_pg_audit_failure'; END; "
-            "$ LANGUAGE plpgsql"
+            "CREATE OR REPLACE FUNCTION " + func +
+            "() RETURNS trigger LANGUAGE plpgsql "
+            "AS 'BEGIN RAISE EXCEPTION ''synthetic_pg_audit_failure''; END;'"
         )
         self.c.execute(
             "CREATE TRIGGER " + trigger +
