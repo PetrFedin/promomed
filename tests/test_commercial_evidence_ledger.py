@@ -194,6 +194,40 @@ class CommercialEvidenceLedgerTests(unittest.TestCase):
             self.event("renewal",old,amount=0,related=recognition["id"],
                        ext="wrong-renewal")
 
+    def test_candidate_allocation_correction_releases_capacity_without_mutation(self):
+        cid,_,_,invoice=self.pipeline()
+        settlement=self.event("settlement",cid,amount=8000,ext="correct-deposit")["id"]
+        allocation=self.event("allocation",cid,amount=7000,ext="correct-alloc",parent=invoice,related=settlement)
+        corrected=self.event("allocation",cid,amount=0,ext="correct-alloc",version=2,
+                             parent=invoice,related=settlement,replace=allocation["id"])
+        self.assertNotEqual(corrected["id"],allocation["id"])
+        another=self.event("allocation",cid,amount=7000,ext="new-alloc",parent=invoice,related=settlement)
+        self.assertTrue(another["created"])
+        self.assertEqual(ledger.snapshot(self.c,A,actor=ACTOR)["contractCandidates"][0]["documentCounts"]["allocation"],2)
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_candidate_recognition_correction_releases_net_ceiling(self):
+        cid,_,_,invoice=self.pipeline()
+        old=self.event("recognition",cid,amount=7000,ext="rec-correction",parent=invoice,period="2026-10")
+        self.event("recognition",cid,amount=0,ext="rec-correction",version=2,
+                   parent=invoice,period="2026-10",replace=old["id"])
+        new=self.event("recognition",cid,amount=7000,ext="new-rec",parent=invoice,period="2026-10")
+        self.assertTrue(new["created"])
+        self.assertIsNone(ledger.snapshot(self.c,A,actor=ACTOR)["recognizedRevenue"])
+
+    def test_revisions_cannot_reassign_parent_or_recognition_period(self):
+        cid,_,_,invoice=self.pipeline()
+        settlement=self.event("settlement",cid,amount=8000,ext="lineage-settlement")["id"]
+        orig=self.event("allocation",cid,amount=1000,ext="lineage-allocation",parent=invoice,related=settlement)
+        another=self.event("settlement",cid,amount=2000,ext="another-settlement")["id"]
+        with self.assertRaisesRegex(ValueError,"event_revision_lineage_mismatch"):
+            self.event("allocation",cid,amount=0,ext="lineage-allocation",version=2,
+                       parent=invoice,related=another,replace=orig["id"])
+        recognition=self.event("recognition",cid,amount=1000,ext="lineage-rec",parent=invoice,period="2026-10")
+        with self.assertRaisesRegex(ValueError,"event_revision_lineage_mismatch"):
+            self.event("recognition",cid,amount=0,ext="lineage-rec",version=2,
+                       parent=invoice,period="2026-11",replace=recognition["id"])
+
     def test_cross_tenant_cannot_read_or_reuse_parent(self):
         a=self.contract()
         b=self.contract(org=B,external="other-pilot")
