@@ -383,8 +383,7 @@ class H(SimpleHTTPRequestHandler):
     outcome=handle_community_command(c,p,role,email,data)
     if outcome is None: outcome=handle_learning_command(c,p,role,email,data)
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_programme_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_programme_command(c,p,role,email,data); outcome=handle_operations_command(c,p,role,email,data) if outcome is None else outcome
     if outcome is None: outcome=partner_collaboration.handle_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
