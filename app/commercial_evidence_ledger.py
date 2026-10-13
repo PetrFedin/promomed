@@ -522,32 +522,123 @@ def snapshot(c, organization_id, *, actor):
     }
 
 
+def _stored_document_payload(kind, document):
+    """Rebuild the original canonical payload from *actual stored fields*.
+
+    Comparing the audit chain only to the mutable payload_sha256 column would
+    miss tampering with money, party, currency, tax or document references.
+    """
+    if kind == "contract":
+        expected_id = "cc:" + _digest([
+            document["organization_id"], document["external_ref"],
+            document["version"],
+        ])[:26]
+        payload = {
+            "organizationId": document["organization_id"],
+            "externalRef": document["external_ref"],
+            "version": document["version"],
+            "currency": document["currency_code"],
+            "netAmountMinor": document["net_amount_minor"],
+            "sourceRef": document["source_ref"],
+            "sourceSha256": document["evidence_sha256"],
+            "previousContractId": document["previous_contract_id"],
+            "demoOnly": bool(document["demo_only"]),
+        }
+    elif kind == "event":
+        expected_id = "ce:" + _digest([
+            document["organization_id"], document["contract_id"],
+            document["event_type"], document["external_ref"],
+            document["version"],
+        ])[:26]
+        payload = {
+            "organizationId": document["organization_id"],
+            "contractId": document["contract_id"],
+            "eventType": document["event_type"],
+            "externalRef": document["external_ref"],
+            "version": document["version"],
+            "amountMinor": document["amount_minor"],
+            "taxMinor": document["tax_minor"],
+            "currency": document["currency_code"],
+            "accountingPeriod": document["accounting_period"],
+            "parentEventId": document["parent_event_id"],
+            "relatedEventId": document["related_event_id"],
+            "replacesEventId": document["replaces_event_id"],
+            "sourceRef": document["source_ref"],
+            "sourceSha256": document["evidence_sha256"],
+            "decision": document["decision"],
+            "demoOnly": bool(document["demo_only"]),
+        }
+    else:
+        return None
+    if document["id"] != expected_id or document["state"] != "candidate":
+        return None
+    return payload
+
+
 def verify_chain(c, organization_id, *, actor):
+    """Check hash-linked audit, stored payload integrity and record coverage.
+
+    This remains an *internal* verification. A sufficiently privileged DB
+    operator can rewrite/reanchor the whole history. External independent
+    signature/anchoring and verified original documents are STILL required.
+    """
     _member(c, organization_id, actor)
-    _org(c, organization_id)
+    org = _org(c, organization_id)
     rows = list(c.execute(
-        "SELECT * FROM commercial_evidence_audit WHERE organization_id=? ORDER BY entry_no",
-        (organization_id,)
+        "SELECT * FROM commercial_evidence_audit "
+        "WHERE organization_id=? ORDER BY entry_no", (organization_id,)
     ))
     previous = None
+    seen_entities = set()
     for idx, row in enumerate(rows, 1):
         if row["entry_no"] != idx or row["previous_sha256"] != previous:
-            return {"valid": False, "checked": idx-1}
-        table = ("commercial_contract_versions" if row["entity_kind"] == "contract"
+            return {"valid": False, "checked": idx - 1, "reason": "BROKEN_CHAIN"}
+        kind = row["entity_kind"]
+        if kind not in ("contract", "event"):
+            return {"valid": False, "checked": idx - 1, "reason": "UNKNOWN_ENTITY_KIND"}
+        entity_key = (kind, row["entity_id"])
+        if entity_key in seen_entities:
+            return {"valid": False, "checked": idx - 1, "reason": "DUPLICATE_ENTITY_AUDIT"}
+        table = ("commercial_contract_versions" if kind == "contract"
                  else "commercial_evidence_events")
         document = c.execute(
-            "SELECT payload_sha256 FROM " + table + " WHERE organization_id=? AND id=?",
+            "SELECT * FROM " + table + " WHERE organization_id=? AND id=?",
             (organization_id, row["entity_id"]),
         ).fetchone()
         if not document:
-            return {"valid": False, "checked": idx-1}
+            return {"valid": False, "checked": idx - 1, "reason": "MISSING_DOCUMENT"}
+        doc = dict(document)
+        if (bool(doc["demo_only"]) != bool(org["demo_only"])
+                or doc["recorded_by"] != row["recorded_by"]):
+            return {"valid": False, "checked": idx - 1, "reason": "ACTOR_OR_SCOPE_MISMATCH"}
+        payload = _stored_document_payload(kind, doc)
+        if payload is None or _digest(payload) != doc["payload_sha256"]:
+            return {"valid": False, "checked": idx - 1, "reason": "DOCUMENT_PAYLOAD_MISMATCH"}
         raw = {
-            "organization": organization_id, "entryNo": idx, "previous": previous,
-            "entityKind": row["entity_kind"], "entityId": row["entity_id"],
-            "payloadSha256": document["payload_sha256"],
+            "organization": organization_id, "entryNo": idx,
+            "previous": previous, "entityKind": kind,
+            "entityId": row["entity_id"],
+            "payloadSha256": doc["payload_sha256"],
             "recordedBy": row["recorded_by"], "recordedAt": row["recorded_at"],
         }
-        if _digest(raw) != row["entry_sha256"]:
-            return {"valid": False, "checked": idx-1}
-        previous = row["entry_sha256"]
+        expected_sha = _digest(raw)
+        if (expected_sha != row["entry_sha256"]
+                or row["id"] != "ca:" + expected_sha[:28]):
+            return {"valid": False, "checked": idx - 1, "reason": "AUDIT_DIGEST_MISMATCH"}
+        seen_entities.add(entity_key)
+        previous = expected_sha
+
+    # Check that audit rows are complete, not merely valid as a shorter
+    # chain after a suffix of audit entries is removed by a privileged actor.
+    contract_count = c.execute(
+        "SELECT COUNT(*) n FROM commercial_contract_versions "
+        "WHERE organization_id=?", (organization_id,)
+    ).fetchone()["n"]
+    event_count = c.execute(
+        "SELECT COUNT(*) n FROM commercial_evidence_events "
+        "WHERE organization_id=?", (organization_id,)
+    ).fetchone()["n"]
+    if int(contract_count) + int(event_count) != len(rows):
+        return {"valid": False, "checked": len(rows), "reason": "AUDIT_COVERAGE_GAP"}
     return {"valid": True, "checked": len(rows), "headSha256": previous}
+
