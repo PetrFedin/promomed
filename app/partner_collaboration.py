@@ -95,6 +95,18 @@ def handle_command(c,route,role,email,data):
     digest=_hash({"route":route,"data":{k:v for k,v in data.items() if k!="operation_id"}})
     prior=c.execute("SELECT route,request_sha256,result_json FROM partner_collab_operations WHERE actor_email=? AND operation_id=?",(email,operation)).fetchone()
     if prior:
+        # Idempotent replay must not bypass revoked institutional access.
+        if route=="/api/partner-collaboration/create":
+            requested_org=partner_org_scope.org_id(data.get("organization_id"))
+            if "organization_id" in data and not requested_org:
+                return error("invalid_organization_id",422)
+            if requested_org:
+                if not partner_org_scope.member(c,requested_org,email):
+                    return error("organization_not_found",404)
+            elif not partner_org_scope.legacy_demo_allowed():
+                return error("organization_required",422)
+        elif not _project(c,_text(data.get("project_id"),100),role,email):
+            return error("project_not_found",404)
         if prior["route"]!=route or prior["request_sha256"]!=digest:return error("idempotency_conflict",409)
         return custom(json.loads(prior["result_json"]))
     now=int(time.time())
@@ -105,9 +117,21 @@ def handle_command(c,route,role,email,data):
         if role!="partner":return error("forbidden",403)
         title=_text(data.get("title"),140);objective=_text(data.get("objective"),1200)
         fmt=data.get("format")
-        if not title or fmt not in FORMATS:return error("invalid_project",422)
+        if not title or not isinstance(fmt,str) or fmt not in FORMATS:return error("invalid_project",422)
+        wants_scope="organization_id" in data
+        organization=partner_org_scope.org_id(data.get("organization_id"))
+        if wants_scope and not organization:return error("invalid_organization_id",422)
+        if organization:
+            admission=partner_org_scope.member(c,organization,email)
+            if admission is None:return error("organization_not_found",404)
+            # No non-demo pilot may be created until independent production admission.
+            if int(admission["demo_only"])!=1:return error("non_demo_partner_pilot_not_admitted",409)
+        elif not partner_org_scope.legacy_demo_allowed():
+            return error("organization_required",422)
         pid=secrets.token_hex(12)
         c.execute("INSERT INTO partner_collab_projects(id,owner_email,title,objective,format,status,version,demo_only,created_at,updated_at) VALUES(?,?,?,?,?,'draft',1,1,?,?)",(pid,email,title,objective,fmt,now,now))
+        if organization:
+            c.execute("INSERT INTO partner_collab_project_scopes(project_id,organization_id,demo_only,linked_by,created_at) VALUES(?,?,1,?,?)",(pid,organization,email,now))
         _events(c,pid,email,role,"project_created","draft")
         result={"project_id":pid,"status":"draft","version":1,"truthBoundary":"internal_planning_only"}
     else:
@@ -118,7 +142,7 @@ def handle_command(c,route,role,email,data):
         if route=="/api/partner-collaboration/project":
             action=data.get("action")
             target={"request_review":"review_requested","request_changes":"changes_requested","review":"internally_reviewed","archive":"archived"}.get(action)
-            if target is None:return error("bad_action",422)
+            if not isinstance(action,str) or target is None:return error("bad_action",422)
             allowed={"draft":{"request_review","archive"},"changes_requested":{"request_review","archive"},"review_requested":{"request_changes","review","archive"},"internally_reviewed":{"request_changes","archive"}}
             if action not in allowed.get(p["status"],set()):return error("invalid_transition",409)
             if action in ("request_review",) and role!="partner":return error("forbidden",403)
@@ -132,7 +156,7 @@ def handle_command(c,route,role,email,data):
             if p["status"] not in ("draft","changes_requested"):return error("project_not_editable",409)
             if role!="partner":return error("forbidden",403)
             title=_text(data.get("title"),180);lane=data.get("lane")
-            if not title or lane not in ("partner","platform"):return error("invalid_task",422)
+            if not title or not isinstance(lane,str) or lane not in ("partner","platform"):return error("invalid_task",422)
             tid=secrets.token_hex(12)
             c.execute("INSERT INTO partner_collab_tasks(id,project_id,title,lane,status,version,created_by,updated_by,created_at,updated_at) VALUES(?,?,?,?,'todo',1,?,?,?,?)",(tid,pid,title,lane,email,email,now,now))
             _events(c,pid,email,role,"task_created",tid)
@@ -148,7 +172,8 @@ def read_result(query, actor, connect):
         return {"error": "unauthorized"}, 401
     args = parse_qs(query, keep_blank_values=True)
     project_ids = args.get("project_id", [])
-    if len(project_ids) > 1:
+    org_view = args.get("view",[])==["organizations"]
+    if len(project_ids)>1 or (org_view and project_ids):
         return {"error": "invalid_project_id"}, 422
     pid = project_ids[0] if project_ids else None
     if pid is not None and (not pid or len(pid) > 100):
@@ -156,6 +181,11 @@ def read_result(query, actor, connect):
     c = connect()
     try:
         try:
+            if org_view:
+                if actor[0]!="partner":return {"error":"forbidden"},403
+                return {"organizations":partner_org_scope.partner_organizations(c,actor[2]),
+                        "legacyDemoAllowed":partner_org_scope.legacy_demo_allowed(),
+                        "truthBoundary":"verified_demo_memberships_only"},200
             return snapshot(c, actor[0], actor[2], pid), 200
         except PermissionError:
             return {"error": "forbidden"}, 403
