@@ -99,7 +99,7 @@ jobs:
           DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_upgrade_ci
         run: |
           psql -h 127.0.0.1 -U promomed -d postgres -c "CREATE DATABASE promomed_upgrade_ci;"
-          python ops/verify_parallel_migration_upgrade.py
+          python -m ops.verify_parallel_migration_upgrade
 
       - name: Prove PostgreSQL backup and restore
         env:
