@@ -79,7 +79,8 @@ def run():
 
         rows = conn.execute(
             "SELECT version FROM _schema_migrations "
-            "WHERE version LIKE '026_%' ORDER BY version"
+            "WHERE version LIKE ? ORDER BY version",
+            ("026_%",),
         )
         assert [r["version"] for r in rows] == [
             "026_commercial_evidence_ledger", "026_partner_collaboration"
