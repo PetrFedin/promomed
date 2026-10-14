@@ -39,6 +39,7 @@ MODULES = {
     "partner_commands.py",
     "editorial_commands.py",
     "demo_commands.py",
+    "demo_reads.py",
     "reviewer_authority.py",
     "evidence_interchange.py",
     "institutional_commands.py",
@@ -69,7 +70,9 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("from app.analytics import commercial, state", SERVER)
         self.assertIn("from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash", SERVER)
         self.assertIn("from app.core import audit, notify, promote_waitlist, setv, sval", SERVER)
-        self.assertIn("from app.demo import DEMO_STEPS, reset_demo, run_demo_step", SERVER)
+        self.assertIn("from app.demo_reads import serve as serve_demo_read", SERVER)
+        self.assertIn("demo_view=serve_demo_read(p,a,conn)", SERVER)
+        self.assertNotIn('if p=="/api/demo/evidence":', SERVER)
 
     def test_bounded_context_modules_exist(self):
         present = {p.name for p in APP.glob("*.py")}
