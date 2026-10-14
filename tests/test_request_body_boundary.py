@@ -147,5 +147,92 @@ class DemoEndpointTruthBoundaryTests(unittest.TestCase):
             self.assertEqual(result.status, 403)
 
 
+class ExtractedDemoReadContractTests(unittest.TestCase):
+    def test_demo_status_preserves_step_metadata_and_closes_connection(self):
+        from app.demo_reads import serve
+
+        class Conn:
+            closed = False
+
+            def close(self):
+                self.closed = True
+
+        c = Conn()
+        with patch("app.demo_reads.db.demo_seed_enabled", return_value=True):
+            with patch("app.demo_reads.sval", return_value="0"):
+                with patch("app.demo_reads.state", return_value={"phase": "before"}):
+                    payload, status = serve(
+                        "/api/demo/status",
+                        ("sales", "Demo Sales", "sales@demo.ru"),
+                        lambda: c,
+                    )
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["phase"], "before")
+        self.assertEqual(payload["step_index"], 0)
+        self.assertEqual(payload["step_key"], "ready")
+        self.assertEqual(payload["total_steps"], 12)
+        self.assertTrue(c.closed)
+
+    def test_demo_evidence_preserves_source_fields_and_closes_connection(self):
+        from app.demo_reads import serve
+
+        class Rows:
+            def __init__(self, rows=(), first=None):
+                self.rows = rows
+                self.first = first
+
+            def __iter__(self):
+                return iter(self.rows)
+
+            def fetchone(self):
+                return self.first
+
+        class Conn:
+            closed = False
+
+            def execute(self, sql):
+                if "FROM events" in sql:
+                    return Rows([{"id": 1, "kind": "demo_start",
+                                  "actor": "demo", "payload": "{}", "ts": 1}])
+                if "FROM deliverables" in sql:
+                    return Rows([{"id": 1, "label": "Fixture",
+                                  "status": "contracted", "evidence": "",
+                                  "updated": 1}])
+                if "FROM notifications" in sql:
+                    return Rows(first={"n": 2})
+                raise AssertionError("Unexpected query: " + sql)
+
+            def close(self):
+                self.closed = True
+
+        c = Conn()
+        values = {"live_state": "scheduled", "phase": "before",
+                  "session_time": "11:00", "session_room": "Лекторий",
+                  "occupied": "116", "capacity": "120"}
+        with patch("app.demo_reads.db.demo_seed_enabled", return_value=True):
+            with patch("app.demo_reads.commercial", return_value={"leads": 0}):
+                with patch("app.demo_reads.state", return_value={"placement_status": "contracted"}):
+                    with patch("app.demo_reads.sval",
+                               side_effect=lambda _c, key, default=None: values.get(key, default)):
+                        payload, status = serve(
+                            "/api/demo/evidence",
+                            ("partner", "Demo Partner", "partner@demo.ru"),
+                            lambda: c,
+                        )
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["events"][0]["kind"], "demo_start")
+        self.assertEqual(payload["metrics"]["notifications"], 2)
+        self.assertEqual(payload["metrics"]["occupied"], 116)
+        self.assertEqual(len(payload["proposed_pilot_gates"]), 5)
+        self.assertEqual(payload["deliverables"][0]["status"], "contracted")
+        self.assertTrue(c.closed)
+
+    def test_demo_reader_unknown_routes_do_not_touch_authority(self):
+        from app.demo_reads import serve
+        with patch("app.demo_reads.db.demo_seed_enabled",
+                   side_effect=AssertionError("unrelated demo scope consulted")):
+            self.assertIsNone(serve("/api/partner-collaboration", None, None))
+
+
 if __name__ == "__main__":
     unittest.main()
