@@ -1,7 +1,7 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority
+from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority, partner_collaboration
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
 from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
@@ -9,7 +9,7 @@ from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 from app.community_commands import handle_command as handle_community_command; from app.learning_commands import handle_command as handle_learning_command; from app.participant_commands import handle_command as handle_participant_command
 from app.programme_commands import handle_command as handle_programme_command; from app.operations_commands import handle_command as handle_operations_command; from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public; from app.syndication_commands import handle_command as handle_syndication_command, handle_public as handle_syndication_public; from app.trust_commands import handle_command as handle_trust_command, handle_public as handle_trust_public
-from app.demo_commands import handle_command as handle_demo_command
+from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
 from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection; from app.discovery_reads import serve as serve_discovery; from app.media_reads import serve as serve_media
@@ -203,6 +203,8 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
+  if p=="/api/partner-collaboration": return self.out(*partner_collaboration.read_result(urlparse(self.path).query,a,conn))
+  if p=="/api/client-365": return self.out(*serve_client365(a,self.path))
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
@@ -308,7 +310,7 @@ class H(SimpleHTTPRequestHandler):
    return self.out(d)
   if a:
    c=conn()
-   try: strategic=read_strategic_projection(c,p,a[0])
+   try: strategic=read_strategic_projection(c,p,a[0],a[2])
    finally:c.close()
    if strategic is not None: return self.out(strategic[0],strategic[1])
   if p=="/api/corporate-readiness":
@@ -381,8 +383,8 @@ class H(SimpleHTTPRequestHandler):
     outcome=handle_community_command(c,p,role,email,data)
     if outcome is None: outcome=handle_learning_command(c,p,role,email,data)
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_programme_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_programme_command(c,p,role,email,data); outcome=handle_operations_command(c,p,role,email,data) if outcome is None else outcome
+    if outcome is None: outcome=partner_collaboration.handle_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
     if outcome is None: outcome=handle_institutional_command(c,p,role,email,data)
@@ -399,6 +401,5 @@ class H(SimpleHTTPRequestHandler):
     return self.out(payload,outcome.status)
    finally: c.close()
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
-
 if __name__=="__main__":
  init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.8 persistence admission",db.backend_name(),"listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()
