@@ -190,6 +190,9 @@ class H(SimpleHTTPRequestHandler):
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path; a=auth(self)
+  # Demo endpoints must be invisible on a real-data/non-demo authority.
+  if p.startswith("/api/demo/") and not db.demo_seed_enabled():
+   return self.out({"error":"not_found"},404)
   if p=="/health":
    return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"demo_seed":db.demo_seed_enabled(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
   if p=="/ready":
@@ -356,6 +359,9 @@ class H(SimpleHTTPRequestHandler):
   return super().do_GET()
  def do_POST(self):
   p=urlparse(self.path).path
+  # Never execute demo resets/steps or expose demo routes on a non-demo tenant.
+  if p.startswith("/api/demo/") and not db.demo_seed_enabled():
+   return self.out({"error":"not_found"},404)
   try: data=body(self)
   except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
   except RequestBodyError: return self.out({"error":"bad_json"},400)
