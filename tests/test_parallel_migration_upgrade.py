@@ -52,7 +52,7 @@ try:
 
     expected = ("commercial_contract_versions", "commercial_evidence_events",
                 "commercial_evidence_audit", "partner_collab_projects",
-                "partner_task_receipts", "partner_collab_project_scopes",
+                "partner_collab_task_receipts", "partner_collab_project_scopes",
                 "institutional_organizations", "auth_sessions")
     for table in expected:
         row = c.execute(
