@@ -173,6 +173,13 @@ Legend: `Source state` is the 2026-10-11 classification, **not** automatically u
 | ADV-09 | DEFER | Discourse/Moodle/Ghost parallel platforms откладываются до нагрузочных/UX обоснований | No duplicate authority, no added vendor cost without measurable benefit |
 | ADV-10 | PLAN | AI summarization/NLP/knowledge graph использовать только как reviewable proposals | Логи происхождения и reviewer approve, никакой автоматической медистины |
 
+## Migration upgrade continuity evidence
+
+- The combined branch contains two distinct `026_` full-stem migrations. They are NOT renamed or rewritten; an already applied migration checksum is never altered.
+- `tests/test_parallel_migration_upgrade.py` reconstructs a persisted **001–025** SQLite authority, writes a preserved sentinel, upgrades to the **30-migration** combined schema, checks the two `026` records, five new versions, schema objects and repeated idempotent execution.
+- `ops/verify_parallel_migration_upgrade.py` performs the analogous isolated PostgreSQL 17 upgrade in an ephemeral **separate** `promomed_upgrade_ci` CI service-container database. It fails closed unless an explicit CI opt-in and exact local database name match, and does not connect to Render or any external provider.
+- This proves schema continuity **only in CI**; provider-live source restoration, production ownership, rollback drill and external PostgreSQL admission remain open (#65).
+
 ## Quality and release instructions
 
 1. At the integrated exact SHA, run SQLite, PostgreSQL 17, migration checksums, 026 partner+026 commercial+027+028+029, source→restore fingerprints, negative role/tenant/session tests, atomic finance fault injection, participant/partner/organizer/finance browser routes and evidence screenshot review.
