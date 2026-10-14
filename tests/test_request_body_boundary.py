@@ -92,11 +92,22 @@ class JsonEnvelopeBoundaryTests(unittest.TestCase):
 class DemoEndpointTruthBoundaryTests(unittest.TestCase):
     def test_non_demo_get_does_not_expose_cross_tenant_event_history(self):
         with patch("app.db.demo_seed_enabled", return_value=False):
-            for route in ("/api/demo/status", "/api/demo/evidence"):
-                with self.subTest(route=route):
-                    h = request()
-                    h.path = route
-                    self.assertEqual(H.do_GET(h), ({"error": "not_found"}, 404))
+            with patch("server.conn", side_effect=AssertionError("demo data accessed")):
+                for route, role in (
+                    ("/api/demo/status", "sales"),
+                    ("/api/demo/evidence", "partner"),
+                ):
+                    # Even an otherwise eligible authenticated role cannot use
+                    # an unscoped demo projection in the real-data authority.
+                    with self.subTest(route=route), patch(
+                        "server.auth",
+                        return_value=(role, "Authorized Actor", "actor@example.test"),
+                    ):
+                        h = request()
+                        h.path = route
+                        self.assertEqual(
+                            H.do_GET(h), ({"error": "not_found"}, 404)
+                        )
 
     def test_non_demo_post_reset_or_step_never_reads_body(self):
         with patch("app.db.demo_seed_enabled", return_value=False):
