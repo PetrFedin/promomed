@@ -84,6 +84,11 @@ class JsonEnvelopeBoundaryTests(unittest.TestCase):
                 with self.assertRaises(RequestBodyError):
                     body(request(payload, content_length=len(payload)))
 
+    def test_nested_json_parser_depth_is_rejected(self):
+        deeply_nested = b"[" * 2000 + b"0" + b"]" * 2000
+        h = request(deeply_nested, content_length=len(deeply_nested))
+        self.assertEqual(H.do_POST(h), ({"error": "bad_json"}, 400))
+
     def test_bad_json_uses_400_without_auth_or_db_access(self):
         bad = request(b"[]", content_length=2)
         self.assertEqual(H.do_POST(bad), ({"error": "bad_json"}, 400))
