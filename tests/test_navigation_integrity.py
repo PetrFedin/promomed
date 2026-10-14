@@ -84,11 +84,12 @@ class NavigationIntegrityTests(unittest.TestCase):
         workspace = (PUBLIC / "institutional-commercial-workspace.html").read_text(
             encoding="utf-8"
         )
+        shell = (PUBLIC / "institutional-shell.js").read_text(encoding="utf-8")
         for route in (
             "/partner-collaboration.html", "/value-exchange.html",
             "/pilot-revenue-ladder.html",
         ):
-            self.assertIn(route, home + workspace)
+            self.assertIn(route, home + workspace + shell)
         self.assertTrue((PUBLIC / "pilot-revenue-ladder.html").is_file())
         self.assertTrue((PUBLIC / "partner-collaboration.html").is_file())
 
