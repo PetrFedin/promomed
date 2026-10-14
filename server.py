@@ -5,10 +5,10 @@ from app import corporate, db, executive, investor, investment_proof, contract_b
 from app.analytics import commercial, state
 from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash, RequestBodyError, RequestBodyTooLarge
 from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
-from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 from app.community_commands import handle_command as handle_community_command; from app.learning_commands import handle_command as handle_learning_command; from app.participant_commands import handle_command as handle_participant_command
 from app.programme_commands import handle_command as handle_programme_command; from app.operations_commands import handle_command as handle_operations_command; from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public; from app.syndication_commands import handle_command as handle_syndication_command, handle_public as handle_syndication_public; from app.trust_commands import handle_command as handle_trust_command, handle_public as handle_trust_public
+from app.demo_reads import serve as serve_demo_read
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -325,37 +325,8 @@ class H(SimpleHTTPRequestHandler):
   if p=="/api/analytics":
    if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
    c=conn(); d=commercial(c); d["seeded_demo"]=False; d["demo_run"]=sval(c,"demo_run","0"); d["demo_step"]=sval(c,"demo_step","-1"); c.close(); return self.out(d)
-  if p=="/api/demo/status":
-   if not a or a[0] not in ("sales","organizer"): return self.out({"error":"forbidden"},403)
-   c=conn(); idx=int(sval(c,"demo_step","-1")); d=state(c,a[2]); c.close()
-   d["step_index"]=idx; d["step_key"]=DEMO_STEPS[idx][0] if 0<=idx<len(DEMO_STEPS) else "not_started"
-   d["step_title"]=DEMO_STEPS[idx][1] if 0<=idx<len(DEMO_STEPS) else "Демо не подготовлено"
-   d["total_steps"]=len(DEMO_STEPS)
-   return self.out(d)
-  if p=="/api/demo/evidence":
-   if not a or a[0] not in ("sales","organizer","partner"): return self.out({"error":"forbidden"},403)
-   c=conn()
-   rows=[dict(r) for r in c.execute("SELECT id,kind,actor,payload,ts FROM events ORDER BY id DESC LIMIT 30")]
-   rows.reverse()
-   metrics=commercial(c)
-   metrics["placement_status"]=state(c).get("placement_status")
-   metrics["live_state"]=sval(c,"live_state","scheduled")
-   metrics["phase"]=sval(c,"phase","before")
-   metrics["session_time"]=sval(c,"session_time","11:00")
-   metrics["session_room"]=sval(c,"session_room","Лекторий")
-   metrics["occupied"]=int(sval(c,"occupied","0"))
-   metrics["capacity"]=int(sval(c,"capacity","120"))
-   deliverables=[dict(r) for r in c.execute("SELECT id,label,status,evidence,updated FROM deliverables ORDER BY id")]
-   notifications=c.execute("SELECT COUNT(*) n FROM notifications").fetchone()["n"]
-   metrics["notifications"]=notifications
-   c.close()
-   return self.out({"events":rows,"metrics":metrics,"deliverables":deliverables,"proposed_pilot_gates":[
-    {"id":"audience","label":"Аудитория","criterion":"Регистрация → фактическое участие","target":"Цель пилота согласуется до запуска","status":"to_agree"},
-    {"id":"engagement","label":"Вовлечённость","criterion":"Контент → событие → post-event возврат","target":"Цель пилота согласуется до запуска","status":"to_agree"},
-    {"id":"partner","label":"Коммерция","criterion":"Добровольные лиды и ценность партнёра","target":"Цель пилота согласуется до запуска","status":"to_agree"},
-    {"id":"operations","label":"Операции","criterion":"Check-in / waitlist / venue / live без критических тупиков","target":"0 критических сценариев без recovery path","status":"proposed"},
-    {"id":"trust","label":"Доверие","criterion":"Контент, согласия и партнёрская прозрачность","target":"100% обязательных approval / disclosure полей в пилоте","status":"proposed"}
-   ]})
+  demo_view=serve_demo_read(p,a,conn)
+  if demo_view is not None: return self.out(demo_view[0],demo_view[1])
   return super().do_GET()
  def do_POST(self):
   p=urlparse(self.path).path
