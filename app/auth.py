@@ -169,7 +169,7 @@ def body(h):
         raise RequestBodyError("incomplete_json_body")
     try:
         data = json.loads(payload or b"{}")
-    except (ValueError, UnicodeDecodeError):
+    except (ValueError, UnicodeDecodeError, RecursionError):
         raise RequestBodyError("malformed_json") from None
     if not isinstance(data, dict):
         raise RequestBodyError("json_object_required")
