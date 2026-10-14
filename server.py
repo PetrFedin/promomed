@@ -3,7 +3,7 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
 from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority, partner_collaboration
 from app.analytics import commercial, state
-from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
+from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash, RequestBodyError, RequestBodyTooLarge
 from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
 from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 from app.community_commands import handle_command as handle_community_command; from app.learning_commands import handle_command as handle_learning_command; from app.participant_commands import handle_command as handle_participant_command
@@ -357,7 +357,8 @@ class H(SimpleHTTPRequestHandler):
  def do_POST(self):
   p=urlparse(self.path).path
   try: data=body(self)
-  except Exception: return self.out({"error":"bad_json"},400)
+  except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
+  except RequestBodyError: return self.out({"error":"bad_json"},400)
   public_outcome=handle_evidence_checkpoint_public(p,data)
   if public_outcome is not None:
    return self.out(public_outcome[0],public_outcome[1])
