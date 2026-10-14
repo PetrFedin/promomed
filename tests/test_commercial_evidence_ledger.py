@@ -194,6 +194,40 @@ class CommercialEvidenceLedgerTests(unittest.TestCase):
             self.event("renewal",old,amount=0,related=recognition["id"],
                        ext="wrong-renewal")
 
+    def test_candidate_allocation_correction_releases_capacity_without_mutation(self):
+        cid,_,_,invoice=self.pipeline()
+        settlement=self.event("settlement",cid,amount=8000,ext="correct-deposit")["id"]
+        allocation=self.event("allocation",cid,amount=7000,ext="correct-alloc",parent=invoice,related=settlement)
+        corrected=self.event("allocation",cid,amount=0,ext="correct-alloc",version=2,
+                             parent=invoice,related=settlement,replace=allocation["id"])
+        self.assertNotEqual(corrected["id"],allocation["id"])
+        another=self.event("allocation",cid,amount=7000,ext="new-alloc",parent=invoice,related=settlement)
+        self.assertTrue(another["created"])
+        self.assertEqual(ledger.snapshot(self.c,A,actor=ACTOR)["contractCandidates"][0]["documentCounts"]["allocation"],2)
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_candidate_recognition_correction_releases_net_ceiling(self):
+        cid,_,_,invoice=self.pipeline()
+        old=self.event("recognition",cid,amount=7000,ext="rec-correction",parent=invoice,period="2026-10")
+        self.event("recognition",cid,amount=0,ext="rec-correction",version=2,
+                   parent=invoice,period="2026-10",replace=old["id"])
+        new=self.event("recognition",cid,amount=7000,ext="new-rec",parent=invoice,period="2026-10")
+        self.assertTrue(new["created"])
+        self.assertIsNone(ledger.snapshot(self.c,A,actor=ACTOR)["recognizedRevenue"])
+
+    def test_revisions_cannot_reassign_parent_or_recognition_period(self):
+        cid,_,_,invoice=self.pipeline()
+        settlement=self.event("settlement",cid,amount=8000,ext="lineage-settlement")["id"]
+        orig=self.event("allocation",cid,amount=1000,ext="lineage-allocation",parent=invoice,related=settlement)
+        another=self.event("settlement",cid,amount=2000,ext="another-settlement")["id"]
+        with self.assertRaisesRegex(ValueError,"event_revision_lineage_mismatch"):
+            self.event("allocation",cid,amount=0,ext="lineage-allocation",version=2,
+                       parent=invoice,related=another,replace=orig["id"])
+        recognition=self.event("recognition",cid,amount=1000,ext="lineage-rec",parent=invoice,period="2026-10")
+        with self.assertRaisesRegex(ValueError,"event_revision_lineage_mismatch"):
+            self.event("recognition",cid,amount=0,ext="lineage-rec",version=2,
+                       parent=invoice,period="2026-11",replace=recognition["id"])
+
     def test_cross_tenant_cannot_read_or_reuse_parent(self):
         a=self.contract()
         b=self.contract(org=B,external="other-pilot")
@@ -222,6 +256,167 @@ class CommercialEvidenceLedgerTests(unittest.TestCase):
             self.c.execute("DELETE FROM commercial_evidence_audit WHERE organization_id=?",(A,))
         self.c.rollback()
         self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_audit_detects_privileged_contract_amount_tampering(self):
+        cid,_,_,_=self.pipeline()
+        self.c.commit()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+        self.c.execute("DROP TRIGGER commercial_contract_update_denied")
+        self.c.execute(
+            "UPDATE commercial_contract_versions SET net_amount_minor=? WHERE id=?",
+            (999999,cid),
+        )
+        invalid=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertFalse(invalid["valid"])
+        self.assertEqual(invalid["reason"],"DOCUMENT_PAYLOAD_MISMATCH")
+        self.c.rollback()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_audit_detects_privileged_event_amount_tampering(self):
+        cid,_,_,invoice=self.pipeline()
+        self.c.commit()
+        self.c.execute("DROP TRIGGER commercial_event_update_denied")
+        self.c.execute(
+            "UPDATE commercial_evidence_events SET amount_minor=1 WHERE id=?",
+            (invoice,),
+        )
+        invalid=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertFalse(invalid["valid"])
+        self.assertEqual(invalid["reason"],"DOCUMENT_PAYLOAD_MISMATCH")
+        self.c.rollback()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_audit_detects_privileged_missing_suffix(self):
+        self.pipeline()
+        self.c.commit()
+        self.c.execute("DROP TRIGGER commercial_audit_delete_denied")
+        self.c.execute(
+            "DELETE FROM commercial_evidence_audit WHERE organization_id=? AND entry_no=4",
+            (A,),
+        )
+        invalid=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertFalse(invalid["valid"])
+        self.assertEqual(invalid["reason"],"AUDIT_COVERAGE_GAP")
+        self.c.rollback()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_audit_detects_idempotency_key_tampering(self):
+        cid,_,_,_=self.pipeline()
+        self.c.commit()
+        self.c.execute("DROP TRIGGER commercial_contract_update_denied")
+        self.c.execute(
+            "UPDATE commercial_contract_versions SET idempotency_key=? WHERE id=?",
+            ("altered-request-key",cid),
+        )
+        invalid=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertEqual(invalid["reason"],"DOCUMENT_PAYLOAD_MISMATCH")
+        self.c.rollback()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_audit_detects_record_time_tampering(self):
+        cid,_,_,_=self.pipeline()
+        self.c.commit()
+        self.c.execute("DROP TRIGGER commercial_event_update_denied")
+        self.c.execute(
+            "UPDATE commercial_evidence_events SET recorded_at=recorded_at+60 "
+            "WHERE organization_id=? AND event_type='invoice'",
+            (A,),
+        )
+        invalid=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertEqual(invalid["reason"],"DOCUMENT_AUDIT_TIMESTAMP_MISMATCH")
+        self.c.rollback()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+
+    def test_successful_candidate_operations_do_not_implicitly_commit(self):
+        cid = self.contract(external="outer-transaction-only")["id"]
+        self.event(
+            "obligation", cid, amount=2000, ext="outer-obligation"
+        )
+        # The application must not commit behind the caller's back.
+        self.c.rollback()
+        contract_count = self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_contract_versions "
+            "WHERE organization_id=?", (A,),
+        ).fetchone()["n"]
+        event_count = self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_evidence_events "
+            "WHERE organization_id=?", (A,),
+        ).fetchone()["n"]
+        audit_count = self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_evidence_audit "
+            "WHERE organization_id=?", (A,),
+        ).fetchone()["n"]
+        self.assertEqual((contract_count, event_count, audit_count), (0, 0, 0))
+        self.assertTrue(ledger.verify_chain(self.c, A, actor=ACTOR)["valid"])
+
+    def test_atomic_contract_and_audit_fail_together_with_outer_work_preserved(self):
+        # Record marker in the *outer* transaction. An induced failure in the
+        # audit insert must revert only the candidate operation, not unrelated
+        # work the caller will later commit.
+        self.c.execute("CREATE TABLE atomicity_marker(id TEXT PRIMARY KEY)")
+        self.c.execute(
+            """CREATE TRIGGER fixture_reject_contract_audit
+               BEFORE INSERT ON commercial_evidence_audit
+               WHEN NEW.organization_id='LEDGER-DEMO-A'
+                 AND NEW.entity_kind='contract'
+               BEGIN SELECT RAISE(ABORT,'synthetic_contract_audit_failure'); END"""
+        )
+        self.c.commit()
+        self.c.execute("INSERT INTO atomicity_marker(id) VALUES('unrelated')")
+        with self.assertRaisesRegex(self.db.INTEGRITY_ERRORS, "synthetic_contract_audit_failure"):
+            self.contract(external="atomic-contract",key="atomic-contract-request")
+        self.c.commit()
+        count=self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_contract_versions WHERE organization_id=?",
+            (A,),
+        ).fetchone()["n"]
+        audit=self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_evidence_audit WHERE organization_id=?",
+            (A,),
+        ).fetchone()["n"]
+        self.assertEqual((count,audit),(0,0))
+        self.assertEqual(self.c.execute(
+            "SELECT COUNT(*) n FROM atomicity_marker"
+        ).fetchone()["n"],1)
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+        self.c.execute("DROP TRIGGER fixture_reject_contract_audit")
+        created=self.contract(external="atomic-contract",key="atomic-contract-request")
+        self.assertTrue(created["created"])
+        self.c.commit()
+        self.assertEqual(ledger.verify_chain(self.c,A,actor=ACTOR)["checked"],1)
+
+    def test_atomic_event_and_audit_fail_together_reusing_idempotency_key(self):
+        cid=self.contract(external="atomic-event-contract")["id"]
+        self.c.commit()
+        self.c.execute(
+            """CREATE TRIGGER fixture_reject_event_audit
+               BEFORE INSERT ON commercial_evidence_audit
+               WHEN NEW.organization_id='LEDGER-DEMO-A'
+                 AND NEW.entity_kind='event'
+               BEGIN SELECT RAISE(ABORT,'synthetic_event_audit_failure'); END"""
+        )
+        self.c.commit()
+        with self.assertRaisesRegex(self.db.INTEGRITY_ERRORS, "synthetic_event_audit_failure"):
+            self.event("obligation",cid,amount=3000,
+                       ext="atomic-obligation",key="atomic-event-request")
+        # Deliberately COMMIT even though the caller caught the error.
+        # Without savepoint atomicity the event would survive without an audit.
+        self.c.commit()
+        count=self.c.execute(
+            "SELECT COUNT(*) n FROM commercial_evidence_events WHERE organization_id=?",
+            (A,),
+        ).fetchone()["n"]
+        self.assertEqual(count,0)
+        proof=ledger.verify_chain(self.c,A,actor=ACTOR)
+        self.assertTrue(proof["valid"],proof)
+        self.assertEqual(proof["checked"],1)
+        self.c.execute("DROP TRIGGER fixture_reject_event_audit")
+        recovered=self.event("obligation",cid,amount=3000,
+                             ext="atomic-obligation",key="atomic-event-request")
+        self.assertTrue(recovered["created"])
+        self.c.commit()
+        self.assertTrue(ledger.verify_chain(self.c,A,actor=ACTOR)["valid"])
+        self.assertEqual(ledger.snapshot(self.c,A,actor=ACTOR)["auditLength"],2)
 
     def test_non_demo_candidate_write_is_denied_in_sqlite(self):
         evidence_interchange.register_organization(
