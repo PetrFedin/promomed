@@ -3,6 +3,7 @@
 import io
 import json
 import unittest
+from unittest.mock import patch
 from email.message import Message
 from types import SimpleNamespace
 
@@ -86,6 +87,48 @@ class JsonEnvelopeBoundaryTests(unittest.TestCase):
     def test_bad_json_uses_400_without_auth_or_db_access(self):
         bad = request(b"[]", content_length=2)
         self.assertEqual(H.do_POST(bad), ({"error": "bad_json"}, 400))
+
+
+class DemoEndpointTruthBoundaryTests(unittest.TestCase):
+    def test_non_demo_get_does_not_expose_cross_tenant_event_history(self):
+        with patch("app.db.demo_seed_enabled", return_value=False):
+            for route in ("/api/demo/status", "/api/demo/evidence"):
+                with self.subTest(route=route):
+                    h = request()
+                    h.path = route
+                    self.assertEqual(H.do_GET(h), ({"error": "not_found"}, 404))
+
+    def test_non_demo_post_reset_or_step_never_reads_body(self):
+        with patch("app.db.demo_seed_enabled", return_value=False):
+            for route in ("/api/demo/reset", "/api/demo/next"):
+                with self.subTest(route=route):
+                    h = request(stream=ExplodingRead())
+                    h.path = route
+                    self.assertEqual(H.do_POST(h), ({"error": "not_found"}, 404))
+
+    def test_direct_demo_command_rejects_even_organizer_without_demo_seed(self):
+        from app import demo_commands
+
+        with patch("app.db.demo_seed_enabled", return_value=False):
+            for route in ("/api/demo/reset", "/api/demo/next"):
+                result = demo_commands.handle_command(
+                    None, route, "organizer", "organizer@example.test", {}
+                )
+                self.assertEqual(result.status, 404)
+                self.assertEqual(result.payload, {"error": "not_found"})
+
+    def test_demo_mode_still_rejects_unauthorized_roles(self):
+        from app import demo_commands
+
+        with patch("app.db.demo_seed_enabled", return_value=True):
+            h = request()
+            h.path = "/api/demo/evidence"
+            self.assertEqual(H.do_GET(h), ({"error": "forbidden"}, 403))
+            result = demo_commands.handle_command(
+                None, "/api/demo/reset", "participant",
+                "participant@demo.ru", {},
+            )
+            self.assertEqual(result.status, 403)
 
 
 if __name__ == "__main__":
