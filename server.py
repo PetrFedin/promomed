@@ -10,6 +10,7 @@ from app.programme_commands import handle_command as handle_programme_command; f
 from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public; from app.syndication_commands import handle_command as handle_syndication_command, handle_public as handle_syndication_public; from app.trust_commands import handle_command as handle_trust_command, handle_public as handle_trust_public
 from app.demo_reads import serve as serve_demo_read
 from app.legacy_report_scope import unavailable_on_non_demo
+from app.legacy_write_scope import unavailable_on_non_demo as legacy_write_unavailable
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
 from app.self_registration import handle_public as handle_self_registration_public
@@ -345,6 +346,7 @@ class H(SimpleHTTPRequestHandler):
   return super().do_GET()
  def do_POST(self):
   parsed=urlparse(self.path); p=parsed.path
+  if legacy_write_unavailable(p): return self.out({"error":"not_found"},404)
   if p.startswith(MY_STATE_ROUTE) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   try: data=body(self)
