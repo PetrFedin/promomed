@@ -11,6 +11,7 @@ from app.editorial_commands import handle_command as handle_editorial_command; f
 from app.demo_reads import serve as serve_demo_read
 from app.legacy_report_scope import unavailable_on_non_demo
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
+from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.my_workspace import read as read_my_workspace, handle_command as handle_my_workspace_command, READ_ROUTE as MY_STATE_ROUTE, PAGE_PREFIX as MY_STATE_PAGE_PREFIX
 from app.investment_commands import handle_command as handle_investment_command
@@ -195,6 +196,8 @@ class H(SimpleHTTPRequestHandler):
   parsed=urlparse(self.path); p=parsed.path
   if (p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX)) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
+  if p==PUBLIC_STATE_ROUTE:
+   public_state=serve_public_state(self.path); return self.out(public_state[0],public_state[1])
   a=auth(self)
   if p=="/health":
    return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"demo_seed":db.demo_seed_enabled(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
