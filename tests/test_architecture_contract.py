@@ -44,6 +44,7 @@ MODULES = {
     "public_state.py",
     "self_registration.py",
     "registration_delivery.py",
+    "event_registration.py",
     "reviewer_authority.py",
     "evidence_interchange.py",
     "institutional_commands.py",
@@ -84,6 +85,8 @@ class ArchitectureContractTests(unittest.TestCase):
         auth_idx = SERVER.index("a=auth(self)", SERVER.index(" def do_GET(self):"))
         self.assertLess(public_idx, auth_idx)
         self.assertIn("handle_self_registration_public", SERVER)
+        self.assertIn("serve_event_registration", SERVER)
+        self.assertIn("handle_event_registration_command", SERVER)
 
     def test_bounded_context_modules_exist(self):
         present = {p.name for p in APP.glob("*.py")}
