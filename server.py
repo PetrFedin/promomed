@@ -12,6 +12,7 @@ from app.demo_reads import serve as serve_demo_read
 from app.legacy_report_scope import unavailable_on_non_demo
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
+from app.my_workspace import read as read_my_workspace, handle_command as handle_my_workspace_command, READ_ROUTE as MY_STATE_ROUTE, PAGE_PREFIX as MY_STATE_PAGE_PREFIX
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
 from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection; from app.discovery_reads import serve as serve_discovery; from app.media_reads import serve as serve_media
@@ -191,7 +192,8 @@ class H(SimpleHTTPRequestHandler):
   self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors(); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
-  p=urlparse(self.path).path
+  parsed=urlparse(self.path); p=parsed.path
+  if (p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX)) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   a=auth(self)
   if p=="/health":
@@ -209,6 +211,11 @@ class H(SimpleHTTPRequestHandler):
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
   if p=="/api/partner-collaboration": return self.out(*partner_collaboration.read_result(urlparse(self.path).query,a,conn))
   if p=="/api/client-365": return self.out(*serve_client365(a,self.path))
+  if p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX):
+   if not a: return self.out({"error":"unauthorized"},401)
+   c=conn()
+   try: payload,status=read_my_workspace(c,p,a[0],a[2]); return self.out(payload,status)
+   finally: c.close()
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
@@ -330,7 +337,8 @@ class H(SimpleHTTPRequestHandler):
   if demo_view is not None: return self.out(demo_view[0],demo_view[1])
   return super().do_GET()
  def do_POST(self):
-  p=urlparse(self.path).path
+  parsed=urlparse(self.path); p=parsed.path
+  if p.startswith(MY_STATE_ROUTE) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   try: data=body(self)
   except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
@@ -359,6 +367,7 @@ class H(SimpleHTTPRequestHandler):
    try:
     outcome=handle_community_command(c,p,role,email,data)
     if outcome is None: outcome=handle_learning_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_my_workspace_command(c,p,role,email,data)
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
     if outcome is None: outcome=handle_programme_command(c,p,role,email,data); outcome=handle_operations_command(c,p,role,email,data) if outcome is None else outcome
     if outcome is None: outcome=partner_collaboration.handle_command(c,p,role,email,data)

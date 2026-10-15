@@ -30,6 +30,7 @@ MODULES = {
     "partners.py",
     "operations.py",
     "participant.py",
+    "my_workspace.py",
     "commanding.py",
     "community_commands.py",
     "learning_commands.py",
@@ -71,6 +72,8 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash", SERVER)
         self.assertIn("from app.core import audit, notify, promote_waitlist, setv, sval", SERVER)
         self.assertIn("from app.demo_reads import serve as serve_demo_read", SERVER)
+        self.assertIn("from app.my_workspace import read as read_my_workspace", SERVER)
+        self.assertIn("handle_my_workspace_command", SERVER)
         self.assertIn("demo_view=serve_demo_read(p,a,conn)", SERVER)
         self.assertNotIn('if p=="/api/demo/evidence":', SERVER)
 
