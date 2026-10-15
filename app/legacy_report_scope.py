@@ -7,6 +7,7 @@ reviewed membership-scoped projections; this gate is not a tenant implementation
 from app import db
 
 LEGACY_GLOBAL_REPORT_ROUTES = frozenset({
+    "/api/state",
     "/api/analytics",
     "/api/command",
     "/api/intelligence",
