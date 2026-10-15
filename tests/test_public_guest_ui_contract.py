@@ -1,6 +1,5 @@
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
@@ -39,7 +38,8 @@ class PublicGuestUiContractTests(unittest.TestCase):
         import http.server
         import server
         for path in ("/", "/index.html"):
-            h=SimpleNamespace(path=path)
+            h=object.__new__(server.H)
+            h.path=path
             with patch("server.db.demo_seed_enabled", return_value=False):
                 with patch.object(http.server.SimpleHTTPRequestHandler, "do_GET", return_value="STATIC") as static:
                     self.assertEqual(server.H.do_GET(h), "STATIC")
@@ -49,7 +49,8 @@ class PublicGuestUiContractTests(unittest.TestCase):
     def test_demo_root_is_not_rewritten_to_public_guest_surface(self):
         import http.server
         import server
-        h=SimpleNamespace(path="/")
+        h=object.__new__(server.H)
+        h.path="/"
         with patch("server.db.demo_seed_enabled", return_value=True):
             with patch("server.auth", return_value=None):
                 with patch.object(http.server.SimpleHTTPRequestHandler, "do_GET", return_value="LEGACY") as static:
