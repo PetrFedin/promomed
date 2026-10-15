@@ -30,7 +30,7 @@
     state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.registration=null;
     $("workspace").hidden=true;$("signed-out").hidden=false;$("logout").hidden=true;
     $("login-button").disabled=false;$("signup-button").disabled=false;$("verify-button").disabled=false;$("save-note").disabled=true;$("logout-all").disabled=false;
-    $("password").value="";$("signup-password").value="";$("verify-code").value="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();
+    $("password").value="";$("signup-name").value="";$("signup-email").value="";$("signup-password").value="";$("verify-code").value="";$("verify-email").textContent="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();
     showAuthMode("login");updateCount();
   }
   function stale(g,token){return g!==state.generation||token!==state.token;}
