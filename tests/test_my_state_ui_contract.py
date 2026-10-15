@@ -27,6 +27,15 @@ class MyStateUiContractTests(unittest.TestCase):
         self.assertIn("stale(g,token)", JS)
         self.assertIn("data.role!==\"participant\"", JS)
 
+    def test_login_captures_credentials_before_clear_session(self):
+        capture = 'const email=$("email").value.trim(),password=$("password").value;'
+        submit = JS.index('$("login-form").addEventListener("submit"')
+        capture_at = JS.index(capture, submit)
+        clear_at = JS.index("clearSession();", submit)
+        self.assertGreaterEqual(submit, 0)
+        self.assertGreaterEqual(capture_at, 0)
+        self.assertGreater(clear_at, capture_at)
+
     def test_user_text_is_rendered_as_text_not_html(self):
         self.assertIn("textContent", JS)
         self.assertNotIn("innerHTML", JS)
