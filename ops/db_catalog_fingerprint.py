@@ -15,6 +15,7 @@ TABLES = (
     "accounts",
     "auth_sessions",
     "personal_notes_v1",
+    "public_artifact_admissions",
     "program_items",
     "content_catalog",
     "product_catalog",
