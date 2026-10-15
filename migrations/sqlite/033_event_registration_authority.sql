@@ -21,6 +21,29 @@ CREATE TABLE IF NOT EXISTS participant_event_registrations_v1 (
 CREATE INDEX IF NOT EXISTS participant_event_registration_queue
 ON participant_event_registrations_v1(event_id,status,requested_at,email);
 
+-- SQLite runtime does not globally enable PRAGMA foreign_keys, so the authority
+-- enforces both parent references explicitly as well as with declared FKs.
+CREATE TRIGGER IF NOT EXISTS participant_event_registration_parent_insert
+BEFORE INSERT ON participant_event_registrations_v1
+BEGIN
+  SELECT CASE WHEN NOT EXISTS(
+    SELECT 1 FROM event_editions_v1 WHERE id=NEW.event_id
+  ) THEN RAISE(ABORT,'event_registration_event_missing') END;
+  SELECT CASE WHEN NOT EXISTS(
+    SELECT 1 FROM accounts WHERE email=NEW.email
+  ) THEN RAISE(ABORT,'event_registration_account_missing') END;
+END;
+CREATE TRIGGER IF NOT EXISTS participant_event_registration_parent_update
+BEFORE UPDATE OF event_id,email ON participant_event_registrations_v1
+BEGIN
+  SELECT CASE WHEN NOT EXISTS(
+    SELECT 1 FROM event_editions_v1 WHERE id=NEW.event_id
+  ) THEN RAISE(ABORT,'event_registration_event_missing') END;
+  SELECT CASE WHEN NOT EXISTS(
+    SELECT 1 FROM accounts WHERE email=NEW.email
+  ) THEN RAISE(ABORT,'event_registration_account_missing') END;
+END;
+
 CREATE TRIGGER IF NOT EXISTS participant_event_registration_account_delete
 AFTER DELETE ON accounts
 BEGIN
