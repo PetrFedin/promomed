@@ -192,7 +192,8 @@ class H(SimpleHTTPRequestHandler):
   self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors(); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
-  p=urlparse(self.path).path
+  parsed=urlparse(self.path); p=parsed.path
+  if (p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX)) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   a=auth(self)
   if p=="/health":
@@ -336,7 +337,8 @@ class H(SimpleHTTPRequestHandler):
   if demo_view is not None: return self.out(demo_view[0],demo_view[1])
   return super().do_GET()
  def do_POST(self):
-  p=urlparse(self.path).path
+  parsed=urlparse(self.path); p=parsed.path
+  if p.startswith(MY_STATE_ROUTE) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   try: data=body(self)
   except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
