@@ -11,6 +11,7 @@
   function clearSession(){
     state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;
     $("workspace").hidden=true;$("signed-out").hidden=false;$("logout").hidden=true;
+    $("login-button").disabled=false;$("save-note").disabled=true;$("logout-all").disabled=false;
     $("password").value="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();
     updateCount();
   }
