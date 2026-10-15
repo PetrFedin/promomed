@@ -12,6 +12,7 @@ from app.demo_reads import serve as serve_demo_read
 from app.legacy_report_scope import unavailable_on_non_demo
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
+from app.self_registration import handle_public as handle_self_registration_public
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.my_workspace import read as read_my_workspace, handle_command as handle_my_workspace_command, READ_ROUTE as MY_STATE_ROUTE, PAGE_PREFIX as MY_STATE_PAGE_PREFIX
 from app.investment_commands import handle_command as handle_investment_command
@@ -346,6 +347,8 @@ class H(SimpleHTTPRequestHandler):
   try: data=body(self)
   except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
   except RequestBodyError: return self.out({"error":"bad_json"},400)
+  registration_public=handle_self_registration_public(p,data)
+  if registration_public is not None: return self.out(registration_public[0],registration_public[1])
   public_outcome=handle_evidence_checkpoint_public(p,data)
   if public_outcome is not None:
    return self.out(public_outcome[0],public_outcome[1])
