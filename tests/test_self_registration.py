@@ -188,9 +188,11 @@ class ParticipantSelfRegistrationTests(unittest.TestCase):
         payload, captured = self.request_with_code()
         c = self.db.connect()
         try:
+            now = int(time.time())
             c.execute(
-                "UPDATE participant_registration_requests SET expires_at=? WHERE id=?",
-                (int(time.time()) - 1, payload["requestId"]),
+                "UPDATE participant_registration_requests "
+                "SET created_at=?,expires_at=? WHERE id=?",
+                (now - 601, now - 1, payload["requestId"]),
             )
             c.commit()
         finally:
