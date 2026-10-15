@@ -40,7 +40,7 @@ Cancel rules:
 
 ## Concurrency
 
-The event row is the serialization boundary: PostgreSQL uses `SELECT ... FOR UPDATE`; SQLite uses `BEGIN IMMEDIATE`.
+The event row is the serialization boundary: PostgreSQL uses `SELECT ... FOR UPDATE`; SQLite uses `BEGIN IMMEDIATE`. Because this repository does not globally enable SQLite foreign-key enforcement, migration 033 also installs database triggers that reject event-registration rows whose event or account parent does not exist, plus explicit delete cleanup.
 
 The dedicated PostgreSQL 17 qualification starts two registration requests concurrently against capacity=1 and requires exactly one `confirmed` and one `waitlist`.
 
