@@ -1,8 +1,13 @@
+import importlib
+import os
 import secrets
 import time
 import unittest
 
 from app import db
+
+ORIGINAL_DATABASE_URL = os.environ.get("DATABASE_URL")
+ORIGINAL_SQLITE_PATH = os.environ.get("SQLITE_PATH")
 from app.auth import hash_password, issue_session, token_hash
 from app.commanding import finalize_command
 from app.my_workspace import (
@@ -14,6 +19,18 @@ from app.my_workspace import (
 class MyStateV1Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        # Other explicit test modules may temporarily reload app.db against
+        # disposable paths. Restore the workflow-selected backend before this
+        # suite so test order cannot select a deleted database.
+        if ORIGINAL_DATABASE_URL is None:
+            os.environ.pop("DATABASE_URL", None)
+        else:
+            os.environ["DATABASE_URL"] = ORIGINAL_DATABASE_URL
+        if ORIGINAL_SQLITE_PATH is None:
+            os.environ.pop("SQLITE_PATH", None)
+        else:
+            os.environ["SQLITE_PATH"] = ORIGINAL_SQLITE_PATH
+        importlib.reload(db)
         db.migrate()
 
     def setUp(self):
