@@ -14,6 +14,7 @@ TABLES = (
     "state",
     "accounts",
     "auth_sessions",
+    "personal_notes_v1",
     "program_items",
     "content_catalog",
     "product_catalog",
