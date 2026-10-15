@@ -16,6 +16,7 @@ TABLES = (
     "auth_sessions",
     "personal_notes_v1",
     "public_artifact_admissions",
+    "participant_invites",
     "program_items",
     "content_catalog",
     "product_catalog",
