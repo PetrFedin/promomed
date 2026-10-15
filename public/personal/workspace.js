@@ -136,6 +136,7 @@
       if(g!==state.generation)return;
       const status=result.registration?.status;
       message(action==="cancel"?"Регистрация отменена.":status==="confirmed"?"Место подтверждено.":"Вы добавлены в лист ожидания.");
+      state.eventBusy=false;
       await refresh();
     }catch(err){
       fail(err,g,err.status===409?"Регистрация на это событие закрыта.":"Не удалось изменить регистрацию.");
