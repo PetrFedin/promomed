@@ -40,6 +40,8 @@ def read(c, raw_path, role, email):
 
 
 def serve(raw_path, role, email):
+    if unavailable_on_non_demo(urlparse(raw_path).path):
+        return {"error": "not_found"}, 404
     c = db.connect()
     try:
         return read(c, raw_path, role, email)
