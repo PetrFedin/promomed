@@ -26,6 +26,7 @@ def fake_request(path):
 class LegacyGlobalReportBoundaryTests(unittest.TestCase):
     def test_registry_contains_all_observed_unscoped_reports(self):
         self.assertEqual(LEGACY_GLOBAL_REPORT_ROUTES, frozenset({
+            "/api/state",
             "/api/analytics",
             "/api/command",
             "/api/intelligence",
@@ -62,7 +63,7 @@ class LegacyGlobalReportBoundaryTests(unittest.TestCase):
     def test_non_demo_does_not_disable_unrelated_public_and_tenant_routes(self):
         paths = (
             "/", "/health", "/ready", "/api/client-365",
-            "/api/partner-collaboration", "/api/state",
+            "/api/partner-collaboration",
             "/api/discovery", "/api/media", "/api/login",
             "/api/analytics-export", "/api/intelligence/other",
         )
