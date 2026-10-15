@@ -117,7 +117,8 @@ class EventRegistrationTests(unittest.TestCase):
         self.assertEqual(len(payload["events"]), 1)
         self.assertEqual(payload["events"][0]["myStatus"], "confirmed")
         self.assertNotIn(self.users[1], str(payload))
-        self.assertNotIn("attendance", str(payload).lower())
+        self.assertNotIn("attendance", str(payload["events"]).lower())
+        self.assertTrue(payload["truthBoundary"]["registrationIsNotAttendance"])
         self.assertFalse(payload["truthBoundary"]["marketingConsent"])
 
     def test_foreign_roles_and_query_selectors_are_rejected(self):
