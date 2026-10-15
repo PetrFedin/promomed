@@ -1,19 +1,37 @@
 (() => {
   "use strict";
   const API="/api/my-state/v1";
+  const REG_REQUEST="/api/participant-registration/v1/request";
+  const REG_VERIFY="/api/participant-registration/v1/verify";
   const $=id=>document.getElementById(id);
-  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false};
+  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,registration:null};
 
   function message(text="",error=false){
     const n=$("notice");n.hidden=!text;n.textContent=text;n.classList.toggle("error",!!error);
   }
   function abortAll(){for(const c of state.controllers)c.abort();state.controllers.clear();}
+  function showAuthMode(mode){
+    const login=mode==="login",verify=mode==="verify";
+    $("login-form").hidden=!login;
+    $("signup-form").hidden=login||verify;
+    $("verify-form").hidden=!verify;
+    $("mode-login").classList.toggle("active",login);
+    $("mode-signup").classList.toggle("active",!login);
+    $("mode-login").setAttribute("aria-selected",String(login));
+    $("mode-signup").setAttribute("aria-selected",String(!login));
+    if(!verify){$("demo-code").hidden=true;$("demo-code").textContent="";}
+  }
+  function changeAuthMode(mode){
+    state.generation++;abortAll();state.registration=null;state.authBusy=false;
+    $("verify-code").value="";$("signup-password").value="";
+    showAuthMode(mode);message("");
+  }
   function clearSession(){
-    state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;
+    state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.registration=null;
     $("workspace").hidden=true;$("signed-out").hidden=false;$("logout").hidden=true;
-    $("login-button").disabled=false;$("save-note").disabled=true;$("logout-all").disabled=false;
-    $("password").value="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();
-    updateCount();
+    $("login-button").disabled=false;$("signup-button").disabled=false;$("verify-button").disabled=false;$("save-note").disabled=true;$("logout-all").disabled=false;
+    $("password").value="";$("signup-name").value="";$("signup-email").value="";$("signup-password").value="";$("verify-code").value="";$("verify-email").textContent="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();
+    showAuthMode("login");updateCount();
   }
   function stale(g,token){return g!==state.generation||token!==state.token;}
   async function request(url,{method="GET",body=null,anonymous=false}={}){
@@ -98,6 +116,59 @@
     }catch(err){if(g===state.generation){clearSession();message(err.status===401?"Проверьте почту и пароль участника.":"Вход не выполнен.",true);}}
     finally{if(g===state.generation)$("login-button").disabled=false;$("password").value="";}
   });
+  $("mode-login").addEventListener("click",()=>changeAuthMode("login"));
+  $("mode-signup").addEventListener("click",()=>changeAuthMode("signup"));
+  $("change-registration-email").addEventListener("click",()=>changeAuthMode("signup"));
+
+  $("signup-form").addEventListener("submit",async e=>{
+    e.preventDefault();if(state.authBusy)return;
+    const name=$("signup-name").value.trim(),email=$("signup-email").value.trim(),password=$("signup-password").value;
+    const g=state.generation;state.authBusy=true;$("signup-button").disabled=true;message("Отправляем код подтверждения…");
+    try{
+      const data=await request(REG_REQUEST,{method:"POST",body:{email,name,password},anonymous:true});
+      if(g!==state.generation)return;
+      state.registration={requestId:data.requestId,email};
+      $("verify-email").textContent="Код отправлен на "+email;
+      $("signup-password").value="";$("verify-code").value="";
+      showAuthMode("verify");
+      if(data.demoOnly&&data.demoVerificationCode){
+        $("demo-code").textContent="DEMO ONLY · код: "+data.demoVerificationCode;
+        $("demo-code").hidden=false;
+      }
+      message("Проверьте почту и введите шестизначный код.");
+      $("verify-code").focus();
+    }catch(err){
+      if(g!==state.generation||err?.stale)return;
+      const text=err.status===503
+        ?"Регистрация пока недоступна: канал подтверждения email не настроен или временно не отвечает."
+        :"Проверьте имя, email и требования к паролю.";
+      message(text,true);
+    }finally{
+      if(g===state.generation){state.authBusy=false;$("signup-button").disabled=false;$("signup-password").value="";}
+    }
+  });
+
+  $("verify-form").addEventListener("submit",async e=>{
+    e.preventDefault();if(state.authBusy||!state.registration)return;
+    const code=$("verify-code").value.trim();
+    if(!/^[0-9]{6}$/.test(code)){message("Введите шестизначный код из письма.",true);return;}
+    const g=state.generation;state.authBusy=true;$("verify-button").disabled=true;message("Подтверждаем email…");
+    try{
+      const data=await request(REG_VERIFY,{method:"POST",body:{request_id:state.registration.requestId,code},anonymous:true});
+      if(g!==state.generation)return;
+      if(data.role!=="participant"||!data.token){throw Object.assign(new Error("invalid_registration_session"),{status:403});}
+      state.token=data.token;state.account={name:data.name||"",email:state.registration.email};state.registration=null;
+      $("verify-code").value="";$("signup-name").value="";$("signup-email").value="";
+      await refresh();
+      if(g===state.generation)message(data.eventRegistration?"Аккаунт создан.":"Аккаунт создан. Регистрация на мероприятие выполняется отдельно.");
+    }catch(err){
+      if(g!==state.generation||err?.stale)return;
+      message(err.status===422?"Код неверен, истёк или число попыток исчерпано.":"Не удалось подтвердить регистрацию.",true);
+    }finally{
+      if(g===state.generation){state.authBusy=false;$("verify-button").disabled=false;}
+    }
+  });
+
   $("note-text").addEventListener("input",updateCount);
   $("save-note").addEventListener("click",async()=>{
     if(state.busy||!state.token)return;
@@ -146,5 +217,5 @@
   window.addEventListener("pagehide",clearSession);
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&state.token&&!state.busy){const g=state.generation;refresh().catch(e=>fail(e,g));}});
   setInterval(()=>{if(state.token&&!state.busy){const g=state.generation;refresh().catch(e=>fail(e,g));}},30000);
-  updateCount();
+  showAuthMode("login");updateCount();
 })();
