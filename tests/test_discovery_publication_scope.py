@@ -61,6 +61,21 @@ class DiscoveryPublicationBoundaryTests(unittest.TestCase):
                         ({"error": "not_found"}, 404),
                     )
 
+    def test_direct_serve_fails_before_opening_database(self):
+        with patch("app.public_discovery_scope.db.demo_seed_enabled",
+                   return_value=False):
+            with patch("app.discovery_reads.db.connect",
+                       side_effect=AssertionError("DB opened")):
+                self.assertEqual(
+                    discovery_reads.serve(
+                        "/api/discovery?review_status=concept", None, None
+                    ), ({"error": "not_found"}, 404)
+                )
+                self.assertEqual(
+                    discovery_reads.serve("/api/discovery/saved", "participant", "a@e.test"),
+                    ({"error": "not_found"}, 404),
+                )
+
     def test_direct_saved_mutations_cannot_bypass_http_gate(self):
         with patch("app.public_discovery_scope.db.demo_seed_enabled",
                    return_value=False):
