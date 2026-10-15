@@ -19,6 +19,7 @@ NEXT = {
     "029_auth_session_revocation",
     "030_personal_workspace_notes",
     "031_public_artifact_admission",
+    "032_participant_invite_onboarding",
 }
 TABLES = {
     "commercial_contract_versions",
@@ -33,6 +34,7 @@ TABLES = {
     "auth_sessions",
     "personal_notes_v1",
     "public_artifact_admissions",
+    "participant_invites",
 }
 
 
@@ -76,7 +78,7 @@ def run():
 
         upgraded = db.migrate(conn)
         assert upgraded["schema_ready"] and not upgraded["checksum_drift"], upgraded
-        assert len(upgraded["applied"]) == len(original) == 32, upgraded
+        assert len(upgraded["applied"]) == len(original) == 33, upgraded
         assert conn.execute(
             "SELECT v FROM state WHERE k=?", (SENTINEL,)
         ).fetchone()["v"] == "preserve-me"
@@ -98,7 +100,7 @@ def run():
         assert TABLES.issubset(schema), TABLES - schema
         rerun = db.migrate(conn)
         assert rerun["schema_ready"] and not rerun["checksum_drift"], rerun
-        assert len(rerun["applied"]) == 32, rerun
+        assert len(rerun["applied"]) == 33, rerun
         assert conn.execute(
             "SELECT v FROM state WHERE k=?", (SENTINEL,)
         ).fetchone()["v"] == "preserve-me"
