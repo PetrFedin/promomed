@@ -79,6 +79,14 @@ def handle_command(c, route, role, email, data):
             return error("demo_identity_forbidden", 422)
         if c.execute("SELECT 1 FROM accounts WHERE email=?", (target,)).fetchone():
             return error("account_exists", 409)
+
+        now = int(time.time())
+        # An expired token cannot remain the unique pending authority forever.
+        c.execute(
+            "UPDATE participant_invites SET status='revoked',consumed_at=? "
+            "WHERE email=? AND status='pending' AND expires_at<=?",
+            (now, target, now),
+        )
         if c.execute(
             "SELECT 1 FROM participant_invites WHERE email=? AND status='pending' LIMIT 1",
             (target,),
@@ -86,12 +94,11 @@ def handle_command(c, route, role, email, data):
             return error("invite_pending", 409)
 
         token = secrets.token_urlsafe(32)
-        now = int(time.time())
         invite_id = uuid.uuid4().hex
         c.execute(
             "INSERT INTO participant_invites("
             "id,token_hash,email,name,status,created_by,created_at,expires_at"
-            ") VALUES(?,?,?,?,'pending',?,?,?)",
+            ") VALUES(?,?,?,?,'pending',?,?,?) ON CONFLICT DO NOTHING",
             (
                 invite_id,
                 token_hash(token),
@@ -102,6 +109,10 @@ def handle_command(c, route, role, email, data):
                 now + INVITE_TTL_SECONDS,
             ),
         )
+        if c.execute(
+            "SELECT 1 FROM participant_invites WHERE id=?", (invite_id,)
+        ).fetchone() is None:
+            return error("invite_pending", 409)
         # Never put the raw invite token in the audit ledger.
         audit(c, "participant_invite_created", email, {"invite_id": invite_id})
         return custom({
