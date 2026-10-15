@@ -59,6 +59,7 @@ jobs:
           python tests/test_session_revocation_browser.py
           python tests/test_my_state_browser.py
           python tests/test_registration_ui_browser.py
+          python tests/test_event_registration_ui_browser.py
       - name: Upload browser evidence
         if: always()
         uses: actions/upload-artifact@v4
