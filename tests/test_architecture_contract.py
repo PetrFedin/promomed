@@ -87,6 +87,9 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("handle_self_registration_public", SERVER)
         self.assertIn("serve_event_registration", SERVER)
         self.assertIn("handle_event_registration_command", SERVER)
+        public_home_idx = SERVER.index('if p in ("/","/index.html") and not db.demo_seed_enabled():')
+        get_auth_idx = SERVER.index("a=auth(self)", SERVER.index(" def do_GET(self):"))
+        self.assertLess(public_home_idx, get_auth_idx)
 
     def test_bounded_context_modules_exist(self):
         present = {p.name for p in APP.glob("*.py")}
