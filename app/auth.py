@@ -6,6 +6,7 @@ import secrets
 import time
 
 from app import db
+from app.request_body_io import BodyReadError, read_exact_body
 
 SESSION_TTL = int(os.environ.get("PROMOMED_SESSION_TTL_SECONDS", "43200"))
 SCRYPT_N = 16384
@@ -164,9 +165,11 @@ def body(h):
     n = int(declared)
     if n > MAX_JSON_BODY_BYTES:
         raise RequestBodyTooLarge("json_body_too_large")
-    payload = h.rfile.read(n)
-    if len(payload) != n:
-        raise RequestBodyError("incomplete_json_body")
+    try:
+        payload = read_exact_body(h, n)
+    except BodyReadError as exc:
+        # Preserve the existing generic HTTP 400 contract; no socket details.
+        raise RequestBodyError(str(exc)) from None
     try:
         data = json.loads(payload or b"{}")
     except (ValueError, UnicodeDecodeError, RecursionError):

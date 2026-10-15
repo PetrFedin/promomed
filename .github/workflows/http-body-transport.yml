@@ -1,0 +1,35 @@
+name: Promomed HTTP body transport
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  body-deadline-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install existing runtime dependencies
+        run: pip install -r requirements.txt
+      - name: Verify JSON envelope and actual loopback HTTP deadlines
+        run: |
+          set -o pipefail
+          python -m unittest -v tests/test_request_body_boundary.py tests/test_request_body_deadline.py tests/test_http_body_deadline_integration.py 2>&1 | tee /tmp/http-body-tests.log
+      - name: Preserve non-sensitive test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: http-body-transport-${{ github.event.pull_request.head.sha }}
+          path: /tmp/http-body-tests.log
+          if-no-files-found: error
+          retention-days: 14
