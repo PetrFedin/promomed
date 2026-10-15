@@ -54,5 +54,24 @@ jobs:
           python-version: "3.12"
       - name: Install runtime
         run: pip install -r requirements.txt
+      - name: Admit schema and prove guarded event provisioning
+        run: |
+          python - <<'PY'
+          from app import db
+          result=db.migrate()
+          assert result["schema_ready"] and not result["checksum_drift"], result
+          PY
+          python ops/provision_event.py --id CI-EVENT --title "CI Event" --starts-at "2027-04-24T10:00:00+03:00" --capacity 2 --status open
+          set +e
+          python ops/provision_event.py --id CI-EVENT --title "CI Event" --starts-at "2027-04-24T10:00:00+03:00" --capacity 2 --status open >/tmp/duplicate-event.json
+          code=$?
+          set -e
+          test "$code" -ne 0
+          python - <<'PY'
+          import json
+          result=json.load(open("/tmp/duplicate-event.json"))
+          assert result["error"]=="event_exists", result
+          print("NON-DEMO EVENT PROVISIONING PASS")
+          PY
       - name: Verify last-place serialization on PostgreSQL 17
         run: python -m unittest -v tests/test_event_registration_postgres.py
