@@ -117,7 +117,8 @@ def request_registration(data):
             return _generic_request()
         if existing:
             c.execute(
-                "UPDATE participant_registration_requests SET status='expired' "
+                "UPDATE participant_registration_requests "
+                "SET status='expired',password_hash='',verification_hash='' "
                 "WHERE id=? AND status='pending'", (existing["id"],)
             )
 
@@ -185,7 +186,8 @@ def verify_registration(data):
             return {"error": "invalid_verification"}, 422
         if int(row["expires_at"]) <= now:
             c.execute(
-                "UPDATE participant_registration_requests SET status='expired' "
+                "UPDATE participant_registration_requests "
+                "SET status='expired',password_hash='',verification_hash='' "
                 "WHERE id=? AND status='pending'", (request_id,)
             )
             c.commit()
@@ -196,10 +198,17 @@ def verify_registration(data):
         if not hmac.compare_digest(expected, actual):
             attempts = int(row["attempts"]) + 1
             status = "blocked" if attempts >= MAX_ATTEMPTS else "pending"
-            c.execute(
-                "UPDATE participant_registration_requests SET attempts=?,status=? "
-                "WHERE id=?", (attempts, status, request_id)
-            )
+            if status == "blocked":
+                c.execute(
+                    "UPDATE participant_registration_requests "
+                    "SET attempts=?,status='blocked',password_hash='',verification_hash='' "
+                    "WHERE id=?", (attempts, request_id)
+                )
+            else:
+                c.execute(
+                    "UPDATE participant_registration_requests SET attempts=? "
+                    "WHERE id=?", (attempts, request_id)
+                )
             c.commit()
             return {"error": "invalid_verification"}, 422
 
@@ -207,7 +216,8 @@ def verify_registration(data):
             "SELECT 1 FROM accounts WHERE email=?", (row["email"],)
         ).fetchone():
             c.execute(
-                "UPDATE participant_registration_requests SET status='blocked' "
+                "UPDATE participant_registration_requests "
+                "SET status='blocked',password_hash='',verification_hash='' "
                 "WHERE id=?", (request_id,)
             )
             c.commit()
@@ -220,7 +230,8 @@ def verify_registration(data):
         )
         c.execute(
             "UPDATE participant_registration_requests "
-            "SET status='verified',verified_at=? WHERE id=? AND status='pending'",
+            "SET status='verified',verified_at=?,password_hash='',verification_hash='' "
+            "WHERE id=? AND status='pending'",
             (now, request_id),
         )
         token, expires = issue_session(
