@@ -5,6 +5,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 HTML = (ROOT / "public" / "join" / "index.html").read_text(encoding="utf-8")
 JS = (ROOT / "public" / "join" / "join.js").read_text(encoding="utf-8")
+CSS = (ROOT / "public" / "join" / "join.css").read_text(encoding="utf-8")
 
 
 class ParticipantInviteUiContractTests(unittest.TestCase):
@@ -19,6 +20,12 @@ class ParticipantInviteUiContractTests(unittest.TestCase):
         self.assertNotIn("localStorage", combined)
         self.assertNotIn("sessionStorage", combined)
         self.assertNotIn("document.cookie", combined)
+
+    def test_hidden_state_overrides_layout_rules(self):
+        # Author CSS display rules must never make an element with [hidden] visible.
+        compact = CSS.replace(" ", "").replace("\n", "")
+        self.assertIn("[hidden]{display:none!important}", compact)
+        self.assertIn('id="success" class="success" hidden', HTML)
 
     def test_activation_posts_token_and_password_only(self):
         self.assertIn("JSON.stringify({token,password:password.value})", JS)
