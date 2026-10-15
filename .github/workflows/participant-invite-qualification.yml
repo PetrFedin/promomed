@@ -24,7 +24,7 @@ jobs:
       - name: Install runtime
         run: pip install -r requirements.txt
       - name: Verify one-time invite authority and HTTP composition
-        run: python -m unittest -v tests/test_participant_onboarding.py tests/test_participant_onboarding_http.py
+        run: python -m unittest -v tests/test_participant_onboarding.py tests/test_participant_onboarding_http.py tests/test_participant_invite_ui_contract.py
 
   postgres-invite:
     runs-on: ubuntu-latest
