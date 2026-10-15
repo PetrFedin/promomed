@@ -84,8 +84,10 @@
     if(g!==state.generation)return;render(data);
   }
   $("login-form").addEventListener("submit",async e=>{
-    e.preventDefault();clearSession();
-    const email=$("email").value.trim(),password=$("password").value,g=state.generation;
+    e.preventDefault();
+    const email=$("email").value.trim(),password=$("password").value;
+    clearSession();
+    const g=state.generation;
     $("login-button").disabled=true;message("Проверяем аккаунт…");
     try{
       const data=await request("/api/login",{method:"POST",body:{email,password},anonymous:true});
