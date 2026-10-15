@@ -1,5 +1,7 @@
 import time
 
+from app import db
+
 from app.commanding import custom, error, ok
 from app.core import audit, notify, promote_waitlist, setv, sval
 
@@ -17,6 +19,8 @@ def handle_command(c, route, role, email, data):
         return None
 
     if route == "/api/register":
+        if not db.demo_seed_enabled():
+            return error("not_found", 404)
         if role != "participant":
             return error("forbidden", 403)
         c.execute("INSERT OR REPLACE INTO registrations(email,status,ts) VALUES(?,'confirmed',?)", (email, int(time.time())))
