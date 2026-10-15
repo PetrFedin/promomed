@@ -116,6 +116,35 @@ class ParticipantInvitePostgresTests(unittest.TestCase):
         account = auth.authenticate(self.c, self.participant, PASSWORD)
         self.assertEqual(account["role"], "participant")
 
+    def test_parallel_invite_creation_has_one_pending_authority(self):
+        def create(_):
+            c = db.connect()
+            try:
+                out = onboarding.handle_command(
+                    c, onboarding.CREATE_ROUTE, "organizer", self.organizer,
+                    {"email": self.participant, "name": "PG Participant"},
+                )
+                if out.status < 400:
+                    c.commit()
+                else:
+                    c.rollback()
+                return out.status
+            finally:
+                c.close()
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            statuses = list(pool.map(create, range(2)))
+        self.assertEqual(statuses.count(201), 1, statuses)
+        self.assertEqual(statuses.count(409), 1, statuses)
+        self.assertEqual(
+            self.c.execute(
+                "SELECT COUNT(*) n FROM participant_invites "
+                "WHERE email=? AND status='pending'",
+                (self.participant,),
+            ).fetchone()["n"],
+            1,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
