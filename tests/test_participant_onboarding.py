@@ -187,9 +187,10 @@ class ParticipantInviteTests(unittest.TestCase):
 
     def test_expired_invite_and_password_policy_fail_closed(self):
         invite = self.create("expired@example.test")
+        now = int(time.time())
         self.c.execute(
-            "UPDATE participant_invites SET expires_at=? WHERE id=?",
-            (int(time.time()) - 1, invite.payload["invite_id"]),
+            "UPDATE participant_invites SET created_at=?,expires_at=? WHERE id=?",
+            (now - 3600, now - 1, invite.payload["invite_id"]),
         )
         self.c.commit()
         expired = onboarding.handle_public(
@@ -238,9 +239,10 @@ class ParticipantInviteTests(unittest.TestCase):
 
     def test_expired_pending_is_closed_before_reissue(self):
         first = self.create("reissue@example.test")
+        now = int(time.time())
         self.c.execute(
-            "UPDATE participant_invites SET expires_at=? WHERE id=?",
-            (int(time.time()) - 1, first.payload["invite_id"]),
+            "UPDATE participant_invites SET created_at=?,expires_at=? WHERE id=?",
+            (now - 3600, now - 1, first.payload["invite_id"]),
         )
         self.c.commit()
         second = self.create("reissue@example.test")
