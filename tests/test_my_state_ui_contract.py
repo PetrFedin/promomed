@@ -15,6 +15,18 @@ class MyStateUiContractTests(unittest.TestCase):
         self.assertIn('API+"/notes"', JS)
         self.assertIn('API+"/notes/delete"', JS)
 
+    def test_self_registration_uses_verified_public_endpoints(self):
+        self.assertIn('const REG_REQUEST="/api/participant-registration/v1/request"', JS)
+        self.assertIn('const REG_VERIFY="/api/participant-registration/v1/verify"', JS)
+        self.assertIn('request(REG_REQUEST', JS)
+        self.assertIn('request(REG_VERIFY', JS)
+        self.assertIn('data.eventRegistration', JS)
+        self.assertIn('data.demoOnly&&data.demoVerificationCode', JS)
+        self.assertIn('id="signup-form"', HTML)
+        self.assertIn('id="verify-form"', HTML)
+        self.assertIn('autocomplete="one-time-code"', HTML)
+        self.assertIn("Создание аккаунта не означает регистрацию на мероприятие", HTML)
+
     def test_bearer_token_is_memory_only(self):
         self.assertNotIn("localStorage", JS)
         self.assertNotIn("sessionStorage", JS)
