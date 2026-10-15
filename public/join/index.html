@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; object-src 'none'">
+<title>СОСТОЯНИЕ — активация приглашения</title>
+<link rel="stylesheet" href="/join/join.css">
+</head>
+<body>
+<main class="shell">
+  <a class="brand" href="/">СОСТОЯНИЕ <span>ПРОМОМЕД</span></a>
+  <section class="card" aria-labelledby="title">
+    <p class="ey">ПРИГЛАШЕНИЕ УЧАСТНИКА</p>
+    <h1 id="title">Создайте доступ</h1>
+    <p class="lead">Приглашение одноразовое. Здесь не нужно вводить email: он уже связан с токеном организатора.</p>
+    <div id="inviteState" class="notice" role="status" aria-live="polite">Проверяем ссылку приглашения…</div>
+    <form id="joinForm" autocomplete="off">
+      <label for="inviteToken">Код приглашения</label>
+      <input id="inviteToken" name="inviteToken" type="password" inputmode="text" spellcheck="false" autocomplete="off" required>
+      <label for="password">Новый пароль</label>
+      <input id="password" name="password" type="password" autocomplete="new-password" minlength="14" maxlength="256" required>
+      <p class="hint">Не менее 14 символов и минимум три типа: строчные/прописные буквы, цифры, специальные знаки.</p>
+      <label for="confirm">Повторите пароль</label>
+      <input id="confirm" name="confirm" type="password" autocomplete="new-password" minlength="14" maxlength="256" required>
+      <button id="submit" type="submit">Активировать приглашение</button>
+    </form>
+    <div id="success" class="success" hidden>
+      <p class="ey">ГОТОВО</p>
+      <h2>Аккаунт создан</h2>
+      <p>Серверную сессию мы не создавали автоматически. Войдите в личный кабинет новым паролем.</p>
+      <a class="button" href="/personal/">Открыть «Моё СОСТОЯНИЕ»</a>
+    </div>
+    <p class="boundary">Это регистрация участия, а не медицинская анкета. Не вводите сведения о здоровье в пароль или код приглашения.</p>
+  </section>
+</main>
+<script src="/join/join.js" defer></script>
+</body>
+</html>
