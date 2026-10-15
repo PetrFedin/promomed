@@ -10,6 +10,7 @@ from app.programme_commands import handle_command as handle_programme_command; f
 from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public; from app.syndication_commands import handle_command as handle_syndication_command, handle_public as handle_syndication_public; from app.trust_commands import handle_command as handle_trust_command, handle_public as handle_trust_public
 from app.demo_reads import serve as serve_demo_read
 from app.legacy_report_scope import unavailable_on_non_demo
+from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
@@ -191,7 +192,7 @@ class H(SimpleHTTPRequestHandler):
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   p=urlparse(self.path).path
-  if unavailable_on_non_demo(p): return self.out({"error":"not_found"},404)
+  if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   a=auth(self)
   if p=="/health":
    return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"demo_seed":db.demo_seed_enabled(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
@@ -330,7 +331,7 @@ class H(SimpleHTTPRequestHandler):
   return super().do_GET()
  def do_POST(self):
   p=urlparse(self.path).path
-  if unavailable_on_non_demo(p): return self.out({"error":"not_found"},404)
+  if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   try: data=body(self)
   except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
   except RequestBodyError: return self.out({"error":"bad_json"},400)

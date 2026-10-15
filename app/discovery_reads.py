@@ -1,12 +1,15 @@
 from urllib.parse import parse_qs, urlparse
 
 from app import discovery, db
+from app.public_discovery_scope import unavailable_on_non_demo
 
 
 def read(c, raw_path, role, email):
     parsed = urlparse(raw_path)
     if parsed.path not in ("/api/discovery", "/api/discovery/saved"):
         return None
+    if unavailable_on_non_demo(parsed.path):
+        return {"error": "not_found"}, 404
     if parsed.path == "/api/discovery/saved":
         if role != "participant" or not email:
             return {"error": "forbidden"}, 403
@@ -37,6 +40,8 @@ def read(c, raw_path, role, email):
 
 
 def serve(raw_path, role, email):
+    if unavailable_on_non_demo(urlparse(raw_path).path):
+        return {"error": "not_found"}, 404
     c = db.connect()
     try:
         return read(c, raw_path, role, email)
