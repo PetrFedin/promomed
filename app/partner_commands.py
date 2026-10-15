@@ -1,5 +1,6 @@
 import time
 
+from app.legacy_write_scope import unavailable_on_non_demo
 from app.commanding import error, ok
 from app.core import audit, notify
 
@@ -14,6 +15,8 @@ ROUTES = {
 def handle_command(c, route, role, email, data):
     if route not in ROUTES:
         return None
+    if unavailable_on_non_demo(route):
+        return error("not_found", 404)
 
     if route == "/api/placement":
         if role != "partner":
