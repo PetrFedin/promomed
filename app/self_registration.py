@@ -80,11 +80,12 @@ def _identity(data):
     return email, name, password
 
 
-def _generic_request():
+def _generic_request(request_id=None):
     return {
         "accepted": True,
         "next": "check_email",
         "expiresInSeconds": CODE_TTL_SECONDS,
+        "requestId": request_id or uuid.uuid4().hex,
     }, 202
 
 
@@ -136,9 +137,8 @@ def request_registration(data):
 
         if demo:
             c.commit()
-            payload, status = _generic_request()
+            payload, status = _generic_request(request_id)
             payload = dict(payload)
-            payload["requestId"] = request_id
             payload["demoVerificationCode"] = code
             payload["demoOnly"] = True
             return payload, status
@@ -149,9 +149,8 @@ def request_registration(data):
             c.rollback()
             return {"error": "registration_delivery_failed"}, 503
         c.commit()
-        payload, status = _generic_request()
+        payload, status = _generic_request(request_id)
         payload = dict(payload)
-        payload["requestId"] = request_id
         return payload, status
     finally:
         c.close()
