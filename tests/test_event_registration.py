@@ -145,6 +145,23 @@ class EventRegistrationTests(unittest.TestCase):
             ).fetchone()
         )
 
+    def test_sqlite_parent_guards_reject_orphan_registration(self):
+        with self.assertRaises(Exception):
+            self.c.execute(
+                "INSERT INTO participant_event_registrations_v1("
+                "event_id,email,status,requested_at,updated_at,source"
+                ") VALUES('MISSING',?,'confirmed',1,1,'participant')",
+                (self.users[0],),
+            )
+        self.c.rollback()
+        with self.assertRaises(Exception):
+            self.c.execute(
+                "INSERT INTO participant_event_registrations_v1("
+                "event_id,email,status,requested_at,updated_at,source"
+                ") VALUES('EV1','missing@example.test','confirmed',1,1,'participant')"
+            )
+        self.c.rollback()
+
     def test_account_creation_is_still_separate_from_event_registration(self):
         self.assertIsNone(self.status(self.users[2]))
         payload, status = event_registration.read(
