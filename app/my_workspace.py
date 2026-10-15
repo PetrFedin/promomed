@@ -85,6 +85,17 @@ def read(c, path, role, email):
     registration = c.execute(
         "SELECT status,ts FROM registrations WHERE email=?", (email,)
     ).fetchone()
+    event_registrations = [
+        dict(r)
+        for r in c.execute(
+            "SELECT r.event_id,e.title event_title,e.starts_at,r.status,"
+            "r.requested_at,r.updated_at "
+            "FROM participant_event_registrations_v1 r "
+            "JOIN event_editions_v1 e ON e.id=r.event_id "
+            "WHERE r.email=? ORDER BY e.starts_at,r.event_id",
+            (email,),
+        )
+    ]
     bookings = [
         dict(r)
         for r in c.execute(
@@ -98,6 +109,7 @@ def read(c, path, role, email):
         "account": dict(account),
         "demoOnly": bool(db.demo_seed_enabled()),
         "registration": dict(registration) if registration else None,
+        "eventRegistrations": event_registrations,
         "bookings": bookings[:50],
         "bookingsTruncated": len(bookings) > 50,
         "notes": _notes(c, email),
@@ -105,6 +117,8 @@ def read(c, path, role, email):
             "ownAccountOnly": True,
             "noteSource": "participant_authored_unreviewed",
             "bookingIsAttendance": False,
+            "eventRegistrationIsAttendance": False,
+            "waitlistIsConfirmation": False,
             "publicCatalogAdmitted": False,
             "externalPilotAccepted": False,
             "medicalInference": False,
