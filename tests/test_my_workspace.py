@@ -161,6 +161,18 @@ class MyStateV1Tests(unittest.TestCase):
         ).fetchone()
         self.assertIsNone(row["revoked_at"])
 
+    def test_account_delete_erases_personal_note_storage(self):
+        self.command(
+            NOTE_ROUTE, self.a,
+            {"text": "erase-with-account", "request_id": secrets.token_hex(16)},
+        )
+        self.c.execute("DELETE FROM accounts WHERE email=?", (self.a,))
+        self.c.commit()
+        count = self.c.execute(
+            "SELECT COUNT(*) n FROM personal_notes_v1 WHERE email=?", (self.a,)
+        ).fetchone()["n"]
+        self.assertEqual(count, 0)
+
     def test_unknown_route_not_claimed(self):
         self.assertIsNone(
             handle_command(self.c, "/api/other", "participant", self.a, {})
