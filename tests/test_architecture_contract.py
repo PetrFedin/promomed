@@ -42,6 +42,7 @@ MODULES = {
     "demo_commands.py",
     "demo_reads.py",
     "public_state.py",
+    "participant_onboarding.py",
     "reviewer_authority.py",
     "evidence_interchange.py",
     "institutional_commands.py",
@@ -81,6 +82,11 @@ class ArchitectureContractTests(unittest.TestCase):
         public_idx = SERVER.index("if p==PUBLIC_STATE_ROUTE:")
         auth_idx = SERVER.index("a=auth(self)", SERVER.index(" def do_GET(self):"))
         self.assertLess(public_idx, auth_idx)
+        self.assertIn("handle_participant_invite_public", SERVER)
+        invite_public_idx = SERVER.index("participant_invite_public=handle_participant_invite_public(p,data)")
+        post_auth_idx = SERVER.index("a=auth(self)", SERVER.index(" def do_POST(self):"))
+        self.assertLess(invite_public_idx, post_auth_idx)
+        self.assertIn("handle_participant_invite_command", SERVER)
 
     def test_bounded_context_modules_exist(self):
         present = {p.name for p in APP.glob("*.py")}
