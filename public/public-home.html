@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#071d36">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'self'; object-src 'none'; frame-ancestors 'none'">
+  <title>СОСТОЯНИЕ — человек, наука, жизнь</title>
+  <link rel="stylesheet" href="/public-home.css">
+  <script src="/public-home.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">К содержанию</a>
+<header class="top">
+  <a class="brand" href="/" aria-label="СОСТОЯНИЕ"><b>СОСТОЯНИЕ</b><span>ПРОМОМЕД</span></a>
+  <nav aria-label="Основная навигация">
+    <a href="#agenda">Программа</a>
+    <a href="#materials">Материалы</a>
+    <a class="account" href="/personal/">Войти / создать аккаунт</a>
+  </nav>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="heroCopy">
+      <p class="eyebrow">ЧЕЛОВЕК · НАУКА · ЖИЗНЬ</p>
+      <h1>Здоровье,<br><em>которое понятно.</em></h1>
+      <p class="lead">Проверенная публичная программа и материалы СОСТОЯНИЯ. Личные данные, записи и заметки существуют отдельно — только после входа.</p>
+      <div class="heroActions">
+        <a class="primary" href="#agenda">Смотреть программу</a>
+        <a class="secondary" href="/personal/">Моё СОСТОЯНИЕ</a>
+      </div>
+    </div>
+    <aside class="heroProof">
+      <span class="proofMark" aria-hidden="true">✓</span>
+      <p class="eyebrow">PUBLICATION BOUNDARY</p>
+      <strong>Только явно допущенные версии</strong>
+      <p>Изменение опубликованного текста или расписания требует нового допуска. Материал с active hold здесь не появляется.</p>
+    </aside>
+  </section>
+
+  <section class="trustStrip" aria-label="Принципы публичной версии">
+    <div><b>01</b><span>Без персональных данных</span></div>
+    <div><b>02</b><span>Без скрытых KPI и лидов</span></div>
+    <div><b>03</b><span>Без медицинских выводов по поведению</span></div>
+  </section>
+
+  <section id="agenda" class="section">
+    <div class="sectionHead">
+      <div><p class="eyebrow">ПРОГРАММА</p><h2>Что опубликовано</h2></div>
+      <span id="agenda-count" class="count">—</span>
+    </div>
+    <p class="intro">Здесь появляются только версии событий, для которых зафиксирован отдельный publication admission.</p>
+    <div id="agenda-list" class="agendaGrid" aria-live="polite"><div class="skeleton"></div><div class="skeleton"></div></div>
+    <div id="agenda-empty" class="empty" hidden><b>Программа готовится к публикации</b><p>Непроверенные и held-события намеренно не показываются.</p></div>
+  </section>
+
+  <section id="materials" class="section materials">
+    <div class="sectionHead">
+      <div><p class="eyebrow">МАТЕРИАЛЫ</p><h2>Читать дальше</h2></div>
+      <span id="content-count" class="count">—</span>
+    </div>
+    <p class="intro">Публичный материал должен одновременно иметь статус published, точный hash-admission и отсутствие active hold.</p>
+    <div id="content-list" class="contentGrid" aria-live="polite"><div class="skeleton tall"></div><div class="skeleton tall"></div></div>
+    <div id="content-empty" class="empty" hidden><b>Материалы ещё не опубликованы</b><p>Это безопасное пустое состояние, а не ошибка каталога.</p></div>
+  </section>
+
+  <section class="cta">
+    <div><p class="eyebrow">ЛИЧНЫЙ КОНТУР</p><h2>Ваши действия — не публичная аналитика.</h2><p>Аккаунт, регистрация на событие, waitlist и личные заметки доступны в отдельном пространстве.</p></div>
+    <a class="primary light" href="/personal/">Открыть Моё СОСТОЯНИЕ →</a>
+  </section>
+
+  <div id="error" class="error" role="status" aria-live="polite" hidden>Публичная версия временно недоступна. Повторите попытку позже.</div>
+</main>
+<footer><b>СОСТОЯНИЕ</b><span>Публичная поверхность · versioned admission only</span></footer>
+</body>
+</html>
