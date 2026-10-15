@@ -1,0 +1,58 @@
+name: Promomed event registration qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sqlite-event-registration:
+    runs-on: ubuntu-latest
+    env:
+      SQLITE_PATH: /tmp/promomed-event-registration.db
+      PROMOMED_SEED_DEMO: "false"
+      PROMOMED_REQUIRE_POSTGRES: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime
+        run: pip install -r requirements.txt
+      - name: Verify capacity and waitlist semantics on SQLite
+        run: python -m unittest -v tests/test_event_registration.py
+
+  postgres-event-registration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: promomed
+          POSTGRES_PASSWORD: promomed
+          POSTGRES_DB: promomed_event_registration_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U promomed -d promomed_event_registration_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_event_registration_ci
+      PROMOMED_REQUIRE_POSTGRES: "true"
+      PROMOMED_SEED_DEMO: "false"
+      PROMOMED_EVENT_REGISTRATION_PG_TEST: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime
+        run: pip install -r requirements.txt
+      - name: Verify last-place serialization on PostgreSQL 17
+        run: python -m unittest -v tests/test_event_registration_postgres.py
