@@ -236,6 +236,23 @@ class ParticipantInviteTests(unittest.TestCase):
         self.assertEqual(second.status, 409)
         self.assertEqual(second.payload["error"], "invite_pending")
 
+    def test_expired_pending_is_closed_before_reissue(self):
+        first = self.create("reissue@example.test")
+        self.c.execute(
+            "UPDATE participant_invites SET expires_at=? WHERE id=?",
+            (int(time.time()) - 1, first.payload["invite_id"]),
+        )
+        self.c.commit()
+        second = self.create("reissue@example.test")
+        self.assertEqual(second.status, 201)
+        self.assertNotEqual(first.payload["invite_id"], second.payload["invite_id"])
+        old = self.c.execute(
+            "SELECT status,consumed_at FROM participant_invites WHERE id=?",
+            (first.payload["invite_id"],),
+        ).fetchone()
+        self.assertEqual(old["status"], "revoked")
+        self.assertIsNotNone(old["consumed_at"])
+
 
 if __name__ == "__main__":
     unittest.main()
