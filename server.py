@@ -12,6 +12,7 @@ from app.demo_reads import serve as serve_demo_read
 from app.legacy_report_scope import unavailable_on_non_demo
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
+from app.participant_onboarding import handle_command as handle_participant_invite_command, handle_public as handle_participant_invite_public
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.my_workspace import read as read_my_workspace, handle_command as handle_my_workspace_command, READ_ROUTE as MY_STATE_ROUTE, PAGE_PREFIX as MY_STATE_PAGE_PREFIX
 from app.investment_commands import handle_command as handle_investment_command
@@ -346,6 +347,8 @@ class H(SimpleHTTPRequestHandler):
   try: data=body(self)
   except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
   except RequestBodyError: return self.out({"error":"bad_json"},400)
+  participant_invite_public=handle_participant_invite_public(p,data)
+  if participant_invite_public is not None: return self.out(participant_invite_public[0],participant_invite_public[1])
   public_outcome=handle_evidence_checkpoint_public(p,data)
   if public_outcome is not None:
    return self.out(public_outcome[0],public_outcome[1])
@@ -376,6 +379,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=partner_collaboration.handle_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_participant_invite_command(c,p,role,email,data)
     if outcome is None: outcome=handle_institutional_command(c,p,role,email,data)
     if outcome is None: outcome=handle_syndication_command(c,p,role,email,data); outcome=handle_trust_command(c,p,role,email,data) if outcome is None else outcome
     if outcome is None: outcome=handle_demo_command(c,p,role,email,data)
