@@ -12,3 +12,8 @@ CREATE TABLE IF NOT EXISTS personal_notes_v1 (
 );
 CREATE INDEX IF NOT EXISTS personal_notes_v1_owner_page
     ON personal_notes_v1(email, created_at DESC, id DESC);
+CREATE TRIGGER IF NOT EXISTS personal_notes_v1_account_delete
+AFTER DELETE ON accounts
+BEGIN
+    DELETE FROM personal_notes_v1 WHERE email=OLD.email;
+END;
