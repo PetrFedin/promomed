@@ -41,6 +41,7 @@ MODULES = {
     "editorial_commands.py",
     "demo_commands.py",
     "demo_reads.py",
+    "public_state.py",
     "reviewer_authority.py",
     "evidence_interchange.py",
     "institutional_commands.py",
@@ -76,6 +77,10 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("handle_my_workspace_command", SERVER)
         self.assertIn("demo_view=serve_demo_read(p,a,conn)", SERVER)
         self.assertNotIn('if p=="/api/demo/evidence":', SERVER)
+        self.assertIn("from app.public_state import serve as serve_public_state", SERVER)
+        public_idx = SERVER.index("if p==PUBLIC_STATE_ROUTE:")
+        auth_idx = SERVER.index("a=auth(self)", SERVER.index(" def do_GET(self):"))
+        self.assertLess(public_idx, auth_idx)
 
     def test_bounded_context_modules_exist(self):
         present = {p.name for p in APP.glob("*.py")}
