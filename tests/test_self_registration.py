@@ -75,6 +75,17 @@ class ParticipantSelfRegistrationTests(unittest.TestCase):
                 "email=? AND status='pending'", (self.email,)
             ), 1
         )
+        c = self.db.connect()
+        try:
+            pending = c.execute(
+                "SELECT password_hash,verification_hash FROM participant_registration_requests "
+                "WHERE email=?", (self.email,)
+            ).fetchone()
+            self.assertTrue(pending["password_hash"].startswith("scrypt$"))
+            self.assertEqual(len(pending["verification_hash"]), 64)
+            self.assertNotEqual(pending["verification_hash"], captured["code"])
+        finally:
+            c.close()
         result, status = self_registration.verify_registration({
             "request_id": payload["requestId"], "code": captured["code"]
         })
@@ -85,6 +96,17 @@ class ParticipantSelfRegistrationTests(unittest.TestCase):
         self.assertTrue(result["token"])
         self.assertEqual(self.count("accounts", "email=?", (self.email,)), 1)
         self.assertEqual(self.count("registrations", "email=?", (self.email,)), 0)
+        c = self.db.connect()
+        try:
+            terminal = c.execute(
+                "SELECT status,password_hash,verification_hash FROM "
+                "participant_registration_requests WHERE email=?", (self.email,)
+            ).fetchone()
+            self.assertEqual(terminal["status"], "verified")
+            self.assertEqual(terminal["password_hash"], "")
+            self.assertEqual(terminal["verification_hash"], "")
+        finally:
+            c.close()
 
     def test_existing_account_has_same_public_response_shape_and_no_delivery(self):
         c = self.db.connect()
@@ -150,6 +172,17 @@ class ParticipantSelfRegistrationTests(unittest.TestCase):
         })
         self.assertEqual((result, status), ({"error": "invalid_verification"}, 422))
         self.assertEqual(self.count("accounts", "email=?", (self.email,)), 0)
+        c = self.db.connect()
+        try:
+            terminal = c.execute(
+                "SELECT status,password_hash,verification_hash FROM "
+                "participant_registration_requests WHERE email=?", (self.email,)
+            ).fetchone()
+            self.assertEqual(terminal["status"], "blocked")
+            self.assertEqual(terminal["password_hash"], "")
+            self.assertEqual(terminal["verification_hash"], "")
+        finally:
+            c.close()
 
     def test_expired_code_never_creates_account(self):
         payload, captured = self.request_with_code()
@@ -167,6 +200,17 @@ class ParticipantSelfRegistrationTests(unittest.TestCase):
         })
         self.assertEqual((result, status), ({"error": "invalid_verification"}, 422))
         self.assertEqual(self.count("accounts", "email=?", (self.email,)), 0)
+        c = self.db.connect()
+        try:
+            terminal = c.execute(
+                "SELECT status,password_hash,verification_hash FROM "
+                "participant_registration_requests WHERE email=?", (self.email,)
+            ).fetchone()
+            self.assertEqual(terminal["status"], "expired")
+            self.assertEqual(terminal["password_hash"], "")
+            self.assertEqual(terminal["verification_hash"], "")
+        finally:
+            c.close()
 
     def test_invalid_payload_never_opens_delivery(self):
         bad = dict(self.payload)
