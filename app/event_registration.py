@@ -121,6 +121,16 @@ def read(c, raw_path, role, email):
     }, 200
 
 
+def serve(actor, raw_path):
+    if not actor:
+        return {"error": "unauthorized"}, 401
+    c = db.connect()
+    try:
+        return read(c, raw_path, actor[0], actor[2])
+    finally:
+        c.close()
+
+
 def _promote_one(c, event):
     if event["registration_status"] != "open":
         return False
