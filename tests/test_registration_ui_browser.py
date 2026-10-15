@@ -52,8 +52,12 @@ def main():
 
             expect(page.locator("#workspace")).to_be_visible(timeout=12000)
             expect(page.locator("#account-email")).to_have_text(email)
-            expect(page.locator("#registration")).to_have_text(
-                "Нет подтверждённой регистрации"
+            event_card = page.locator(".eventRegistration").filter(
+                has_text="СОСТОЯНИЕ / 2027"
+            ).first
+            expect(event_card).to_be_visible(timeout=12000)
+            expect(event_card.locator(".eventStatus")).to_have_text(
+                "Не зарегистрирован"
             )
             assert page.evaluate("localStorage.length") == 0
             assert page.evaluate("sessionStorage.length") == 0
