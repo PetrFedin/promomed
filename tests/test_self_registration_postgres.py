@@ -96,6 +96,13 @@ class ParticipantRegistrationPostgresTests(unittest.TestCase):
                 (self.email,),
             ).fetchone()["n"]
             self.assertEqual(int(sessions), 1)
+            terminal = c.execute(
+                "SELECT status,password_hash,verification_hash FROM "
+                "participant_registration_requests WHERE email=?", (self.email,)
+            ).fetchone()
+            self.assertEqual(terminal["status"], "verified")
+            self.assertEqual(terminal["password_hash"], "")
+            self.assertEqual(terminal["verification_hash"], "")
         finally:
             c.close()
 
