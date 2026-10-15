@@ -13,6 +13,7 @@ from app.legacy_report_scope import unavailable_on_non_demo
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
 from app.self_registration import handle_public as handle_self_registration_public
+from app.event_registration import read as read_event_registration, handle_command as handle_event_registration_command, seed_demo as seed_demo_event_registration, ROUTE as EVENT_REGISTRATION_ROUTE
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.my_workspace import read as read_my_workspace, handle_command as handle_my_workspace_command, READ_ROUTE as MY_STATE_ROUTE, PAGE_PREFIX as MY_STATE_PAGE_PREFIX
 from app.investment_commands import handle_command as handle_investment_command
@@ -28,6 +29,7 @@ def init():
    c.close(); return
   # Deterministic demo seed. Production PostgreSQL requires explicit PROMOMED_SEED_DEMO=true.
   seed_demo_accounts(c)
+  seed_demo_event_registration(c)
   defaults={"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"-1","demo_run":"0"}
   for k,v in defaults.items(): c.execute("INSERT OR IGNORE INTO state(k,v) VALUES(?,?)",(k,v))
   c.execute("INSERT OR IGNORE INTO cms(id,status,version,updated) VALUES('A-014','medical_review',1,?)",(int(time.time()),))
@@ -215,6 +217,11 @@ class H(SimpleHTTPRequestHandler):
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
   if p=="/api/partner-collaboration": return self.out(*partner_collaboration.read_result(urlparse(self.path).query,a,conn))
   if p=="/api/client-365": return self.out(*serve_client365(a,self.path))
+  if p==EVENT_REGISTRATION_ROUTE:
+   if not a: return self.out({"error":"unauthorized"},401)
+   c=conn()
+   try: payload,status=read_event_registration(c,self.path,a[0],a[2]); return self.out(payload,status)
+   finally: c.close()
   if p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX):
    if not a: return self.out({"error":"unauthorized"},401)
    c=conn()
@@ -374,6 +381,7 @@ class H(SimpleHTTPRequestHandler):
     outcome=handle_community_command(c,p,role,email,data)
     if outcome is None: outcome=handle_learning_command(c,p,role,email,data)
     if outcome is None: outcome=handle_my_workspace_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_event_registration_command(c,p,role,email,data)
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
     if outcome is None: outcome=handle_programme_command(c,p,role,email,data); outcome=handle_operations_command(c,p,role,email,data) if outcome is None else outcome
     if outcome is None: outcome=partner_collaboration.handle_command(c,p,role,email,data)
