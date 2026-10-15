@@ -1,0 +1,36 @@
+name: Promomed public home qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-home:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install runtime and Playwright
+        run: |
+          pip install -r requirements.txt
+          pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify public-home source boundary
+        run: python -m unittest -v tests/test_public_home_contract.py
+      - name: Prove admitted-only non-demo browser home
+        run: python tests/test_public_home_browser.py
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: promomed-public-home
+          path: artifacts/browser-qa/public-home
+          if-no-files-found: ignore
