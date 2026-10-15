@@ -27,6 +27,14 @@ class MyStateUiContractTests(unittest.TestCase):
         self.assertIn('autocomplete="one-time-code"', HTML)
         self.assertIn("Создание аккаунта не означает регистрацию на мероприятие", HTML)
 
+    def test_event_registration_uses_capacity_aware_authority(self):
+        self.assertIn('const EVENT_API="/api/event-registration/v1"', JS)
+        self.assertIn('request(EVENT_API', JS)
+        self.assertIn('event_id:event.eventId', JS)
+        self.assertIn('id="event-registration-list"', HTML)
+        self.assertIn("Регистрация подтверждает место или очередь, но не является фактом посещения", HTML)
+        self.assertNotIn('id="registration"', HTML)
+
     def test_bearer_token_is_memory_only(self):
         self.assertNotIn("localStorage", JS)
         self.assertNotIn("sessionStorage", JS)
