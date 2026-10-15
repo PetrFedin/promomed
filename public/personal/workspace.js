@@ -1,10 +1,11 @@
 (() => {
   "use strict";
   const API="/api/my-state/v1";
+  const EVENT_API="/api/event-registration/v1";
   const REG_REQUEST="/api/participant-registration/v1/request";
   const REG_VERIFY="/api/participant-registration/v1/verify";
   const $=id=>document.getElementById(id);
-  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,registration:null};
+  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,eventBusy:false,registration:null,eventEditions:[]};
 
   function message(text="",error=false){
     const n=$("notice");n.hidden=!text;n.textContent=text;n.classList.toggle("error",!!error);
@@ -27,10 +28,10 @@
     showAuthMode(mode);message("");
   }
   function clearSession(){
-    state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.registration=null;
+    state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.eventBusy=false;state.registration=null;state.eventEditions=[];
     $("workspace").hidden=true;$("signed-out").hidden=false;$("logout").hidden=true;
     $("login-button").disabled=false;$("signup-button").disabled=false;$("verify-button").disabled=false;$("save-note").disabled=true;$("logout-all").disabled=false;
-    $("password").value="";$("signup-name").value="";$("signup-email").value="";$("signup-password").value="";$("verify-code").value="";$("verify-email").textContent="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();
+    $("password").value="";$("signup-name").value="";$("signup-email").value="";$("signup-password").value="";$("verify-code").value="";$("verify-email").textContent="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();$("event-registration-list").replaceChildren();
     showAuthMode("login");updateCount();
   }
   function stale(g,token){return g!==state.generation||token!==state.token;}
@@ -87,7 +88,6 @@
     $("account-name").textContent=data.account.name||"Участник";$("account-email").textContent=data.account.email||"";
     $("editing-account").textContent="Сохраняется только для "+(data.account.email||"текущего аккаунта");
     $("avatar").textContent=(data.account.name||"У").trim().slice(0,2).toLocaleUpperCase("ru-RU");
-    $("registration").textContent=data.registration?.status==="confirmed"?"Подтверждена":data.registration?"Запись существует":"Нет подтверждённой регистрации";
     const bookings=$("bookings");bookings.replaceChildren();
     for(const b of data.bookings||[]){
       const row=el("div","booking");row.append(el("strong","",b.item_id),el("span","",b.status||"recorded"));bookings.append(row);
@@ -96,10 +96,59 @@
     if(data.bookingsTruncated)bookings.append(el("p","fine","Показаны последние 50 записей."));
     $("signed-out").hidden=true;$("workspace").hidden=false;$("logout").hidden=false;renderNotes();updateCount();
   }
+  function renderEventRegistrations(data){
+    const root=$("event-registration-list");root.replaceChildren();
+    state.eventEditions=data.events||[];
+    if(!state.eventEditions.length){
+      root.append(el("p","fine","Открытых событий пока нет."));
+      return;
+    }
+    const labels={confirmed:"Место подтверждено",waitlist:"Лист ожидания",cancelled:"Регистрация отменена"};
+    for(const event of state.eventEditions){
+      const card=el("article","eventRegistration"),head=el("div","eventRegistrationHead");
+      const info=el("div",""),title=el("strong","",event.eventTitle||event.eventId);
+      const date=event.startsAt?new Date(event.startsAt*1000).toLocaleString("ru-RU",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"}):"Дата уточняется";
+      info.append(title,el("span","fine",date));
+      const status=el("span","eventStatus "+(event.myStatus||"none"),labels[event.myStatus]||"Не зарегистрирован");
+      head.append(info,status);card.append(head);
+      const action=el("button","outline eventAction");
+      action.type="button";action.dataset.eventId=event.eventId;
+      if(event.myStatus==="confirmed"||event.myStatus==="waitlist"){
+        action.textContent="Отменить регистрацию";action.dataset.action="cancel";
+      }else if(event.registrationStatus==="open"){
+        action.textContent="Зарегистрироваться";action.dataset.action="register";
+      }else if(event.registrationStatus==="waitlist_only"){
+        action.textContent="Встать в лист ожидания";action.dataset.action="register";
+      }else{
+        action.textContent="Регистрация закрыта";action.disabled=true;
+      }
+      if(state.eventBusy)action.disabled=true;
+      action.addEventListener("click",()=>changeEventRegistration(event,action));
+      card.append(action);root.append(card);
+    }
+  }
+  async function changeEventRegistration(event,button){
+    if(state.eventBusy||!state.token)return;
+    const g=state.generation,action=button.dataset.action;
+    state.eventBusy=true;button.disabled=true;
+    try{
+      const result=await request(EVENT_API,{method:"POST",body:{event_id:event.eventId,action}});
+      if(g!==state.generation)return;
+      const status=result.registration?.status;
+      message(action==="cancel"?"Регистрация отменена.":status==="confirmed"?"Место подтверждено.":"Вы добавлены в лист ожидания.");
+      state.eventBusy=false;
+      await refresh();
+    }catch(err){
+      fail(err,g,err.status===409?"Регистрация на это событие закрыта.":"Не удалось изменить регистрацию.");
+    }finally{
+      if(g===state.generation)state.eventBusy=false;
+    }
+  }
   async function refresh(){
     if(!state.token)return;
-    const g=state.generation,data=await request(API);
-    if(g!==state.generation)return;render(data);
+    const g=state.generation;
+    const [data,eventData]=await Promise.all([request(API),request(EVENT_API)]);
+    if(g!==state.generation)return;render(data);renderEventRegistrations(eventData);
   }
   $("login-form").addEventListener("submit",async e=>{
     e.preventDefault();
