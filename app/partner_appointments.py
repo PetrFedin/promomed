@@ -224,7 +224,7 @@ def handle_command(c,route,role,email,data):
             "INSERT INTO partner_appointment_slots_v1("
             "id,organization_id,starts_at,ends_at,capacity,status,version,"
             "created_at,updated_at,created_by,demo_only"
-            ") VALUES(?,?,?,?,?,'open',1,?,?,?,?,?)",
+            ") VALUES(?,?,?,?,?,'open',1,?,?,?,?)",
             (
                 slot_id,organization_id,starts,ends,capacity,
                 now,now,email,int(membership["demo_only"]),
