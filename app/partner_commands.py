@@ -1,5 +1,6 @@
 import time
 
+from app import partner_appointment
 from app.legacy_write_scope import unavailable_on_non_demo
 from app.commanding import error, ok
 from app.core import audit, notify
@@ -13,6 +14,9 @@ ROUTES = {
 
 
 def handle_command(c, route, role, email, data):
+    versioned=partner_appointment.handle_command(c,route,role,email,data)
+    if versioned is not None:
+        return versioned
     if route not in ROUTES:
         return None
     if unavailable_on_non_demo(route):
