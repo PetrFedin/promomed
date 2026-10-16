@@ -89,11 +89,13 @@ def read(c, path, role, email):
         dict(r)
         for r in c.execute(
             "SELECT r.event_id,e.title event_title,e.starts_at,r.status,"
-            "r.requested_at,r.updated_at "
+            "r.requested_at,r.updated_at,e.registration_status,"
+            "e.demo_only "
             "FROM participant_event_registrations_v1 r "
             "JOIN event_editions_v1 e ON e.id=r.event_id "
-            "WHERE r.email=? ORDER BY e.starts_at,r.event_id",
-            (email,),
+            "WHERE r.email=? AND (?=1 OR e.demo_only=0) "
+            "ORDER BY e.starts_at,r.event_id",
+            (email, int(db.demo_seed_enabled())),
         )
     ]
     bookings = [

@@ -175,6 +175,7 @@ class Client365EvidenceTests(unittest.TestCase):
         # synthetic 2030 updated_at. Do not backdate a confirmation.
         self.assertEqual(d["registeredAt"],recorded["observed_at"])
         self.assertEqual(d["registrationSource"],"event_registration_v1")
+        self.assertEqual(d["registrationTimeBasis"],"db_observed_confirmation_transition")
         self.assertEqual(d["registrationBaselineEventId"],"EV-C365")
         self.assertEqual(d["counts"]["eventRegistrationsConfirmed"],1)
         self.assertEqual(len([e for e in d["events"] if e["kind"]=="registration"]),1)
@@ -184,6 +185,15 @@ class Client365EvidenceTests(unittest.TestCase):
             for day in (1,7,30)
         ]
         self.assertEqual([m["state"] for m in d["milestones"]],expected)
+
+    def test_current_confirmation_history_has_source_lineage(self):
+        self.canonical_event(self.EMAIL,"confirmed",self.NOW-900,self.NOW-600)
+        d=self.snapshot()
+        row=next(x for x in d["events"] if x["kind"]=="registration")
+        self.assertEqual(row["observedAt"],d["registeredAt"])
+        self.assertEqual(row["source"],"event_registration_transitions_v1")
+        self.assertEqual(row["assurance"],"db_observed_not_externally_attested")
+        self.assertFalse(d["truthBoundary"]["externalAcceptance"])
 
     def test_waitlisted_or_cancelled_canonical_suppresses_stale_legacy(self):
         self.register(days_ago=35)

@@ -64,38 +64,56 @@ def _registration_projection(c, email, now):
             else row["status"]
         )
         counts["cancelled" if status == "edition_cancelled" else status] += 1
-        source_ts = (
-            row["edition_updated_at"] if status == "edition_cancelled"
-            else row["requested_at"] if status == "waitlist"
-            else row["updated_at"]
-        )
-        ts = _timestamp(source_ts, now)
-        if ts is not None:
-            history.append({
-                "id": "event-registration:" + row["event_id"],
-                "kind": "registration",
-                "title": titles[status] + ": " + row["title"],
-                "observedAt": ts,
-                "source": "participant_event_registrations_v1",
-                "assurance": "current_status_record_not_attendance",
-                "eventId": row["event_id"],
-                "registrationStatus": status,
-            })
+        confirmation = None
+        confirmation_time_basis = None
         if status == "confirmed":
-            # Prefer the last database-observed transition into confirmed.
-            # Older rows (before REG-03) have no historical event and remain
-            # explicitly provisional, never backfilled from the current row.
-            evidence = c.execute(
+            transition = c.execute(
                 "SELECT observed_at FROM event_registration_transitions_v1 "
                 "WHERE event_id=? AND email=? AND next_status='confirmed' "
                 "ORDER BY transition_no DESC LIMIT 1",
                 (row["event_id"], email),
             ).fetchone()
-            verified_ts = _timestamp(evidence["observed_at"], now) if evidence else None
-            provisional_ts = _timestamp(row["updated_at"], now)
-            confirmation = verified_ts if verified_ts is not None else provisional_ts
-            if confirmation is not None:
-                confirmed.append((confirmation, row["event_id"]))
+            if transition is not None:
+                # Never silently fall back to a mutable timestamp when the
+                # actual recorded transition has an invalid/future clock.
+                confirmation = _timestamp(transition["observed_at"], now)
+                if confirmation is not None:
+                    confirmation_time_basis = "db_observed_confirmation_transition"
+            else:
+                # This is an old row, not a fabricated historic event.
+                confirmation = _timestamp(row["updated_at"], now)
+                if confirmation is not None:
+                    confirmation_time_basis = "provisional_status_updated_at"
+        source_ts = (
+            row["edition_updated_at"] if status == "edition_cancelled"
+            else row["requested_at"] if status == "waitlist"
+            else confirmation if status == "confirmed"
+            else row["updated_at"]
+        )
+        ts = _timestamp(source_ts, now)
+        if ts is not None:
+            confirmed_from_db = (
+                status == "confirmed"
+                and confirmation_time_basis == "db_observed_confirmation_transition"
+            )
+            history.append({
+                "id": "event-registration:" + row["event_id"],
+                "kind": "registration",
+                "title": titles[status] + ": " + row["title"],
+                "observedAt": ts,
+                "source": (
+                    "event_registration_transitions_v1" if confirmed_from_db
+                    else "participant_event_registrations_v1"
+                ),
+                "assurance": (
+                    "db_observed_not_externally_attested" if confirmed_from_db
+                    else "current_status_record_not_attendance"
+                ),
+                "eventId": row["event_id"],
+                "registrationStatus": status,
+            })
+        if confirmation is not None:
+            confirmed.append((confirmation, row["event_id"], confirmation_time_basis))
 
     # Even a waitlisted/cancelled or hidden canonical record suppresses a
     # misleading older legacy "confirmed" record for this same account.
@@ -105,6 +123,7 @@ def _registration_projection(c, email, now):
             earliest[0] if earliest else None,
             "event_registration_v1",
             earliest[1] if earliest else None,
+            earliest[2] if earliest else "no_current_confirmation_baseline",
             history,
             counts,
         )
@@ -130,6 +149,7 @@ def _registration_projection(c, email, now):
         legacy_ts,
         "legacy_registrations" if legacy is not None else "none",
         None,
+        "legacy_registration_timestamp" if legacy_ts is not None else "none",
         history,
         counts,
     )
@@ -148,7 +168,7 @@ def snapshot(c, email, now=None):
         raise PermissionError("participant_account_not_active")
 
     (registered_at, registration_source, baseline_event_id,
-     registration_events, event_registration_counts) = _registration_projection(
+     registration_time_basis, registration_events, event_registration_counts) = _registration_projection(
         c, email, now
     )
     events = list(registration_events)
@@ -315,13 +335,7 @@ def snapshot(c, email, now=None):
         "registeredAt": registered_at,
         "registrationSource": registration_source,
         "registrationBaselineEventId": baseline_event_id,
-        "registrationTimeBasis": (
-            "last_status_update_not_immutable_confirmation"
-            if registration_source == "event_registration_v1"
-            else "legacy_registration_timestamp"
-            if registration_source == "legacy_registrations"
-            else "none"
-        ),
+        "registrationTimeBasis": registration_time_basis,
         "events": events[:80],
         "followups": planned,
         "milestones": milestones,
