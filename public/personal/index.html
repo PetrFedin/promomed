@@ -26,15 +26,45 @@
   <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
 
   <section id="signed-out" class="loginGrid">
-    <form id="login-form" class="card loginCard">
-      <p class="eyebrow">ВАШ АККАУНТ</p><h2>Рады вас видеть</h2>
-      <label for="email">Электронная почта</label>
-      <input id="email" type="email" autocomplete="username" maxlength="254" required>
-      <label for="password">Пароль</label>
-      <input id="password" type="password" autocomplete="current-password" maxlength="256" required>
-      <button id="login-button" class="primary" type="submit">Войти в кабинет <span aria-hidden="true">→</span></button>
-      <p class="fine">Токен не сохраняется в localStorage или sessionStorage. После обновления страницы потребуется новый вход.</p>
-    </form>
+    <div class="card loginCard">
+      <div class="authTabs" role="tablist" aria-label="Аккаунт">
+        <button id="mode-login" class="authTab active" type="button" role="tab" aria-selected="true">Войти</button>
+        <button id="mode-signup" class="authTab" type="button" role="tab" aria-selected="false">Создать аккаунт</button>
+      </div>
+
+      <form id="login-form">
+        <p class="eyebrow">ВАШ АККАУНТ</p><h2>Рады вас видеть</h2>
+        <label for="email">Электронная почта</label>
+        <input id="email" type="email" autocomplete="username" maxlength="254" required>
+        <label for="password">Пароль</label>
+        <input id="password" type="password" autocomplete="current-password" maxlength="256" required>
+        <button id="login-button" class="primary" type="submit">Войти в кабинет <span aria-hidden="true">→</span></button>
+        <p class="fine">Токен не сохраняется в localStorage или sessionStorage. После обновления страницы потребуется новый вход.</p>
+      </form>
+
+      <form id="signup-form" hidden>
+        <p class="eyebrow">НОВЫЙ УЧАСТНИК</p><h2>Создать аккаунт</h2>
+        <label for="signup-name">Имя</label>
+        <input id="signup-name" type="text" autocomplete="name" maxlength="80" required>
+        <label for="signup-email">Электронная почта</label>
+        <input id="signup-email" type="email" autocomplete="email" maxlength="254" required>
+        <label for="signup-password">Пароль</label>
+        <input id="signup-password" type="password" autocomplete="new-password" minlength="14" maxlength="256" required>
+        <button id="signup-button" class="primary" type="submit">Отправить код <span aria-hidden="true">→</span></button>
+        <p class="fine">Не менее 14 символов и минимум три класса символов. Создание аккаунта не означает регистрацию на мероприятие, медицинское согласие или передачу данных партнёрам.</p>
+      </form>
+
+      <form id="verify-form" hidden>
+        <p class="eyebrow">ПОДТВЕРЖДЕНИЕ EMAIL</p><h2>Введите код</h2>
+        <p id="verify-email" class="muted"></p>
+        <label for="verify-code">Код из письма</label>
+        <input id="verify-code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required>
+        <button id="verify-button" class="primary" type="submit">Подтвердить и войти <span aria-hidden="true">→</span></button>
+        <button id="change-registration-email" class="quiet authBack" type="button">← Изменить данные</button>
+        <p id="demo-code" class="demoCode" hidden></p>
+        <p class="fine">Код ограничен по времени и числу попыток. В production он не возвращается API и должен поступить только через настроенный почтовый канал.</p>
+      </form>
+    </div>
     <aside class="card promise">
       <p class="eyebrow">ПРОДОЛЖЕНИЕ</p><h2>Мысль сегодня.<br>Следующий шаг завтра.</h2>
       <p>Заметки принадлежат текущему аккаунту. Бронирование не считается посещением, а личная заметка — медицинским фактом.</p>
@@ -48,8 +78,14 @@
         <div id="avatar" class="avatar" aria-hidden="true"></div>
         <h2 id="account-name"></h2><p id="account-email" class="muted"></p>
         <span class="tag">Участник</span>
-        <hr>
-        <p class="fine">Регистрация</p><p id="registration" class="registration">—</p>
+      </section>
+      <section class="card">
+        <p class="eyebrow">УЧАСТИЕ В СОБЫТИИ</p>
+        <h3 class="sideTitle">Регистрация</h3>
+        <div id="event-registration-list" class="eventRegistrationList">
+          <p class="fine">Загрузка доступных событий…</p>
+        </div>
+        <p class="fine">Регистрация подтверждает место или очередь, но не является фактом посещения.</p>
       </section>
       <section class="card">
         <p class="eyebrow">МОИ ЗАПИСИ</p><div id="bookings"></div>
