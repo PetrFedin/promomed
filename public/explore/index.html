@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#071d36">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>СОСТОЯНИЕ — открытая программа</title>
+  <link rel="stylesheet" href="/explore/explore.css">
+  <script src="/explore/explore.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">К содержанию</a>
+<header class="top">
+  <a class="brand" href="/explore/" aria-label="СОСТОЯНИЕ"><b>СОСТОЯНИЕ</b><span>Открытая программа</span></a>
+  <a class="account" href="/personal/">Моё СОСТОЯНИЕ →</a>
+</header>
+<main id="main">
+  <section class="hero">
+    <div class="heroCopy">
+      <p class="eyebrow">ПУБЛИЧНАЯ ВЕРСИЯ</p>
+      <h1>Здоровье без<br><em>лишнего шума.</em></h1>
+      <p class="lead">Здесь показываются только материалы и события, которые отдельно допущены к публичной выдаче. Черновики, удержанные и demo-only записи не попадают на эту страницу.</p>
+      <div class="heroActions">
+        <button id="agenda-jump" type="button">Смотреть программу</button>
+        <a href="/personal/">Создать аккаунт</a>
+      </div>
+    </div>
+    <div class="orb" aria-hidden="true"></div>
+  </section>
+
+  <div id="status" class="status" role="status" aria-live="polite">Загружаем открытую программу…</div>
+
+  <section id="agenda-section" class="section" aria-labelledby="agenda-title">
+    <div class="sectionHead">
+      <div><p class="eyebrow">ПРОГРАММА</p><h2 id="agenda-title">Что можно посетить</h2></div>
+      <span id="agenda-count" class="count">0</span>
+    </div>
+    <div id="agenda" class="agenda"></div>
+    <div id="agenda-empty" class="empty" hidden>
+      <b>Пока без публикаций</b>
+      <p>Организатор ещё не допустил ни одной версии события к публичной выдаче. Это не означает, что программа отсутствует — только то, что публикация пока не подтверждена.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="content-title">
+    <div class="sectionHead">
+      <div><p class="eyebrow">МАТЕРИАЛЫ</p><h2 id="content-title">Проверенные публикации</h2></div>
+      <span id="content-count" class="count">0</span>
+    </div>
+    <div id="content" class="contentGrid"></div>
+    <div id="content-empty" class="empty" hidden>
+      <b>Публичных материалов пока нет</b>
+      <p>Мы не показываем черновики и материалы под publication hold только ради заполнения витрины.</p>
+    </div>
+  </section>
+
+  <section class="principles">
+    <p class="eyebrow">ГРАНИЦА ДОВЕРИЯ</p>
+    <h2>Что означает «опубликовано»</h2>
+    <div class="principleGrid">
+      <article><b>01</b><h3>Точная версия</h3><p>Изменение названия, описания, времени или площадки автоматически требует нового допуска.</p></article>
+      <article><b>02</b><h3>Publication hold</h3><p>Активный hold полностью исключает запись из выдачи — не только скрывает её визуально.</p></article>
+      <article><b>03</b><h3>Без персональных данных</h3><p>Здесь нет регистраций, посещаемости, заметок, контактов, лидов и партнёрской аналитики.</p></article>
+    </div>
+  </section>
+</main>
+<footer><b>СОСТОЯНИЕ</b><span>Открытая поверхность · данные только из public-state v1</span></footer>
+</body>
+</html>
