@@ -2,10 +2,12 @@
   "use strict";
   const API="/api/my-state/v1";
   const EVENT_API="/api/event-registration/v1";
+  const PARTNER_APPT="/api/partner-appointments/v1";
+  const PARTNER_LEAD="/api/partner-commercial/v1";
   const REG_REQUEST="/api/participant-registration/v1/request";
   const REG_VERIFY="/api/participant-registration/v1/verify";
   const $=id=>document.getElementById(id);
-  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,eventBusy:false,registration:null,eventEditions:[]};
+  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,eventBusy:false,partnerBusy:false,registration:null,eventEditions:[]};
 
   function message(text="",error=false){
     const n=$("notice");n.hidden=!text;n.textContent=text;n.classList.toggle("error",!!error);
@@ -28,10 +30,10 @@
     showAuthMode(mode);message("");
   }
   function clearSession(){
-    state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.eventBusy=false;state.registration=null;state.eventEditions=[];
+    state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.eventBusy=false;state.partnerBusy=false;state.registration=null;state.eventEditions=[];
     $("workspace").hidden=true;$("signed-out").hidden=false;$("logout").hidden=true;
     $("login-button").disabled=false;$("signup-button").disabled=false;$("verify-button").disabled=false;$("save-note").disabled=true;$("logout-all").disabled=false;
-    $("password").value="";$("signup-name").value="";$("signup-email").value="";$("signup-password").value="";$("verify-code").value="";$("verify-email").textContent="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();$("event-registration-list").replaceChildren();
+    $("password").value="";$("signup-name").value="";$("signup-email").value="";$("signup-password").value="";$("verify-code").value="";$("verify-email").textContent="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();$("event-registration-list").replaceChildren();$("partner-appointments").replaceChildren();$("partner-leads").replaceChildren();
     showAuthMode("login");updateCount();
   }
   function stale(g,token){return g!==state.generation||token!==state.token;}
@@ -144,11 +146,61 @@
       if(g===state.generation)state.eventBusy=false;
     }
   }
+  function renderPartnerRows(target,items,kind){
+    const root=$(target);root.replaceChildren();
+    if(!items.length){root.append(el("p","fine",kind==="appointment"?"Встреч пока нет.":"Заявок пока нет."));return;}
+    for(const item of items){
+      const card=el("div","partnerRecord");
+      const status=item.status||"";
+      if(kind==="appointment"){
+        const name=item.organization_name||item.organization_id||"Партнёр";
+        const stamp=item.starts_at?new Date(item.starts_at*1000).toLocaleString("ru-RU"):"";
+        card.append(el("strong","",name),el("span","fine",stamp),el("span","",status==="booked"?"Место подтверждено":status==="waitlist"?"Лист ожидания":"Отменено"));
+      }else{
+        card.append(el("strong","",item.kind||"Заявка"),el("span","fine","Организация: "+(item.organization_id||"")),el("span","",status==="submitted"?"Контакт передан":"Согласие отозвано"));
+      }
+      if((kind==="appointment"&&["booked","waitlist"].includes(status))||(kind==="lead"&&status==="submitted")){
+        const button=el("button","outline",kind==="appointment"?"Отменить встречу":"Отозвать заявку");
+        button.type="button";button.disabled=state.partnerBusy;
+        button.addEventListener("click",()=>changePartnerRecord(kind,item,button));
+        card.append(button);
+      }
+      root.append(card);
+    }
+  }
+  async function changePartnerRecord(kind,item,button){
+    if(state.partnerBusy||!state.token)return;
+    const generation=state.generation;state.partnerBusy=true;button.disabled=true;
+    const appointment=kind==="appointment";
+    try{
+      await request(appointment?PARTNER_APPT:PARTNER_LEAD,{method:"POST",body:appointment
+        ?{action:"cancel",slot_id:item.slot_id}:{action:"lead_withdraw",lead_id:item.id}});
+      if(generation!==state.generation)return;
+      message(appointment?"Встреча отменена.":"Заявка отозвана.");
+      await refresh();
+    }catch(e){fail(e,generation,"Изменение не подтверждено. Обновите данные и проверьте статус.");}
+    finally{if(generation===state.generation){state.partnerBusy=false;button.disabled=false;}}
+  }
+  async function refreshPartner(){
+    const generation=state.generation;
+    const responses=await Promise.allSettled([request(PARTNER_APPT),request(PARTNER_LEAD)]);
+    if(generation!==state.generation||!state.token)return;
+    const targets=[["partner-appointments","myAppointments","appointment"],["partner-leads","myLeads","lead"]];
+    for(let i=0;i<targets.length;i++){
+      const [id,key,kind]=targets[i],result=responses[i];
+      if(result.status==="fulfilled"){renderPartnerRows(id,result.value[key]||[],kind);}
+      else if(!result.reason?.stale){
+        if(result.reason?.status===401||result.reason?.status===403){fail(result.reason,generation);return;}
+        const root=$(id);root.replaceChildren(el("p","fine","Данные временно недоступны. Повторите обновление."));
+      }
+    }
+  }
   async function refresh(){
     if(!state.token)return;
     const g=state.generation;
     const [data,eventData]=await Promise.all([request(API),request(EVENT_API)]);
     if(g!==state.generation)return;render(data);renderEventRegistrations(eventData);
+    await refreshPartner();
   }
   $("login-form").addEventListener("submit",async e=>{
     e.preventDefault();

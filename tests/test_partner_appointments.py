@@ -329,6 +329,41 @@ class PartnerAppointmentTests(unittest.TestCase):
                          capacity=1,status=invalid)
             self.assertEqual((out.status,out.payload["error"]),(422,"invalid_request"))
 
+    def test_waitlist_promotion_skips_suspended_participant(self):
+        slot=self.create_slot(capacity=1)
+        self.cmd("participant",self.participant_a,action="book",
+                 slot_id=slot,contact_consent=True)
+        self.cmd("participant",self.participant_b,action="book",
+                 slot_id=slot,contact_consent=True)
+        self.c.execute("UPDATE accounts SET status='suspended' WHERE email=?",
+                       (self.participant_b,))
+        self.c.commit()
+        cancelled=self.cmd("participant",self.participant_a,action="cancel",
+                           slot_id=slot)
+        self.assertEqual(cancelled.status,200)
+        self.assertFalse(cancelled.payload["queuePromotionOccurred"])
+        self.assertEqual(self.booking_status(slot,self.participant_b),"waitlist")
+
+    def test_cannot_reopen_slot_while_partner_placement_paused(self):
+        slot=self.create_slot()
+        self.cmd("partner",self.partner_a,action="slot_update",
+                 slot_id=slot,expected_version=1,
+                 starts_at=self.now+3600,ends_at=self.now+5400,
+                 capacity=1,status="closed")
+        paused=partner_commercial.handle_command(
+            self.c,partner_commercial.ROUTE,"partner",self.partner_a,
+            {"action":"placement_update","organization_id":"ORG-A",
+             "status":"paused","expected_version":1},
+        )
+        self.assertEqual(paused.status,200)
+        self.c.commit()
+        denied=self.cmd("partner",self.partner_a,action="slot_update",
+                        slot_id=slot,expected_version=2,
+                        starts_at=self.now+3600,ends_at=self.now+5400,
+                        capacity=1,status="open")
+        self.assertEqual((denied.status,denied.payload["error"]),
+                         (409,"placement_unavailable"))
+
     def test_query_selectors_and_foreign_roles_are_rejected(self):
         payload,status=partner_appointments.read(
             self.c,partner_appointments.ROUTE+"?organization_id=ORG-B",

@@ -183,9 +183,11 @@ def _promote_one(c,slot):
     if booked>=int(slot["capacity"]):
         return False
     waiter=c.execute(
-        "SELECT email FROM participant_partner_appointments_v1 "
-        "WHERE slot_id=? AND status='waitlist' "
-        "ORDER BY requested_at,email LIMIT 1",
+        "SELECT q.email FROM participant_partner_appointments_v1 q "
+        "JOIN accounts a ON a.email=q.email "
+        "WHERE q.slot_id=? AND q.status='waitlist' "
+        "AND a.role='participant' AND a.status='active' "
+        "ORDER BY q.requested_at,q.email LIMIT 1",
         (slot["id"],),
     ).fetchone()
     if not waiter:
@@ -270,6 +272,8 @@ def handle_command(c,route,role,email,data):
             return error("slot_cancelled",409)
         if int(slot["version"])!=expected:
             return error("version_conflict",409)
+        if state=="open" and not _placement_enabled(c,slot["organization_id"]):
+            return error("placement_unavailable",409)
         booked=int(c.execute(
             "SELECT COUNT(*) n FROM participant_partner_appointments_v1 "
             "WHERE slot_id=? AND status='booked'",
@@ -337,10 +341,12 @@ def handle_command(c,route,role,email,data):
         slot_id=data.get("slot_id")
         if not isinstance(slot_id,str) or len(slot_id)!=32:
             return error("invalid_request",422)
+        # Lock the parent capacity authority before reading this owner's row.
+        # Concurrent duplicate cancels must not both observe an old 'booked' state.
+        slot=_slot(c,slot_id,lock=True)
         own=_own_booking(c,slot_id,email)
         if own is None or own["status"]=="cancelled":
             return error("appointment_not_found",404)
-        slot=_slot(c,slot_id,lock=True)
         was_booked=own["status"]=="booked"
         c.execute(
             "UPDATE participant_partner_appointments_v1 "
