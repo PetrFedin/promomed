@@ -21,6 +21,8 @@ TABLES = (
     "participant_event_registrations_v1",
     "partner_commercial_placements_v1",
     "participant_partner_leads_v1",
+    "partner_appointment_slots_v1",
+    "participant_partner_appointments_v1",
     "program_items",
     "content_catalog",
     "product_catalog",
