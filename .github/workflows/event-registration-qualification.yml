@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - feat/p0-registration-transition-ledger-2026-10-16
+      - fix/p0-event-admission-journey-2026-10-16
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

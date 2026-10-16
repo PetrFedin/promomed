@@ -84,24 +84,53 @@ def read(c, raw_path, role, email):
     if _account(c, role, email) is None:
         return {"error": "forbidden"}, 403
 
+    # Owner-scoped source evidence, never include another participant's history.
+    # The cap protects the endpoint from unbounded historical growth. It does
+    # not imply that older/omitted transitions never existed.
+    observed_rows = list(c.execute(
+        "SELECT event_id,transition_no,previous_status,next_status,observed_at "
+        "FROM event_registration_transitions_v1 WHERE email=? "
+        "ORDER BY event_id,transition_no DESC LIMIT 2001",
+        (email,),
+    ))
+    observed_truncated = len(observed_rows) > 2000
+    owner_history = {}
+    for item in observed_rows[:2000]:
+        entries = owner_history.setdefault(item["event_id"], [])
+        if len(entries) < 5:
+            entries.append({
+                "sequence": item["transition_no"],
+                "previousStatus": item["previous_status"],
+                "nextStatus": item["next_status"],
+                "observedAt": item["observed_at"],
+                "source": "database_observed_transition",
+            })
+    now = int(time.time())
     rows = c.execute(
         "SELECT e.id,e.title,e.starts_at,e.registration_status,e.capacity,e.demo_only,"
         "r.status,r.requested_at,r.updated_at "
         "FROM event_editions_v1 e "
         "LEFT JOIN participant_event_registrations_v1 r "
         "ON r.event_id=e.id AND r.email=? "
-        "WHERE e.registration_status<>'cancelled' ORDER BY e.starts_at,e.id",
+        "WHERE e.registration_status<>'cancelled' OR r.email IS NOT NULL "
+        "ORDER BY e.starts_at,e.id",
         (email,),
     )
     events = []
     for row in rows:
         if not db.demo_seed_enabled() and int(row["demo_only"] or 0) != 0:
             continue
+        started = int(row["starts_at"]) <= now
+        closed_by_start = started and row["registration_status"] in ("open", "waitlist_only")
+        effective_status = "closed" if closed_by_start else row["registration_status"]
         events.append({
             "eventId": row["id"],
             "eventTitle": row["title"],
             "startsAt": row["starts_at"],
-            "registrationStatus": row["registration_status"],
+            "registrationStatus": effective_status,
+            "authorityRegistrationStatus": row["registration_status"],
+            "registrationClosedReason": "event_started" if closed_by_start else None,
+            "registrationHistory": owner_history.get(row["id"], []),
             "capacity": row["capacity"],
             "myStatus": row["status"],
             "requestedAt": row["requested_at"],
@@ -110,10 +139,12 @@ def read(c, raw_path, role, email):
     return {
         "version": "event-registration-v1",
         "events": events,
+        "registrationHistoryTruncated": observed_truncated,
         "truthBoundary": {
             "accountCreationIsNotEventRegistration": True,
             "registrationIsNotAttendance": True,
             "waitlistIsNotConfirmation": True,
+            "registrationHistoryIsNotExternallyVerified": True,
             "marketingConsent": False,
             "medicalConsent": False,
             "partnerLead": False,
@@ -132,7 +163,7 @@ def serve(actor, raw_path):
 
 
 def _promote_one(c, event):
-    if event["registration_status"] != "open":
+    if event["registration_status"] != "open" or int(event["starts_at"]) <= int(time.time()):
         return False
     confirmed = int(c.execute(
         "SELECT COUNT(*) n FROM participant_event_registrations_v1 "
@@ -199,7 +230,7 @@ def handle_command(c, route, role, email, data):
             "queuePromotionOccurred": promoted,
         })
 
-    if event["registration_status"] in ("closed", "cancelled"):
+    if event["registration_status"] in ("closed", "cancelled") or int(event["starts_at"]) <= now:
         return error("registration_closed", 409)
 
     if own is not None and own["status"] in ("confirmed", "waitlist"):
