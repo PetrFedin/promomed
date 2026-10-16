@@ -35,6 +35,16 @@ class MyStateUiContractTests(unittest.TestCase):
         self.assertIn("Регистрация подтверждает место или очередь, но не является фактом посещения", HTML)
         self.assertNotIn('id="registration"', HTML)
 
+    def test_partner_owner_actions_are_wired_to_versioned_authority(self):
+        self.assertIn('const PARTNER_APPT="/api/partner-appointments/v1"',JS)
+        self.assertIn('const PARTNER_LEAD="/api/partner-commercial/v1"',JS)
+        self.assertIn('id="partner-appointments"',HTML)
+        self.assertIn('id="partner-leads"',HTML)
+        self.assertIn('action:"cancel",slot_id:item.slot_id',JS)
+        self.assertIn('action:"lead_withdraw",lead_id:item.id',JS)
+        self.assertIn('Promise.allSettled([request(PARTNER_APPT),request(PARTNER_LEAD)])',JS)
+        self.assertNotIn('innerHTML',JS)
+
     def test_bearer_token_is_memory_only(self):
         self.assertNotIn("localStorage", JS)
         self.assertNotIn("sessionStorage", JS)
