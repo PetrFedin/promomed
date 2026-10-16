@@ -48,7 +48,25 @@ def _member(c,organization_id,email):
     m=partner_org_scope.member(c,organization_id,email)
     if m is None or int(m["demo_only"])!=_runtime_demo_value():
         return None
+    org=c.execute(
+        "SELECT organization_type FROM institutional_organizations WHERE id=?",
+        (organization_id,),
+    ).fetchone()
+    if org is None or org["organization_type"]!="strategic_partner":
+        return None
     return m
+
+
+def _lock_partner_actor(c,email):
+    if db.backend_name()=="sqlite" and not getattr(c,"in_transaction",False):
+        c.execute("BEGIN IMMEDIATE")
+    sql=(
+        "SELECT email FROM accounts WHERE email=? "
+        "AND role='partner' AND status='active'"
+    )
+    if db.backend_name()=="postgres":
+        sql+=" FOR UPDATE"
+    return c.execute(sql,(email,)).fetchone()
 
 
 def _participant(c,email):
@@ -171,6 +189,8 @@ def _replay(prior,route,digest):
 
 def _partner_slot(c,role,email,data):
     if role!="partner":
+        return error("forbidden",403)
+    if _lock_partner_actor(c,email) is None:
         return error("forbidden",403)
     if not isinstance(data,dict):
         return error("invalid_request",422)
