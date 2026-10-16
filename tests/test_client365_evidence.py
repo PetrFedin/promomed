@@ -148,6 +148,68 @@ class Client365EvidenceTests(unittest.TestCase):
         self.assertEqual(d["counts"]["recordedAccountActions"],0)
         self.assertEqual(d["milestones"][2]["state"],"no_observed_account_activity")
 
+    def canonical_event(self,email,status,requested,updated,edition_status="open",event_id="EV-C365"):
+        self.c.execute(
+            "INSERT INTO event_editions_v1(id,title,starts_at,registration_status,capacity,demo_only,created_at,updated_at) "
+            "VALUES(?,?,? ,?,10,0,?,?)",
+            (event_id,"Canonical Event",self.NOW+86400,edition_status,requested,updated),
+        )
+        self.c.execute(
+            "INSERT INTO participant_event_registrations_v1(event_id,email,status,requested_at,updated_at,source) "
+            "VALUES(?,?,?,?,?,'participant')",
+            (event_id,email,status,requested,updated),
+        )
+
+    def test_canonical_confirmed_registration_supersedes_legacy(self):
+        self.register(days_ago=35)
+        ts=self.NOW-8*86400
+        self.canonical_event(self.EMAIL,"confirmed",ts-200,ts)
+        d=self.snapshot()
+        self.assertEqual(d["registeredAt"],ts)
+        self.assertEqual(d["registrationSource"],"event_registration_v1")
+        self.assertEqual(d["registrationBaselineEventId"],"EV-C365")
+        self.assertEqual(d["counts"]["eventRegistrationsConfirmed"],1)
+        self.assertEqual(len([e for e in d["events"] if e["kind"]=="registration"]),1)
+        self.assertEqual([m["state"] for m in d["milestones"]],["no_observed_account_activity"]*2+["not_due"])
+
+    def test_waitlisted_or_cancelled_canonical_suppresses_stale_legacy(self):
+        self.register(days_ago=35)
+        self.canonical_event(self.EMAIL,"waitlist",self.NOW-500,self.NOW-300)
+        d=self.snapshot()
+        self.assertIsNone(d["registeredAt"])
+        self.assertEqual(d["counts"]["eventRegistrationsWaitlist"],1)
+        self.assertEqual(d["milestones"][0]["state"],"no_registration_baseline")
+        self.c.execute(
+            "UPDATE participant_event_registrations_v1 SET status='cancelled',updated_at=? WHERE event_id='EV-C365'",
+            (self.NOW-100,),
+        )
+        d=self.snapshot()
+        self.assertEqual(d["counts"]["eventRegistrationsCancelled"],1)
+        self.assertIsNone(d["registeredAt"])
+
+    def test_cancelled_edition_is_not_confirmed_and_no_cross_account_leak(self):
+        self.canonical_event(self.OTHER,"confirmed",self.NOW-400,self.NOW-300)
+        own=self.snapshot()
+        self.assertEqual(own["registrationSource"],"none")
+        self.assertNotIn("EV-C365",str(own))
+        self.c.execute("UPDATE event_editions_v1 SET registration_status='cancelled' WHERE id='EV-C365'")
+        other=self.snapshot(self.OTHER)
+        self.assertIsNone(other["registeredAt"])
+        self.assertEqual(other["counts"]["eventRegistrationsCancelled"],1)
+
+    def test_self_attendance_v1_remains_unverified_and_separate(self):
+        self.c.execute(
+            "INSERT INTO session_attendance(email,item_id,status,checkin_ts,checkout_ts,source) "
+            "VALUES(?,'P01','self_reported_complete',?,?,'participant_self_report')",
+            (self.EMAIL,self.NOW-120,self.NOW-90),
+        )
+        d=self.snapshot()
+        self.assertEqual(d["counts"]["selfRecordedAttendance"],0)
+        self.assertEqual(d["counts"]["participantSelfReports"],1)
+        self.assertEqual(d["counts"]["staffRecordedAttendance"],0)
+        self.assertIn("participant_self_report_not_verified",[e["assurance"] for e in d["events"]])
+        self.assertFalse(d["truthBoundary"]["externalAcceptance"])
+
     def test_http_role_identity_and_account_revocation(self):
         self.register()
         self.c.commit()

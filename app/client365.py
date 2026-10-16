@@ -17,6 +17,7 @@ OBSERVED_KINDS = {
 }
 STAFF_SOURCES = {"staff", "organizer"}
 ATTENDED_STATES = {"present", "completed", "checked_in", "attended", "complete"}
+SELF_REPORTED_STATES = {"self_reported", "self_reported_complete"}
 DAY_SECONDS = 86400
 
 
@@ -26,6 +27,101 @@ def _timestamp(value, now):
         return None
     ts = int(value)
     return ts if 0 < ts <= now else None
+
+
+def _registration_projection(c, email, now):
+    """Project current event-registration truth; legacy is a last-resort fallback.
+
+    A waitlist, cancelled registration or cancelled edition cannot be the
+    baseline for D1/D7/D30. The current row's updated_at is the recorded last
+    status transition, NOT a separately attested immutable confirmation event.
+    """
+    rows = list(c.execute(
+        """SELECT r.event_id,r.status,r.requested_at,r.updated_at,
+                  e.title,e.starts_at,e.registration_status,
+                  e.updated_at AS edition_updated_at,e.demo_only
+           FROM participant_event_registrations_v1 r
+           JOIN event_editions_v1 e ON e.id=r.event_id
+           WHERE r.email=? ORDER BY r.requested_at,r.event_id""",
+        (email,),
+    ))
+    history = []
+    counts = {"confirmed": 0, "waitlist": 0, "cancelled": 0}
+    confirmed = []
+    titles = {
+        "confirmed": "Место подтверждено",
+        "waitlist": "Лист ожидания",
+        "cancelled": "Регистрация отменена",
+        "edition_cancelled": "Событие отменено",
+    }
+    for row in rows:
+        # In production a demo edition never becomes a real registration fact.
+        if not db.demo_seed_enabled() and int(row["demo_only"] or 0) != 0:
+            continue
+        status = (
+            "edition_cancelled"
+            if row["registration_status"] == "cancelled"
+            else row["status"]
+        )
+        counts["cancelled" if status == "edition_cancelled" else status] += 1
+        source_ts = (
+            row["edition_updated_at"] if status == "edition_cancelled"
+            else row["requested_at"] if status == "waitlist"
+            else row["updated_at"]
+        )
+        ts = _timestamp(source_ts, now)
+        if ts is not None:
+            history.append({
+                "id": "event-registration:" + row["event_id"],
+                "kind": "registration",
+                "title": titles[status] + ": " + row["title"],
+                "observedAt": ts,
+                "source": "participant_event_registrations_v1",
+                "assurance": "current_status_record_not_attendance",
+                "eventId": row["event_id"],
+                "registrationStatus": status,
+            })
+        if status == "confirmed":
+            confirmation = _timestamp(row["updated_at"], now)
+            if confirmation is not None:
+                confirmed.append((confirmation, row["event_id"]))
+
+    # Even a waitlisted/cancelled or hidden canonical record suppresses a
+    # misleading older legacy "confirmed" record for this same account.
+    if rows:
+        earliest = min(confirmed) if confirmed else None
+        return (
+            earliest[0] if earliest else None,
+            "event_registration_v1",
+            earliest[1] if earliest else None,
+            history,
+            counts,
+        )
+
+    legacy = c.execute(
+        "SELECT status,ts FROM registrations WHERE email=?", (email,)
+    ).fetchone()
+    legacy_ts = (
+        _timestamp(legacy["ts"], now)
+        if legacy is not None and legacy["status"] == "confirmed"
+        else None
+    )
+    if legacy_ts is not None:
+        history.append({
+            "id": "registration",
+            "kind": "registration",
+            "title": "Историческая регистрация (прежний контур)",
+            "observedAt": legacy_ts,
+            "source": "registrations",
+            "assurance": "legacy_application_record_not_event_admission",
+        })
+    return (
+        legacy_ts,
+        "legacy_registrations" if legacy is not None else "none",
+        None,
+        history,
+        counts,
+    )
 
 
 def snapshot(c, email, now=None):
@@ -40,22 +136,11 @@ def snapshot(c, email, now=None):
     if not account or account["role"] != "participant" or account["status"] != "active":
         raise PermissionError("participant_account_not_active")
 
-    registration = c.execute(
-        "SELECT status,ts FROM registrations WHERE email=?", (email,)
-    ).fetchone()
-    registered_at = (
-        _timestamp(registration["ts"], now)
-        if registration and registration["status"] == "confirmed" else None
+    (registered_at, registration_source, baseline_event_id,
+     registration_events, event_registration_counts) = _registration_projection(
+        c, email, now
     )
-
-    events = []
-    if registered_at:
-        events.append({
-            "id": "registration", "kind": "registration",
-            "title": "Регистрация подтверждена системой",
-            "observedAt": registered_at,
-            "source": "registrations", "assurance": "application_record",
-        })
+    events = list(registration_events)
 
     bookings = c.execute(
         """SELECT b.item_id,b.status,b.ts,p.title,p.venue
@@ -95,23 +180,36 @@ def snapshot(c, email, now=None):
     )
     staff_recorded = 0
     self_recorded = 0
+    participant_self_reports = 0
     for a in rows:
         ts = _timestamp(a["checkin_ts"], now)
-        if not ts or a["status"] not in ATTENDED_STATES:
+        if not ts:
             continue
-        internal_staff = a["source"] in STAFF_SOURCES
-        if internal_staff:
+        self_report = (
+            a["source"] == "participant_self_report"
+            and a["status"] in SELF_REPORTED_STATES
+        )
+        if not self_report and a["status"] not in ATTENDED_STATES:
+            continue
+        internal_staff = a["source"] in STAFF_SOURCES and not self_report
+        if self_report:
+            participant_self_reports += 1
+        elif internal_staff:
             staff_recorded += 1
         else:
             self_recorded += 1
         events.append({
             "id": "attendance:" + a["item_id"],
             "kind": "attendance",
-            "title": "Посещение отмечено: " + (a["title"] or a["item_id"]),
+            "title": (
+                "Самостоятельная отметка: " if self_report
+                else "Посещение отмечено: "
+            ) + (a["title"] or a["item_id"]),
             "observedAt": ts, "source": "session_attendance",
             "assurance": (
                 "staff_recorded_not_independently_verified"
-                if internal_staff else "self_recorded_not_verified"
+                if internal_staff else "participant_self_report_not_verified"
+                if self_report else "self_recorded_not_verified"
             ),
         })
 
@@ -204,14 +302,27 @@ def snapshot(c, email, now=None):
         "mode": "client365_account_activity_v1",
         "demoOnly": demo,
         "registeredAt": registered_at,
+        "registrationSource": registration_source,
+        "registrationBaselineEventId": baseline_event_id,
+        "registrationTimeBasis": (
+            "last_status_update_not_immutable_confirmation"
+            if registration_source == "event_registration_v1"
+            else "legacy_registration_timestamp"
+            if registration_source == "legacy_registrations"
+            else "none"
+        ),
         "events": events[:80],
         "followups": planned,
         "milestones": milestones,
         "counts": {
+            "eventRegistrationsConfirmed": event_registration_counts["confirmed"],
+            "eventRegistrationsWaitlist": event_registration_counts["waitlist"],
+            "eventRegistrationsCancelled": event_registration_counts["cancelled"],
             "activeBookings": booked_count,
             "waitlist": waitlist_count,
             "staffRecordedAttendance": staff_recorded,
             "selfRecordedAttendance": self_recorded,
+            "participantSelfReports": participant_self_reports,
             "savedTakeaways": note_count,
             "recordedAccountActions": len(explicit_actions),
             "informationRequests": int(consent),
@@ -220,6 +331,9 @@ def snapshot(c, email, now=None):
             "ownAccountOnly": True,
             "timeWindowOrigin": "registration_not_event_date",
             "scheduledFollowupsAreNotReturns": True,
+            "canonicalEventRegistrationOverridesLegacy": True,
+            "waitlistOrCancelledIsNotConfirmed": True,
+            "registrationIsNotAttendance": True,
             "selfCheckinIsNotVerifiedAttendance": True,
             "staffRecordIsNotIndependentAttendanceProof": True,
             "productInterestIsNotPartnerMarketingConsent": True,
