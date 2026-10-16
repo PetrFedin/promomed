@@ -157,7 +157,7 @@ def handle_command(c,route,role,email,data):
     if not isinstance(data,dict):
         return error("invalid_request",422)
     action=data.get("action")
-    if action not in ACTIONS:
+    if not isinstance(action,str) or action not in ACTIONS:
         return error("bad_action",400)
 
     now=int(time.time())
@@ -167,7 +167,7 @@ def handle_command(c,route,role,email,data):
         organization_id=partner_org_scope.org_id(data.get("organization_id"))
         state=data.get("status")
         expected=data.get("expected_version")
-        if not organization_id or state not in PLACEMENT_STATES or type(expected) is not int or expected<0:
+        if not organization_id or not isinstance(state,str) or state not in PLACEMENT_STATES or type(expected) is not int or expected<0:
             return error("invalid_request",422)
         admission=partner_org_scope.member(c,organization_id,email)
         if admission is None:
