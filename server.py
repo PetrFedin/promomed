@@ -196,7 +196,7 @@ class H(SimpleHTTPRequestHandler):
   self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors(); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
-  parsed=urlparse(self.path); p=parsed.path
+  parsed=urlparse(self.path); p=parsed.path; self.path="/explore/" if p in ("/","/index.html") and not db.demo_seed_enabled() else self.path
   if (p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX)) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   if p==PUBLIC_STATE_ROUTE:
@@ -347,7 +347,7 @@ class H(SimpleHTTPRequestHandler):
  def do_POST(self):
   parsed=urlparse(self.path); p=parsed.path
   if legacy_write_unavailable(p): return self.out({"error":"not_found"},404)
-  if p.startswith(MY_STATE_ROUTE) and parsed.query: return self.out({"error":"unsupported_query"},422)
+  if (p.startswith(MY_STATE_ROUTE) or p=="/api/self-attendance/v1") and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   try: data=body(self)
   except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
