@@ -33,6 +33,7 @@ class LegacyWriteScopeTests(unittest.TestCase):
             "/api/public-state/v1",
             "/api/partner-collaboration",
             "/api/activity-booking",
+            "/api/self-attendance/v1",
         ):
             with self.subTest(route=route):
                 self.assertFalse(legacy_write_scope.requires_demo_authority(route))
