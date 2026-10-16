@@ -8,8 +8,7 @@ from app.core import audit, notify, promote_waitlist, setv, sval; from app.comma
 from app.community_commands import handle_command as handle_community_command; from app.learning_commands import handle_command as handle_learning_command; from app.participant_commands import handle_command as handle_participant_command
 from app.programme_commands import handle_command as handle_programme_command; from app.operations_commands import handle_command as handle_operations_command; from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public; from app.syndication_commands import handle_command as handle_syndication_command, handle_public as handle_syndication_public; from app.trust_commands import handle_command as handle_trust_command, handle_public as handle_trust_public
-from app.demo_reads import serve as serve_demo_read
-from app.legacy_report_scope import unavailable_on_non_demo
+from app.demo_reads import serve as serve_demo_read; from app.legacy_report_scope import unavailable_on_non_demo
 from app.legacy_write_scope import unavailable_on_non_demo as legacy_write_unavailable
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
@@ -196,7 +195,8 @@ class H(SimpleHTTPRequestHandler):
   self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors(); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
-  parsed=urlparse(self.path); p=parsed.path; self.path="/explore/" if p in ("/","/index.html") and not db.demo_seed_enabled() else self.path
+  parsed=urlparse(self.path); p=parsed.path
+  if p in ("/","/index.html") and not db.demo_seed_enabled(): self.path="/explore/"; return super().do_GET()
   if (p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX)) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   if p==PUBLIC_STATE_ROUTE:
