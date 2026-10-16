@@ -320,6 +320,15 @@ class PartnerAppointmentTests(unittest.TestCase):
         self.assertEqual((denied.status,denied.payload["error"]),
                          (422,"invalid_request"))
 
+    def test_structured_slot_state_is_validation_error(self):
+        slot=self.create_slot()
+        for invalid in ([],{},["open"]):
+            out=self.cmd("partner",self.partner_a,action="slot_update",
+                         slot_id=slot,expected_version=1,
+                         starts_at=self.now+3600,ends_at=self.now+5400,
+                         capacity=1,status=invalid)
+            self.assertEqual((out.status,out.payload["error"]),(422,"invalid_request"))
+
     def test_query_selectors_and_foreign_roles_are_rejected(self):
         payload,status=partner_appointments.read(
             self.c,partner_appointments.ROUTE+"?organization_id=ORG-B",
