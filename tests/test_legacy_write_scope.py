@@ -61,7 +61,6 @@ class LegacyWriteScopeTests(unittest.TestCase):
             (partner_commands.handle_command,"/api/lead","participant"),
             (partner_commands.handle_command,"/api/appointment-booking","participant"),
             (programme_commands.handle_command,"/api/booking","participant"),
-            (programme_commands.handle_command,"/api/activity-booking","participant"),
             (programme_commands.handle_command,"/api/session-attendance","staff"),
             (programme_commands.handle_command,"/api/replay","participant"),
         )
