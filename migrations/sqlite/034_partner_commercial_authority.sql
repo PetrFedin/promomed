@@ -1,7 +1,7 @@
 -- Organization-scoped partner commercial authority.
 CREATE TABLE IF NOT EXISTS partner_commercial_placements_v1 (
   organization_id TEXT PRIMARY KEY REFERENCES institutional_organizations(id),
-  status TEXT NOT NULL CHECK(status IN ('planned','contracted','active','ended')),
+  status TEXT NOT NULL CHECK(status IN ('planned','enabled','paused','ended')),
   version INTEGER NOT NULL CHECK(version>=1),
   updated_at BIGINT NOT NULL CHECK(updated_at>0),
   updated_by TEXT NOT NULL,
