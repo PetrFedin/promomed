@@ -14,7 +14,7 @@ from app.legacy_write_scope import unavailable_on_non_demo as legacy_write_unava
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
 from app.self_registration import handle_public as handle_self_registration_public
-from app.event_registration import serve as serve_event_registration, handle_command as handle_event_registration_command, seed_demo as seed_demo_event_registration, ROUTE as EVENT_REGISTRATION_ROUTE; from app.partner_commercial import serve as serve_partner_commercial, handle_command as handle_partner_commercial_command, ROUTE as PARTNER_COMMERCIAL_ROUTE
+from app.event_registration import serve as serve_event_registration, handle_command as handle_event_registration_command, seed_demo as seed_demo_event_registration, ROUTE as EVENT_REGISTRATION_ROUTE; from app.partner_surfaces import serve as serve_partner_surface, handle_command as handle_partner_surface_command
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.my_workspace import read as read_my_workspace, handle_command as handle_my_workspace_command, READ_ROUTE as MY_STATE_ROUTE, PAGE_PREFIX as MY_STATE_PAGE_PREFIX
 from app.investment_commands import handle_command as handle_investment_command; from app.deal_commands import handle_command as handle_deal_command
@@ -216,7 +216,7 @@ class H(SimpleHTTPRequestHandler):
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
   if p=="/api/partner-collaboration": return self.out(*partner_collaboration.read_result(urlparse(self.path).query,a,conn))
-  if p==PARTNER_COMMERCIAL_ROUTE: return self.out(*serve_partner_commercial(a,self.path))
+  if (partner_surface:=serve_partner_surface(a,self.path)) is not None: return self.out(*partner_surface)
   if p=="/api/client-365": return self.out(*serve_client365(a,self.path))
   if p==EVENT_REGISTRATION_ROUTE: return self.out(*serve_event_registration(a,self.path))
   if p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX):
@@ -383,7 +383,7 @@ class H(SimpleHTTPRequestHandler):
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
     if outcome is None: outcome=handle_programme_command(c,p,role,email,data); outcome=handle_operations_command(c,p,role,email,data) if outcome is None else outcome
     if outcome is None: outcome=partner_collaboration.handle_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_partner_commercial_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_partner_surface_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
     if outcome is None: outcome=handle_institutional_command(c,p,role,email,data)
