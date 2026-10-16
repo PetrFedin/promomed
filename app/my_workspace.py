@@ -104,6 +104,17 @@ def read(c, path, role, email):
             (email,),
         )
     ]
+    self_attendance = [
+        dict(r)
+        for r in c.execute(
+            "SELECT a.item_id,p.title,a.status,a.checkin_ts,a.checkout_ts,a.source "
+            "FROM session_attendance a "
+            "LEFT JOIN program_items p ON p.id=a.item_id "
+            "WHERE a.email=? AND a.source='participant_self_report' "
+            "ORDER BY a.checkin_ts DESC,a.item_id LIMIT 50",
+            (email,),
+        )
+    ]
     return {
         "version": "my-state-v1",
         "account": dict(account),
@@ -111,6 +122,7 @@ def read(c, path, role, email):
         "registration": dict(registration) if registration else None,
         "eventRegistrations": event_registrations,
         "bookings": bookings[:50],
+        "selfAttendance": self_attendance,
         "bookingsTruncated": len(bookings) > 50,
         "notes": _notes(c, email),
         "truthBoundary": {
@@ -118,6 +130,8 @@ def read(c, path, role, email):
             "noteSource": "participant_authored_unreviewed",
             "bookingIsAttendance": False,
             "eventRegistrationIsAttendance": False,
+            "selfAttendanceIsVerifiedAttendance": False,
+            "selfAttendanceCountsAsAttendanceKpi": False,
             "waitlistIsConfirmation": False,
             "publicCatalogAdmitted": False,
             "externalPilotAccepted": False,
