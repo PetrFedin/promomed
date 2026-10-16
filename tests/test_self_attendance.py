@@ -2,6 +2,8 @@
 import time
 import unittest
 import uuid
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from app import client365, db, my_workspace, programme_commands, public_state
 from app.auth import hash_password
@@ -182,6 +184,21 @@ class SelfAttendanceV1Tests(unittest.TestCase):
         self.assertEqual((out.status,out.payload["error"]),(422,"invalid_request"))
         out=self.command(self.email,"arrive",role="organizer")
         self.assertEqual((out.status,out.payload["error"]),(403,"forbidden"))
+
+    def test_http_query_selector_is_rejected_before_body_auth_or_db(self):
+        import server
+        h=SimpleNamespace(
+            path="/api/self-attendance/v1?email=other@example.test",
+            rfile=SimpleNamespace(read=lambda *_: (_ for _ in ()).throw(AssertionError("body read"))),
+            headers={},
+            out=lambda value,status=200:(value,status),
+        )
+        with patch("server.auth",side_effect=AssertionError("auth touched")):
+            with patch("server.conn",side_effect=AssertionError("db opened")):
+                self.assertEqual(
+                    server.H.do_POST(h),
+                    ({"error":"unsupported_query"},422),
+                )
 
     def test_other_account_never_sees_owner_self_report(self):
         self.command(self.email,"arrive")
