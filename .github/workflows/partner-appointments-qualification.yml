@@ -4,6 +4,9 @@ on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - fix/p0-partner-appointment-lifecycle-2026-10-16
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -24,7 +27,7 @@ jobs:
       - name: Install runtime
         run: pip install -r requirements.txt
       - name: Verify tenant scope, consent, capacity and cancellation on SQLite
-        run: python -m unittest -v tests/test_partner_appointments.py
+        run: python -m unittest -v tests/test_partner_appointments.py tests/test_partner_commercial.py
 
   postgres-partner-appointments:
     runs-on: ubuntu-latest
@@ -55,4 +58,4 @@ jobs:
       - name: Install runtime
         run: pip install -r requirements.txt
       - name: Verify last-place serialization and revocation on PostgreSQL 17
-        run: python -m unittest -v tests/test_partner_appointments_postgres.py
+        run: python -m unittest -v tests/test_partner_appointments_postgres.py tests/test_partner_commercial_postgres.py
