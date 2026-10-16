@@ -1,4 +1,5 @@
 """SEC-11: participant self-attendance is a self-report, never verified attendance."""
+import importlib
 import time
 import unittest
 import uuid
@@ -12,6 +13,13 @@ from app.auth import hash_password
 class SelfAttendanceV1Tests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        # Prior persistence tests reload app.db under temporary environments.
+        # Rebind all backend-aware modules to the workflow's current env.
+        importlib.reload(db)
+        importlib.reload(public_state)
+        importlib.reload(programme_commands)
+        importlib.reload(my_workspace)
+        importlib.reload(client365)
         db.migrate()
 
     def setUp(self):
