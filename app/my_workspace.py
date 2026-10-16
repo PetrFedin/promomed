@@ -115,6 +115,18 @@ def read(c, path, role, email):
             (email,),
         )
     ]
+    partner_appointments = [
+        dict(r)
+        for r in c.execute(
+            'SELECT b.slot_id,s.organization_id,o.name organization_name,s.item_id,'
+            's.start,s."end",b.status,b.requested_at,b.updated_at '
+            'FROM partner_appointment_bookings_v1 b '
+            'JOIN partner_appointment_slots_v1 s ON s.id=b.slot_id '
+            'JOIN institutional_organizations o ON o.id=s.organization_id '
+            'WHERE b.email=? ORDER BY b.requested_at DESC,b.slot_id LIMIT 50',
+            (email,),
+        )
+    ]
     return {
         "version": "my-state-v1",
         "account": dict(account),
@@ -123,6 +135,7 @@ def read(c, path, role, email):
         "eventRegistrations": event_registrations,
         "bookings": bookings[:50],
         "selfAttendance": self_attendance,
+        "partnerAppointments": partner_appointments,
         "bookingsTruncated": len(bookings) > 50,
         "notes": _notes(c, email),
         "truthBoundary": {
@@ -132,6 +145,8 @@ def read(c, path, role, email):
             "eventRegistrationIsAttendance": False,
             "selfAttendanceIsVerifiedAttendance": False,
             "selfAttendanceCountsAsAttendanceKpi": False,
+            "partnerAppointmentIsAttendance": False,
+            "partnerAppointmentIsMarketingConsent": False,
             "waitlistIsConfirmation": False,
             "publicCatalogAdmitted": False,
             "externalPilotAccepted": False,
