@@ -238,6 +238,20 @@ class EventRegistrationTests(unittest.TestCase):
         self.assertEqual(other["events"],[])
         self.assertNotIn(self.users[0],str(other))
 
+    def test_workspace_event_status_matches_registration_owner(self):
+        from app import my_workspace
+        self.command(self.users[0],"register")
+        self.c.execute("UPDATE event_editions_v1 SET registration_status='cancelled' WHERE id='EV1'")
+        self.c.commit()
+        state,status=my_workspace.read(self.c,my_workspace.READ_ROUTE,"participant",self.users[0])
+        self.assertEqual(status,200)
+        self.assertEqual(len(state["eventRegistrations"]),1)
+        self.assertEqual(state["eventRegistrations"][0]["registration_status"],"cancelled")
+        self.assertEqual(state["eventRegistrations"][0]["status"],"confirmed")
+        stranger,status=my_workspace.read(self.c,my_workspace.READ_ROUTE,"participant",self.users[1])
+        self.assertEqual(status,200)
+        self.assertEqual(stranger["eventRegistrations"],[])
+
     def test_account_creation_is_still_separate_from_event_registration(self):
         self.assertIsNone(self.status(self.users[2]))
         payload, status = event_registration.read(
