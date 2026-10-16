@@ -180,6 +180,7 @@ def snapshot(c, email, now=None):
     )
     staff_recorded = 0
     self_recorded = 0
+    participant_self_reports = 0
     for a in rows:
         ts = _timestamp(a["checkin_ts"], now)
         if not ts:
@@ -191,7 +192,9 @@ def snapshot(c, email, now=None):
         if not self_report and a["status"] not in ATTENDED_STATES:
             continue
         internal_staff = a["source"] in STAFF_SOURCES and not self_report
-        if internal_staff:
+        if self_report:
+            participant_self_reports += 1
+        elif internal_staff:
             staff_recorded += 1
         else:
             self_recorded += 1
@@ -319,6 +322,7 @@ def snapshot(c, email, now=None):
             "waitlist": waitlist_count,
             "staffRecordedAttendance": staff_recorded,
             "selfRecordedAttendance": self_recorded,
+            "participantSelfReports": participant_self_reports,
             "savedTakeaways": note_count,
             "recordedAccountActions": len(explicit_actions),
             "informationRequests": int(consent),
