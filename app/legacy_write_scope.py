@@ -27,7 +27,6 @@ LEGACY_GLOBAL_WRITE_ROUTES=frozenset({
     # Legacy participant programme writes lacking admitted event authority.
     "/api/register",
     "/api/booking",
-    "/api/activity-booking",
     "/api/replay",
     "/api/session-attendance",
 })
