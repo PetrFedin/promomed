@@ -11,6 +11,7 @@ ROUTES = {
     "/api/register",
     "/api/booking",
     "/api/activity-booking",
+    "/api/self-attendance/v1",
     "/api/replay",
     "/api/session-attendance",
 }
@@ -176,6 +177,114 @@ def handle_command(c, route, role, email, data):
             item["start"] + " · " + item["venue"] + " · " + item["title"],
         )
         return ok()
+
+    if route == "/api/self-attendance/v1":
+        if role != "participant":
+            return error("forbidden", 403)
+        if not isinstance(data, dict) or set(data) != {"item_id", "action"}:
+            return error("invalid_request", 422)
+        item_id = data.get("item_id")
+        action = data.get("action")
+        if (
+            not isinstance(item_id, str)
+            or not 1 <= len(item_id) <= 20
+            or any(ch.isspace() for ch in item_id)
+            or action not in ("arrive", "leave")
+        ):
+            return error("invalid_request", 422)
+
+        account = c.execute(
+            "SELECT 1 FROM accounts WHERE email=? "
+            "AND role='participant' AND status='active'",
+            (email,),
+        ).fetchone()
+        if account is None:
+            return error("forbidden", 403)
+
+        existing_attendance = c.execute(
+            "SELECT status,checkin_ts,checkout_ts,source "
+            "FROM session_attendance WHERE email=? AND item_id=?",
+            (email, item_id),
+        ).fetchone()
+
+        if action == "leave":
+            if (
+                existing_attendance is None
+                or existing_attendance["source"] != "participant_self_report"
+            ):
+                return error("self_report_not_found", 404)
+            if existing_attendance["status"] == "self_reported_complete":
+                return custom({
+                    "selfAttendance": dict(existing_attendance),
+                    "verifiedAttendance": False,
+                    "countsAsAttendanceKpi": False,
+                    "replayed": True,
+                })
+            if existing_attendance["status"] != "self_reported":
+                return error("self_report_not_found", 404)
+            now = int(time.time())
+            c.execute(
+                "UPDATE session_attendance "
+                "SET status='self_reported_complete',checkout_ts=? "
+                "WHERE email=? AND item_id=? "
+                "AND source='participant_self_report' AND status='self_reported'",
+                (now, email, item_id),
+            )
+            audit(c, "self_attendance_left", email, {"item_id": item_id})
+            row = c.execute(
+                "SELECT status,checkin_ts,checkout_ts,source "
+                "FROM session_attendance WHERE email=? AND item_id=?",
+                (email, item_id),
+            ).fetchone()
+            return custom({
+                "selfAttendance": dict(row),
+                "verifiedAttendance": False,
+                "countsAsAttendanceKpi": False,
+                "replayed": False,
+            })
+
+        if existing_attendance is not None:
+            if existing_attendance["source"] != "participant_self_report":
+                return error("attendance_record_conflict", 409)
+            if existing_attendance["status"] == "self_reported":
+                return custom({
+                    "selfAttendance": dict(existing_attendance),
+                    "verifiedAttendance": False,
+                    "countsAsAttendanceKpi": False,
+                    "replayed": True,
+                })
+            return error("self_report_already_completed", 409)
+
+        item = _activity_item(c, item_id)
+        if item is None or not exact_artifact_admitted(c, "event", item):
+            return error("program_item_not_found", 404)
+        booking = c.execute(
+            "SELECT status FROM activity_bookings "
+            "WHERE email=? AND item_id=?",
+            (email, item_id),
+        ).fetchone()
+        if booking is None or booking["status"] != "booked":
+            return error("confirmed_booking_required", 409)
+
+        now = int(time.time())
+        c.execute(
+            "INSERT INTO session_attendance("
+            "email,item_id,status,checkin_ts,checkout_ts,source"
+            ") VALUES(?,?,'self_reported',?,NULL,'participant_self_report')",
+            (email, item_id, now),
+        )
+        audit(c, "self_attendance_arrived", email, {"item_id": item_id})
+        row = c.execute(
+            "SELECT status,checkin_ts,checkout_ts,source "
+            "FROM session_attendance WHERE email=? AND item_id=?",
+            (email, item_id),
+        ).fetchone()
+        return custom({
+            "selfAttendance": dict(row),
+            "verifiedAttendance": False,
+            "countsAsAttendanceKpi": False,
+            "replayed": False,
+        }, 201)
 
     if route == "/api/replay":
         item_id = str(data.get("item_id", "P05"))[:20]
