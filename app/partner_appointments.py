@@ -26,9 +26,13 @@ def _participant(c,email):
 
 
 def _placement_enabled(c,organization_id):
+    # Placement and its parent institution must both remain admitted.
+    # A previously enabled placement does not outlive its organization.
     row=c.execute(
-        "SELECT status,demo_only FROM partner_commercial_placements_v1 "
-        "WHERE organization_id=?",
+        "SELECT p.status,p.demo_only FROM partner_commercial_placements_v1 p "
+        "JOIN institutional_organizations o ON o.id=p.organization_id "
+        "WHERE p.organization_id=? AND o.status='active' "
+        "AND LENGTH(TRIM(o.partner_id))>0 AND o.demo_only=p.demo_only",
         (organization_id,),
     ).fetchone()
     if not row or row["status"]!="enabled":
@@ -36,7 +40,6 @@ def _placement_enabled(c,organization_id):
     if not db.demo_seed_enabled() and int(row["demo_only"] or 0)!=0:
         return False
     return True
-
 
 def _slot(c,slot_id,*,lock=False):
     if lock and db.backend_name()=="sqlite" and not getattr(c,"in_transaction",False):
@@ -166,7 +169,11 @@ def serve(actor,raw_path):
 
 
 def _promote_one(c,slot):
-    if slot["status"]!="open" or not _placement_enabled(c,slot["organization_id"]):
+    if (
+        slot["status"]!="open"
+        or int(slot["ends_at"])<=int(time.time())
+        or not _placement_enabled(c,slot["organization_id"])
+    ):
         return False
     booked=int(c.execute(
         "SELECT COUNT(*) n FROM participant_partner_appointments_v1 "
@@ -250,6 +257,7 @@ def handle_command(c,route,role,email,data):
             or type(ends) is not int
             or type(capacity) is not int
             or ends<=starts
+            or (state=="open" and ends<=now)
             or capacity<1
             or capacity>1000
         ):
@@ -292,6 +300,7 @@ def handle_command(c,route,role,email,data):
         if (
             slot is None
             or slot["status"]!="open"
+            or int(slot["ends_at"])<=now
             or not _placement_enabled(c,slot["organization_id"])
         ):
             return error("slot_not_found",404)
