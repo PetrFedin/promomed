@@ -207,6 +207,37 @@ class EventRegistrationTests(unittest.TestCase):
             )
         self.c.rollback()
 
+    def test_past_event_blocks_registration_and_queue_promotion(self):
+        self.command(self.users[0],"register")
+        self.command(self.users[1],"register")
+        self.c.execute("UPDATE event_editions_v1 SET starts_at=? WHERE id='EV1'",
+                       (int(time.time())-60,))
+        self.c.commit()
+        blocked=self.command(self.users[2],"register")
+        self.assertEqual((blocked.status,blocked.payload["error"]),(409,"registration_closed"))
+        cancelled=self.command(self.users[0],"cancel")
+        self.assertEqual(cancelled.status,200)
+        self.assertFalse(cancelled.payload["queuePromotionOccurred"])
+        self.assertEqual(self.status(self.users[1]),"waitlist")
+        mine,status=event_registration.read(self.c,event_registration.ROUTE,"participant",self.users[1])
+        self.assertEqual(status,200)
+        self.assertEqual(mine["events"][0]["registrationStatus"],"closed")
+        self.assertEqual(mine["events"][0]["registrationClosedReason"],"event_started")
+
+    def test_cancelled_edition_remains_visible_only_to_owner(self):
+        self.command(self.users[0],"register")
+        self.c.execute("UPDATE event_editions_v1 SET registration_status='cancelled' WHERE id='EV1'")
+        self.c.commit()
+        mine,status=event_registration.read(self.c,event_registration.ROUTE,"participant",self.users[0])
+        self.assertEqual(status,200)
+        self.assertEqual(mine["events"][0]["registrationStatus"],"cancelled")
+        self.assertEqual(mine["events"][0]["myStatus"],"confirmed")
+        self.assertEqual(len(mine["events"][0]["registrationHistory"]),1)
+        other,status=event_registration.read(self.c,event_registration.ROUTE,"participant",self.users[1])
+        self.assertEqual(status,200)
+        self.assertEqual(other["events"],[])
+        self.assertNotIn(self.users[0],str(other))
+
     def test_account_creation_is_still_separate_from_event_registration(self):
         self.assertIsNone(self.status(self.users[2]))
         payload, status = event_registration.read(
