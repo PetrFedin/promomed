@@ -82,7 +82,18 @@ def _registration_projection(c, email, now):
                 "registrationStatus": status,
             })
         if status == "confirmed":
-            confirmation = _timestamp(row["updated_at"], now)
+            # Prefer the last database-observed transition into confirmed.
+            # Older rows (before REG-03) have no historical event and remain
+            # explicitly provisional, never backfilled from the current row.
+            evidence = c.execute(
+                "SELECT observed_at FROM event_registration_transitions_v1 "
+                "WHERE event_id=? AND email=? AND next_status='confirmed' "
+                "ORDER BY transition_no DESC LIMIT 1",
+                (row["event_id"], email),
+            ).fetchone()
+            verified_ts = _timestamp(evidence["observed_at"], now) if evidence else None
+            provisional_ts = _timestamp(row["updated_at"], now)
+            confirmation = verified_ts if verified_ts is not None else provisional_ts
             if confirmation is not None:
                 confirmed.append((confirmation, row["event_id"]))
 
