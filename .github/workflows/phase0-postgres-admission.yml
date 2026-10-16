@@ -74,16 +74,5 @@ jobs:
           print("PHASE 0 BACKUP/RESTORE CATALOG PROOF PASS")
           PY
 
-      - name: Emit admission evidence
-        run: |
-          python - <<'PY'
-          import json, os
-          source=json.load(open("/tmp/source-fingerprint.json"))
-          print(json.dumps({
-            "phase0_repository_sha": os.environ.get("GITHUB_SHA"),
-            "source_catalog_sha256": source["catalog_sha256"],
-            "migration_versions": source["migration_versions"],
-            "backup_restore": "pass",
-            "production_ready": True,
-          }, indent=2))
-          PY
+      - name: Emit repository-only admission evidence (not live production readiness)
+        run: python ops/phase0_evidence_manifest.py /tmp/source-fingerprint.json /tmp/restore-fingerprint.json

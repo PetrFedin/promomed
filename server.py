@@ -1,15 +1,22 @@
 import json, os, threading, time
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import urlparse
-from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority
+from app import corporate, db, executive, investor, investment_proof, contract_builder, deal_room, portfolio_control, capital_optimizer, transcript_intelligence, evidence_graph, evidence_monitor, reviewer_authority, partner_collaboration
 from app.analytics import commercial, state
-from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash
+from app.auth import authenticate, auth, body, issue_session, seed_demo_accounts, token_hash, RequestBodyError, RequestBodyTooLarge
 from app.core import audit, notify, promote_waitlist, setv, sval; from app.commanding import finalize_command
-from app.demo import DEMO_STEPS, reset_demo, run_demo_step
 from app.community_commands import handle_command as handle_community_command; from app.learning_commands import handle_command as handle_learning_command; from app.participant_commands import handle_command as handle_participant_command
 from app.programme_commands import handle_command as handle_programme_command; from app.operations_commands import handle_command as handle_operations_command; from app.partner_commands import handle_command as handle_partner_command
 from app.editorial_commands import handle_command as handle_editorial_command; from app.evidence_checkpoint_commands import handle_public as handle_evidence_checkpoint_public; from app.institutional_commands import handle_command as handle_institutional_command, handle_public as handle_institutional_public; from app.syndication_commands import handle_command as handle_syndication_command, handle_public as handle_syndication_public; from app.trust_commands import handle_command as handle_trust_command, handle_public as handle_trust_public
-from app.demo_commands import handle_command as handle_demo_command
+from app.demo_reads import serve as serve_demo_read
+from app.legacy_report_scope import unavailable_on_non_demo
+from app.legacy_write_scope import unavailable_on_non_demo as legacy_write_unavailable
+from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
+from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
+from app.self_registration import handle_public as handle_self_registration_public
+from app.event_registration import serve as serve_event_registration, handle_command as handle_event_registration_command, seed_demo as seed_demo_event_registration, ROUTE as EVENT_REGISTRATION_ROUTE
+from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
+from app.my_workspace import read as read_my_workspace, handle_command as handle_my_workspace_command, READ_ROUTE as MY_STATE_ROUTE, PAGE_PREFIX as MY_STATE_PAGE_PREFIX
 from app.investment_commands import handle_command as handle_investment_command
 from app.deal_commands import handle_command as handle_deal_command
 from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection; from app.discovery_reads import serve as serve_discovery; from app.media_reads import serve as serve_media
@@ -23,6 +30,7 @@ def init():
    c.close(); return
   # Deterministic demo seed. Production PostgreSQL requires explicit PROMOMED_SEED_DEMO=true.
   seed_demo_accounts(c)
+  seed_demo_event_registration(c)
   defaults={"session_time":"11:00","session_room":"Лекторий","live_state":"scheduled","occupied":"116","capacity":"120","phase":"before","change_seq":"0","gift_issued":"0","demo_step":"-1","demo_run":"0"}
   for k,v in defaults.items(): c.execute("INSERT OR IGNORE INTO state(k,v) VALUES(?,?)",(k,v))
   c.execute("INSERT OR IGNORE INTO cms(id,status,version,updated) VALUES('A-014','medical_review',1,?)",(int(time.time()),))
@@ -189,7 +197,12 @@ class H(SimpleHTTPRequestHandler):
   self.send_header("Content-Type","application/json; charset=utf-8"); self.send_header("Cache-Control","no-store"); self.cors(); self.send_header("Content-Length",str(len(b))); self.end_headers(); self.wfile.write(b)
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
-  p=urlparse(self.path).path; a=auth(self)
+  parsed=urlparse(self.path); p=parsed.path
+  if (p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX)) and parsed.query: return self.out({"error":"unsupported_query"},422)
+  if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
+  if p==PUBLIC_STATE_ROUTE:
+   public_state=serve_public_state(self.path); return self.out(public_state[0],public_state[1])
+  a=auth(self)
   if p=="/health":
    return self.out({"ok":True,"app":"sostoyanie-v18-persistence-admission","backend":db.backend_name(),"durable":db.is_durable_backend(),"demo_seed":db.demo_seed_enabled(),"git_commit":os.environ.get("RENDER_GIT_COMMIT","local")})
   if p=="/ready":
@@ -203,6 +216,14 @@ class H(SimpleHTTPRequestHandler):
     return self.out(r,200 if r["ready"] else 503)
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
+  if p=="/api/partner-collaboration": return self.out(*partner_collaboration.read_result(urlparse(self.path).query,a,conn))
+  if p=="/api/client-365": return self.out(*serve_client365(a,self.path))
+  if p==EVENT_REGISTRATION_ROUTE: return self.out(*serve_event_registration(a,self.path))
+  if p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX):
+   if not a: return self.out({"error":"unauthorized"},401)
+   c=conn()
+   try: payload,status=read_my_workspace(c,p,a[0],a[2]); return self.out(payload,status)
+   finally: c.close()
   if p=="/api/state":
    c=conn(); d=state(c,a[2] if a else None); c.close(); return self.out(d)
   if p.startswith("/api/discovery"): d=serve_discovery(self.path,a[0] if a else None,a[2] if a else None); return self.out(d[0],d[1])
@@ -308,7 +329,7 @@ class H(SimpleHTTPRequestHandler):
    return self.out(d)
   if a:
    c=conn()
-   try: strategic=read_strategic_projection(c,p,a[0])
+   try: strategic=read_strategic_projection(c,p,a[0],a[2])
    finally:c.close()
    if strategic is not None: return self.out(strategic[0],strategic[1])
   if p=="/api/corporate-readiness":
@@ -320,42 +341,20 @@ class H(SimpleHTTPRequestHandler):
   if p=="/api/analytics":
    if not a or a[0] not in ("organizer","partner","sales"): return self.out({"error":"forbidden"},403)
    c=conn(); d=commercial(c); d["seeded_demo"]=False; d["demo_run"]=sval(c,"demo_run","0"); d["demo_step"]=sval(c,"demo_step","-1"); c.close(); return self.out(d)
-  if p=="/api/demo/status":
-   if not a or a[0] not in ("sales","organizer"): return self.out({"error":"forbidden"},403)
-   c=conn(); idx=int(sval(c,"demo_step","-1")); d=state(c,a[2]); c.close()
-   d["step_index"]=idx; d["step_key"]=DEMO_STEPS[idx][0] if 0<=idx<len(DEMO_STEPS) else "not_started"
-   d["step_title"]=DEMO_STEPS[idx][1] if 0<=idx<len(DEMO_STEPS) else "Демо не подготовлено"
-   d["total_steps"]=len(DEMO_STEPS)
-   return self.out(d)
-  if p=="/api/demo/evidence":
-   if not a or a[0] not in ("sales","organizer","partner"): return self.out({"error":"forbidden"},403)
-   c=conn()
-   rows=[dict(r) for r in c.execute("SELECT id,kind,actor,payload,ts FROM events ORDER BY id DESC LIMIT 30")]
-   rows.reverse()
-   metrics=commercial(c)
-   metrics["placement_status"]=state(c).get("placement_status")
-   metrics["live_state"]=sval(c,"live_state","scheduled")
-   metrics["phase"]=sval(c,"phase","before")
-   metrics["session_time"]=sval(c,"session_time","11:00")
-   metrics["session_room"]=sval(c,"session_room","Лекторий")
-   metrics["occupied"]=int(sval(c,"occupied","0"))
-   metrics["capacity"]=int(sval(c,"capacity","120"))
-   deliverables=[dict(r) for r in c.execute("SELECT id,label,status,evidence,updated FROM deliverables ORDER BY id")]
-   notifications=c.execute("SELECT COUNT(*) n FROM notifications").fetchone()["n"]
-   metrics["notifications"]=notifications
-   c.close()
-   return self.out({"events":rows,"metrics":metrics,"deliverables":deliverables,"proposed_pilot_gates":[
-    {"id":"audience","label":"Аудитория","criterion":"Регистрация → фактическое участие","target":"Цель пилота согласуется до запуска","status":"to_agree"},
-    {"id":"engagement","label":"Вовлечённость","criterion":"Контент → событие → post-event возврат","target":"Цель пилота согласуется до запуска","status":"to_agree"},
-    {"id":"partner","label":"Коммерция","criterion":"Добровольные лиды и ценность партнёра","target":"Цель пилота согласуется до запуска","status":"to_agree"},
-    {"id":"operations","label":"Операции","criterion":"Check-in / waitlist / venue / live без критических тупиков","target":"0 критических сценариев без recovery path","status":"proposed"},
-    {"id":"trust","label":"Доверие","criterion":"Контент, согласия и партнёрская прозрачность","target":"100% обязательных approval / disclosure полей в пилоте","status":"proposed"}
-   ]})
+  demo_view=serve_demo_read(p,a,conn)
+  if demo_view is not None: return self.out(demo_view[0],demo_view[1])
   return super().do_GET()
  def do_POST(self):
-  p=urlparse(self.path).path
+  parsed=urlparse(self.path); p=parsed.path
+  if p=="/api/self-attendance/v1" and parsed.query: return self.out({"error":"unsupported_query"},422)
+  if legacy_write_unavailable(p): return self.out({"error":"not_found"},404)
+  if p.startswith(MY_STATE_ROUTE) and parsed.query: return self.out({"error":"unsupported_query"},422)
+  if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   try: data=body(self)
-  except Exception: return self.out({"error":"bad_json"},400)
+  except RequestBodyTooLarge: return self.out({"error":"request_body_too_large"},413)
+  except RequestBodyError: return self.out({"error":"bad_json"},400)
+  registration_public=handle_self_registration_public(p,data)
+  if registration_public is not None: return self.out(registration_public[0],registration_public[1])
   public_outcome=handle_evidence_checkpoint_public(p,data)
   if public_outcome is not None:
    return self.out(public_outcome[0],public_outcome[1])
@@ -380,9 +379,11 @@ class H(SimpleHTTPRequestHandler):
    try:
     outcome=handle_community_command(c,p,role,email,data)
     if outcome is None: outcome=handle_learning_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_my_workspace_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_event_registration_command(c,p,role,email,data)
     if outcome is None: outcome=handle_participant_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_programme_command(c,p,role,email,data)
-    if outcome is None: outcome=handle_operations_command(c,p,role,email,data)
+    if outcome is None: outcome=handle_programme_command(c,p,role,email,data); outcome=handle_operations_command(c,p,role,email,data) if outcome is None else outcome
+    if outcome is None: outcome=partner_collaboration.handle_command(c,p,role,email,data)
     if outcome is None: outcome=handle_partner_command(c,p,role,email,data)
     if outcome is None: outcome=handle_editorial_command(c,p,role,email,data)
     if outcome is None: outcome=handle_institutional_command(c,p,role,email,data)
@@ -399,6 +400,5 @@ class H(SimpleHTTPRequestHandler):
     return self.out(payload,outcome.status)
    finally: c.close()
  def log_message(self,fmt,*args): print(fmt%args,flush=True)
-
 if __name__=="__main__":
  init(); port=int(os.environ.get("PORT","10000")); print("SOSTOYANIE v1.8 persistence admission",db.backend_name(),"listening",port,flush=True); ThreadingHTTPServer(("0.0.0.0",port),H).serve_forever()

@@ -26,7 +26,7 @@ jobs:
         env:
           SQLITE_PATH: /tmp/promomed-phase0.sqlite
           PROMOMED_SEED_DEMO: "true"
-        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py
+        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py tests/test_commercial_evidence_ledger.py tests/test_postgres_sql_lexer.py tests/test_commercial_integration_gate.py tests/test_parallel_migration_upgrade.py tests/test_phase0_evidence_manifest.py tests/test_auth_session_revocation.py tests/test_request_body_boundary.py tests/test_legacy_report_scope.py tests/test_legacy_write_scope.py tests/test_discovery_publication_scope.py tests/test_my_workspace.py tests/test_my_workspace_http.py tests/test_self_attendance.py
       - name: Prove SQLite backup and restore
         env:
           SQLITE_PATH: /tmp/promomed-phase0.sqlite
@@ -80,7 +80,27 @@ jobs:
           sudo apt-get install -y postgresql-client-17
           echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
       - name: Run real PostgreSQL migration and API-state contract
-        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py
+        run: python -m unittest -v tests/test_persistence_contract.py tests/test_postgres_restore_guard.py tests/test_commercial_evidence_ledger.py tests/test_postgres_sql_lexer.py tests/test_commercial_integration_gate.py tests/test_parallel_migration_upgrade.py tests/test_phase0_evidence_manifest.py tests/test_auth_session_revocation.py tests/test_request_body_boundary.py tests/test_legacy_report_scope.py tests/test_legacy_write_scope.py tests/test_discovery_publication_scope.py tests/test_my_workspace.py tests/test_my_workspace_http.py tests/test_self_attendance.py
+      - name: Verify task execution and receipt rollback on PostgreSQL 17
+        run: python -m unittest -v tests/test_partner_execution_postgres.py
+
+      - name: Verify PostgreSQL account-role and status revocation
+        run: python -m unittest -v tests/test_auth_session_postgres.py
+
+      - name: Verify finance candidates on PostgreSQL 17
+        run: python -m unittest -v tests/test_commercial_evidence_ledger_postgres.py
+
+      - name: Verify isolated PostgreSQL 17 upgrade from migrations 001-025
+        env:
+          PGPASSWORD: promomed
+          PROMOMED_REQUIRE_POSTGRES: "true"
+          PROMOMED_SEED_DEMO: "false"
+          PROMOMED_CONFIRM_ISOLATED_UPGRADE_TEST: "true"
+          DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_upgrade_ci
+        run: |
+          psql -h 127.0.0.1 -U promomed -d postgres -c "CREATE DATABASE promomed_upgrade_ci;"
+          python -m ops.verify_parallel_migration_upgrade
+
       - name: Prove PostgreSQL backup and restore
         env:
           PGPASSWORD: promomed

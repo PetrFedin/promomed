@@ -107,22 +107,70 @@ def issue_session(c, email, role, name):
 
 
 def auth(h):
-    token = h.headers.get("Authorization", "").replace("Bearer ", "").strip()
-    if not token:
+    """Validate the current account authority, never trust a stale session role."""
+    header = h.headers.get("Authorization", "")
+    if not isinstance(header, str) or len(header) > 256 or not header.startswith("Bearer "):
+        return None
+    token = header[len("Bearer "):]
+    if not token or len(token) > 128 or any(ch.isspace() for ch in token):
         return None
     c = db.connect()
     try:
         row = c.execute(
-            "SELECT role,name,email,expires_at,revoked_at FROM auth_sessions WHERE token_hash=?",
+            """SELECT s.email,s.role,s.expires_at,s.revoked_at,
+                      a.role AS account_role,a.status AS account_status,a.name AS account_name
+               FROM auth_sessions s
+               JOIN accounts a ON a.email=s.email
+               WHERE s.token_hash=?""",
             (token_hash(token),),
         ).fetchone()
-        if not row or row["revoked_at"] is not None or int(row["expires_at"]) <= int(time.time()):
+        if (not row or row["revoked_at"] is not None
+                or int(row["expires_at"]) <= int(time.time())
+                or row["account_status"] != "active"
+                or row["account_role"] != row["role"]):
             return None
-        return (row["role"], row["name"], row["email"])
+        return (row["account_role"], row["account_name"], row["email"])
     finally:
         c.close()
 
 
+# HTTP endpoints accept bounded JSON command objects only. Do not read the
+# declared body when the client advertises a size above the limit.
+MAX_JSON_BODY_BYTES = 4 * 1024 * 1024
+
+
+class RequestBodyError(ValueError):
+    """Malformed or unsupported HTTP JSON request envelope."""
+
+
+class RequestBodyTooLarge(RequestBodyError):
+    """The declared JSON body exceeds the explicit application limit."""
+
+
 def body(h):
-    n = int(h.headers.get("Content-Length", "0") or 0)
-    return json.loads(h.rfile.read(n) or b"{}")
+    """Read one bounded JSON object; never trust the client's byte count."""
+    if h.headers.get("Transfer-Encoding") is not None:
+        raise RequestBodyError("unsupported_transfer_encoding")
+    get_all = getattr(h.headers, "get_all", None)
+    lengths = get_all("Content-Length") if callable(get_all) else None
+    if lengths is not None and len(lengths) != 1:
+        raise RequestBodyError("ambiguous_content_length")
+    declared = lengths[0] if lengths else h.headers.get("Content-Length", "0")
+    if not isinstance(declared, str):
+        raise RequestBodyError("invalid_content_length")
+    declared = declared.strip()
+    if not declared or len(declared) > 10 or not declared.isascii() or not declared.isdecimal():
+        raise RequestBodyError("invalid_content_length")
+    n = int(declared)
+    if n > MAX_JSON_BODY_BYTES:
+        raise RequestBodyTooLarge("json_body_too_large")
+    payload = h.rfile.read(n)
+    if len(payload) != n:
+        raise RequestBodyError("incomplete_json_body")
+    try:
+        data = json.loads(payload or b"{}")
+    except (ValueError, UnicodeDecodeError, RecursionError):
+        raise RequestBodyError("malformed_json") from None
+    if not isinstance(data, dict):
+        raise RequestBodyError("json_object_required")
+    return data

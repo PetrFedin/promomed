@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#102f54">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'">
+  <title>Моё СОСТОЯНИЕ</title>
+  <link rel="stylesheet" href="/personal/workspace.css">
+  <script src="/personal/workspace.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">К содержанию</a>
+<header class="top">
+  <a class="brand" href="/personal/" aria-label="Моё СОСТОЯНИЕ"><b>СОСТОЯНИЕ</b><span>Личное пространство</span></a>
+  <button id="logout" class="quiet" type="button" hidden>Выйти из этой вкладки</button>
+</header>
+<main id="main" class="shell">
+  <section class="hero">
+    <div><p class="eyebrow">МОЁ СОСТОЯНИЕ</p><h1>То, что стоит<br><em>сохранить.</em></h1>
+    <p>Ваши записи и личные заметки — отдельно от общей аналитики и партнёрских отчётов.</p></div>
+    <div class="heroMark" aria-hidden="true">01</div>
+  </section>
+
+  <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+  <section id="signed-out" class="loginGrid">
+    <form id="login-form" class="card loginCard">
+      <p class="eyebrow">ВАШ АККАУНТ</p><h2>Рады вас видеть</h2>
+      <label for="email">Электронная почта</label>
+      <input id="email" type="email" autocomplete="username" maxlength="254" required>
+      <label for="password">Пароль</label>
+      <input id="password" type="password" autocomplete="current-password" maxlength="256" required>
+      <button id="login-button" class="primary" type="submit">Войти в кабинет <span aria-hidden="true">→</span></button>
+      <p class="fine">Токен не сохраняется в localStorage или sessionStorage. После обновления страницы потребуется новый вход.</p>
+    </form>
+    <aside class="card promise">
+      <p class="eyebrow">ПРОДОЛЖЕНИЕ</p><h2>Мысль сегодня.<br>Следующий шаг завтра.</h2>
+      <p>Заметки принадлежат текущему аккаунту. Бронирование не считается посещением, а личная заметка — медицинским фактом.</p>
+    </aside>
+  </section>
+
+  <section id="workspace" class="workspace" hidden>
+    <aside class="side">
+      <section class="card identity">
+        <p class="eyebrow">ВАШ ПРОФИЛЬ</p>
+        <div id="avatar" class="avatar" aria-hidden="true"></div>
+        <h2 id="account-name"></h2><p id="account-email" class="muted"></p>
+        <span class="tag">Участник</span>
+        <hr>
+        <p class="fine">Регистрация</p><p id="registration" class="registration">—</p>
+      </section>
+      <section class="card">
+        <p class="eyebrow">МОИ ЗАПИСИ</p><div id="bookings"></div>
+        <p class="fine">Идентификатор бронирования и статус — без подстановки непроверенного публичного каталога.</p>
+      </section>
+      <button id="logout-all" class="outline" type="button">Выйти на всех устройствах</button>
+    </aside>
+
+    <div class="content">
+      <section class="card composer">
+        <p class="eyebrow">ЛИЧНАЯ ЗАПИСЬ</p><h2>Новая заметка</h2>
+        <p id="editing-account" class="fine"></p>
+        <label class="sr" for="note-text">Текст заметки</label>
+        <textarea id="note-text" rows="5" maxlength="2000" placeholder="Что хочется запомнить?"></textarea>
+        <div class="composerFoot"><span id="char-count" class="fine">0 / 2 000</span>
+          <button id="save-note" class="primary" type="button" disabled>Сохранить</button></div>
+        <p class="fine">Личная заметка — пользовательский текст, не медицинская рекомендация и не подтверждение посещения.</p>
+      </section>
+
+      <section class="notesSection">
+        <div class="sectionHead"><div><p class="eyebrow">АРХИВ</p><h2>Мои заметки <span id="shown-count"></span></h2></div>
+          <button id="refresh" class="quiet" type="button">Обновить</button></div>
+        <div id="notes" class="notes"></div>
+        <div id="empty-notes" class="empty"><b>—</b><h3>Здесь появятся ваши мысли</h3><p>Начните с одной заметки.</p></div>
+        <button id="load-more" class="outline more" type="button" hidden>Показать ещё</button>
+      </section>
+    </div>
+  </section>
+</main>
+<footer><b>СОСТОЯНИЕ</b><span>Личное пространство · проверочная версия</span></footer>
+</body>
+</html>
