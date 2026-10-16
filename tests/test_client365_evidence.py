@@ -204,7 +204,8 @@ class Client365EvidenceTests(unittest.TestCase):
             (self.EMAIL,self.NOW-120,self.NOW-90),
         )
         d=self.snapshot()
-        self.assertEqual(d["counts"]["selfRecordedAttendance"],1)
+        self.assertEqual(d["counts"]["selfRecordedAttendance"],0)
+        self.assertEqual(d["counts"]["participantSelfReports"],1)
         self.assertEqual(d["counts"]["staffRecordedAttendance"],0)
         self.assertIn("participant_self_report_not_verified",[e["assurance"] for e in d["events"]])
         self.assertFalse(d["truthBoundary"]["externalAcceptance"])
