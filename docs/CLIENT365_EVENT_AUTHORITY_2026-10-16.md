@@ -12,3 +12,7 @@ Draft candidate; no production release.
 
 ## Qualification
 Run `tests/test_client365_evidence.py` and core UI tests against SQLite. Final integrated gate additionally needs PostgreSQL, browser owner-scope tests, concurrency and independent security review. Keep Draft PR unmerged until evidence is complete.
+
+## CI compatibility correction
+
+The legacy `selfRecordedAttendance` metric intentionally excludes `participant_self_report` rows. New `participantSelfReports` records these source-labelled actions independently. Neither measure is accepted as externally verified attendance. Regression fixed after UI job #38899797467 exposed the mismatch (1 of 509 tests failed); rerun required on the updated SHA.
