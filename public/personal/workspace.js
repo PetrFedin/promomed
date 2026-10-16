@@ -113,9 +113,26 @@
       info.append(title,el("span","fine",date));
       const status=el("span","eventStatus "+(event.myStatus||"none"),labels[event.myStatus]||"Не зарегистрирован");
       head.append(info,status);card.append(head);
+      if(event.registrationClosedReason==="event_started"){
+        card.append(el("p","fine","Мероприятие уже началось. Новые регистрации закрыты."));
+      }
+      if(event.registrationStatus==="cancelled"){
+        card.append(el("p","fine","Событие отменено организатором; запись сохранена в вашей истории."));
+      }
+      if(event.registrationHistory?.length){
+        const history=el("div","registrationHistory");
+        history.append(el("strong","","История изменения регистрации"));
+        const names={confirmed:"Подтверждено",waitlist:"Лист ожидания",cancelled:"Отменено"};
+        for(const entry of event.registrationHistory){
+          const date=new Date(entry.observedAt*1000).toLocaleString("ru-RU");
+          history.append(el("p","fine",(names[entry.nextStatus]||entry.nextStatus)+" · "+date));
+        }
+        card.append(history);
+      }
       const action=el("button","outline eventAction");
       action.type="button";action.dataset.eventId=event.eventId;
-      if(event.myStatus==="confirmed"||event.myStatus==="waitlist"){
+      if(event.registrationStatus==="cancelled"){action.textContent="Событие отменено";action.disabled=true;
+      }else if(event.myStatus==="confirmed"||event.myStatus==="waitlist"){
         action.textContent="Отменить регистрацию";action.dataset.action="cancel";
       }else if(event.registrationStatus==="open"){
         action.textContent="Зарегистрироваться";action.dataset.action="register";
