@@ -115,3 +115,15 @@ PostgreSQL 17 proves:
 - independent privacy/security review.
 
 Legacy `/api/appointment-booking` and `/api/appointment-manage` remain blocked outside demo.
+
+
+## APPT-02 lifecycle hardening candidate (2026-10-16)
+
+- A commercial placement is available only while its parent institutional organization remains active, non-demo scope matches, and the partner reference is present. Historical `enabled` placement by itself is not authorization after organization deactivation.
+- New `book` requests fail closed when the persisted slot's `ends_at` has passed, including requests from existing waitlisted participants. The failure does not expose another participant's identity.
+- Cancelling an existing appointment remains participant-owned even after the time window expires or the organization becomes inactive; neither condition promotes waitlisted participants.
+- Partner cannot update a slot to `open` with an already elapsed end timestamp. Existing `closed` and `cancelled` state semantics are unchanged.
+- SQLite regressions are included in `tests/test_partner_appointments.py` and in the existing UI / persistence workflow suites. They must pass at the candidate's exact SHA before review.
+- No existing migration is rewritten; no schema change, production deployment, Render settings, real account, medical content, or paid resource is touched.
+
+This is a Draft-only source hardening change, not production admission. Independent review, final CI, isolated PostgreSQL source/restore and Render governance remain outstanding.
