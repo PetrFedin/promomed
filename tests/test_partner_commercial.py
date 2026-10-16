@@ -207,6 +207,21 @@ class PartnerCommercialTests(unittest.TestCase):
         self.assertIn("ORG-A",text)
         self.assertNotIn("ORG-B",text)
 
+    def test_structured_action_and_state_return_client_error(self):
+        for invalid in ([],{},["placement_update"]):
+            out=partner_commercial.handle_command(
+                self.c,partner_commercial.ROUTE,"partner",self.partner_a,
+                {"action":invalid},
+            )
+            self.assertEqual(out.status,400)
+        for invalid in ([],{},["enabled"]):
+            out=partner_commercial.handle_command(
+                self.c,partner_commercial.ROUTE,"partner",self.partner_a,
+                {"action":"placement_update","organization_id":"ORG-A",
+                 "status":invalid,"expected_version":1},
+            )
+            self.assertEqual(out.status,422)
+
     def test_query_selectors_and_foreign_roles_are_rejected(self):
         payload,status=partner_commercial.read(
             self.c,partner_commercial.ROUTE+"?organization_id=ORG-B",
