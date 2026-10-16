@@ -197,6 +197,7 @@ class H(SimpleHTTPRequestHandler):
  def do_OPTIONS(self): self.send_response(204); self.cors(); self.end_headers()
  def do_GET(self):
   parsed=urlparse(self.path); p=parsed.path
+  if p in ("/","/index.html") and not db.demo_seed_enabled(): self.path="/explore/"; return super().do_GET()
   if (p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX)) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
   if p==PUBLIC_STATE_ROUTE:
