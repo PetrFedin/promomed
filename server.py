@@ -346,6 +346,7 @@ class H(SimpleHTTPRequestHandler):
   return super().do_GET()
  def do_POST(self):
   parsed=urlparse(self.path); p=parsed.path
+  if p=="/api/self-attendance/v1" and parsed.query: return self.out({"error":"unsupported_query"},422)
   if legacy_write_unavailable(p): return self.out({"error":"not_found"},404)
   if p.startswith(MY_STATE_ROUTE) and parsed.query: return self.out({"error":"unsupported_query"},422)
   if unavailable_on_non_demo(p) or discovery_unavailable(p): return self.out({"error":"not_found"},404)
