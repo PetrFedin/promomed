@@ -43,12 +43,12 @@ try:
                 "029_auth_session_revocation", "030_personal_workspace_notes",
                 "031_public_artifact_admission",
                 "032_participant_self_registration",
-                "033_event_registration_authority")).issubset(set(pending["missing"])), pending
+                "033_event_registration_authority", "034_partner_commercial_authority")).issubset(set(pending["missing"])), pending
 
     upgraded = db.migrate(c)
     assert upgraded["schema_ready"] and not upgraded["missing"], upgraded
     assert not upgraded["checksum_drift"], upgraded
-    assert len(upgraded["applied"]) == 34, upgraded
+    assert len(upgraded["applied"]) == 35, upgraded
     assert c.execute(
         "SELECT v FROM state WHERE k=?", ("upgrade-sentinel",)
     ).fetchone()["v"] == "before-and-after"
@@ -58,7 +58,8 @@ try:
                 "partner_collab_task_receipts", "partner_collab_project_scopes",
                 "institutional_organizations", "auth_sessions", "personal_notes_v1",
                 "public_artifact_admissions", "participant_registration_requests", "event_editions_v1",
-                "participant_event_registrations_v1")
+                "participant_event_registrations_v1", "partner_commercial_placements_v1",
+                "participant_partner_leads_v1")
     for table in expected:
         row = c.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
@@ -73,7 +74,7 @@ try:
     ], version_rows
     repeated = db.migrate(c)
     assert repeated["schema_ready"] and not repeated["checksum_drift"], repeated
-    assert len(repeated["applied"]) == 34, repeated
+    assert len(repeated["applied"]) == 35, repeated
     assert c.execute(
         "SELECT v FROM state WHERE k=?", ("upgrade-sentinel",)
     ).fetchone()["v"] == "before-and-after"
