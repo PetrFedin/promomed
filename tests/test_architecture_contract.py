@@ -46,6 +46,7 @@ MODULES = {
     "registration_delivery.py",
     "event_registration.py",
     "legacy_write_scope.py",
+    "partner_appointment.py",
     "reviewer_authority.py",
     "evidence_interchange.py",
     "institutional_commands.py",
