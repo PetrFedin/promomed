@@ -108,6 +108,22 @@ class EventRegistrationTests(unittest.TestCase):
                          "WHERE email=?", (self.users[0],)).fetchone()["n"]
         self.assertEqual(n,0)
 
+    def test_cancel_does_not_promote_suspended_waitlisted_account(self):
+        self.command(self.users[0],"register")
+        self.command(self.users[1],"register")
+        self.c.execute("UPDATE accounts SET status='suspended' WHERE email=?",
+                       (self.users[1],))
+        self.c.commit()
+        cancelled=self.command(self.users[0],"cancel")
+        self.assertFalse(cancelled.payload["queuePromotionOccurred"])
+        self.assertEqual(self.status(self.users[1]),"waitlist")
+        history=list(self.c.execute(
+            "SELECT next_status FROM event_registration_transitions_v1 "
+            "WHERE event_id='EV1' AND email=? ORDER BY transition_no",
+            (self.users[1],),
+        ))
+        self.assertEqual([x["next_status"] for x in history],["waitlist"])
+
     def test_repeated_register_is_idempotent_without_queue_duplication(self):
         first = self.command(self.users[0], "register")
         requested = first.payload["registration"]["requestedAt"]
