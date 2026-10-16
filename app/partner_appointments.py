@@ -252,6 +252,7 @@ def handle_command(c,route,role,email,data):
             or len(slot_id)!=32
             or type(expected) is not int
             or expected<1
+            or not isinstance(state,str)
             or state not in SLOT_STATES
             or type(starts) is not int
             or type(ends) is not int
