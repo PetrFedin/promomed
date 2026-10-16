@@ -165,12 +165,25 @@ class Client365EvidenceTests(unittest.TestCase):
         ts=self.NOW-8*86400
         self.canonical_event(self.EMAIL,"confirmed",ts-200,ts)
         d=self.snapshot()
-        self.assertEqual(d["registeredAt"],ts)
+        recorded=self.c.execute(
+            "SELECT observed_at FROM event_registration_transitions_v1 "
+            "WHERE event_id='EV-C365' AND email=? AND next_status='confirmed'",
+            (self.EMAIL,),
+        ).fetchone()
+        self.assertIsNotNone(recorded)
+        # The migration records real DB clock time, not this fixture's
+        # synthetic 2030 updated_at. Do not backdate a confirmation.
+        self.assertEqual(d["registeredAt"],recorded["observed_at"])
         self.assertEqual(d["registrationSource"],"event_registration_v1")
         self.assertEqual(d["registrationBaselineEventId"],"EV-C365")
         self.assertEqual(d["counts"]["eventRegistrationsConfirmed"],1)
         self.assertEqual(len([e for e in d["events"] if e["kind"]=="registration"]),1)
-        self.assertEqual([m["state"] for m in d["milestones"]],["no_observed_account_activity"]*2+["not_due"])
+        expected=[
+            "no_observed_account_activity"
+            if self.NOW>=recorded["observed_at"]+day*86400 else "not_due"
+            for day in (1,7,30)
+        ]
+        self.assertEqual([m["state"] for m in d["milestones"]],expected)
 
     def test_waitlisted_or_cancelled_canonical_suppresses_stale_legacy(self):
         self.register(days_ago=35)

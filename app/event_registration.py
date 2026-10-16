@@ -142,9 +142,11 @@ def _promote_one(c, event):
     if confirmed >= int(event["capacity"]):
         return False
     waiter = c.execute(
-        "SELECT email FROM participant_event_registrations_v1 "
-        "WHERE event_id=? AND status='waitlist' "
-        "ORDER BY requested_at,email LIMIT 1",
+        "SELECT r.email FROM participant_event_registrations_v1 r "
+        "JOIN accounts a ON a.email=r.email "
+        "WHERE r.event_id=? AND r.status='waitlist' "
+        "AND a.role='participant' AND a.status='active' "
+        "ORDER BY r.requested_at,r.email LIMIT 1",
         (event["id"],),
     ).fetchone()
     if not waiter:

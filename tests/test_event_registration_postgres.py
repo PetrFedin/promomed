@@ -109,6 +109,13 @@ class EventRegistrationPostgresTests(unittest.TestCase):
                 "WHERE event_id=? AND status='waitlist'", (self.event_id,)
             ).fetchone()["n"]
             self.assertEqual((int(confirmed), int(waitlist)), (1, 1))
+            history=c.execute(
+                "SELECT email,next_status,transition_no FROM event_registration_transitions_v1 "
+                "WHERE event_id=? ORDER BY email,transition_no", (self.event_id,),
+            ).fetchall()
+            self.assertEqual(len(history),2)
+            self.assertEqual(sorted(x["next_status"] for x in history),["confirmed","waitlist"])
+            self.assertTrue(all(x["transition_no"]==1 for x in history))
         finally:
             c.close()
 

@@ -7,6 +7,7 @@ on:
       - promomed-home-inbox-responsive-2026-10-01
       - feat/p0-participant-partner-links-2026-10-16
       - feat/p0-client365-event-authority-2026-10-16
+      - feat/p0-registration-transition-ledger-2026-10-16
   pull_request:
     branches:
       - main

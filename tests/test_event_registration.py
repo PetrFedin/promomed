@@ -79,6 +79,51 @@ class EventRegistrationTests(unittest.TestCase):
         self.assertEqual(self.status(self.users[0]), "cancelled")
         self.assertEqual(self.status(self.users[1]), "confirmed")
 
+    def test_transition_history_records_waitlist_promotion_and_cancellation(self):
+        self.command(self.users[0], "register")
+        self.command(self.users[1], "register")
+        self.command(self.users[1], "register")  # idempotent, no event
+        self.command(self.users[0], "cancel")   # promotes waiting owner
+        for email, expected in (
+            (self.users[0], [(None, "confirmed"), ("confirmed", "cancelled")]),
+            (self.users[1], [(None, "waitlist"), ("waitlist", "confirmed")]),
+        ):
+            rows=list(self.c.execute(
+                "SELECT previous_status,next_status FROM event_registration_transitions_v1 "
+                "WHERE event_id='EV1' AND email=? ORDER BY transition_no", (email,),
+            ))
+            self.assertEqual([(r["previous_status"],r["next_status"]) for r in rows],expected)
+        with self.assertRaises(Exception):
+            self.c.execute(
+                "UPDATE event_registration_transitions_v1 SET next_status='cancelled' "
+                "WHERE event_id='EV1' AND email=?", (self.users[1],),
+            )
+        self.c.rollback()
+
+    def test_transition_history_erased_with_parent_account(self):
+        self.command(self.users[0], "register")
+        self.c.execute("DELETE FROM accounts WHERE email=?", (self.users[0],))
+        self.c.commit()
+        n=self.c.execute("SELECT COUNT(*) n FROM event_registration_transitions_v1 "
+                         "WHERE email=?", (self.users[0],)).fetchone()["n"]
+        self.assertEqual(n,0)
+
+    def test_cancel_does_not_promote_suspended_waitlisted_account(self):
+        self.command(self.users[0],"register")
+        self.command(self.users[1],"register")
+        self.c.execute("UPDATE accounts SET status='suspended' WHERE email=?",
+                       (self.users[1],))
+        self.c.commit()
+        cancelled=self.command(self.users[0],"cancel")
+        self.assertFalse(cancelled.payload["queuePromotionOccurred"])
+        self.assertEqual(self.status(self.users[1]),"waitlist")
+        history=list(self.c.execute(
+            "SELECT next_status FROM event_registration_transitions_v1 "
+            "WHERE event_id='EV1' AND email=? ORDER BY transition_no",
+            (self.users[1],),
+        ))
+        self.assertEqual([x["next_status"] for x in history],["waitlist"])
+
     def test_repeated_register_is_idempotent_without_queue_duplication(self):
         first = self.command(self.users[0], "register")
         requested = first.payload["registration"]["requestedAt"]
