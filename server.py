@@ -14,12 +14,10 @@ from app.legacy_write_scope import unavailable_on_non_demo as legacy_write_unava
 from app.public_discovery_scope import unavailable_on_non_demo as discovery_unavailable
 from app.public_state import serve as serve_public_state, ROUTE as PUBLIC_STATE_ROUTE
 from app.self_registration import handle_public as handle_self_registration_public
-from app.event_registration import serve as serve_event_registration, handle_command as handle_event_registration_command, seed_demo as seed_demo_event_registration, ROUTE as EVENT_REGISTRATION_ROUTE
-from app.partner_commercial import serve as serve_partner_commercial, handle_command as handle_partner_commercial_command, ROUTE as PARTNER_COMMERCIAL_ROUTE
+from app.event_registration import serve as serve_event_registration, handle_command as handle_event_registration_command, seed_demo as seed_demo_event_registration, ROUTE as EVENT_REGISTRATION_ROUTE; from app.partner_commercial import serve as serve_partner_commercial, handle_command as handle_partner_commercial_command, ROUTE as PARTNER_COMMERCIAL_ROUTE
 from app.demo_commands import handle_command as handle_demo_command; from app.client365 import serve as serve_client365
 from app.my_workspace import read as read_my_workspace, handle_command as handle_my_workspace_command, READ_ROUTE as MY_STATE_ROUTE, PAGE_PREFIX as MY_STATE_PAGE_PREFIX
-from app.investment_commands import handle_command as handle_investment_command
-from app.deal_commands import handle_command as handle_deal_command
+from app.investment_commands import handle_command as handle_investment_command; from app.deal_commands import handle_command as handle_deal_command
 from app.capital_execution_commands import handle_command as handle_capital_execution_command; from app.intervention_commands import handle_command as handle_intervention_command; from app.reallocation_commands import handle_command as handle_reallocation_command; from app.strategic_reads import read as read_strategic_projection; from app.discovery_reads import serve as serve_discovery; from app.media_reads import serve as serve_media
 ROOT=os.path.join(os.path.dirname(__file__),"public"); LOCK=threading.RLock()
 def conn(): return db.connect()
