@@ -3,6 +3,7 @@ import time
 from app import db
 
 from app.legacy_write_scope import unavailable_on_non_demo
+from app.public_state import exact_artifact_admitted
 from app.commanding import custom, error, ok
 from app.core import audit, notify, promote_waitlist, setv, sval
 
@@ -13,6 +14,18 @@ ROUTES = {
     "/api/replay",
     "/api/session-attendance",
 }
+
+
+def _activity_item(c, item_id, *, lock=False):
+    if lock and db.backend_name() == "sqlite" and not getattr(c, "in_transaction", False):
+        c.execute("BEGIN IMMEDIATE")
+    sql = (
+        'SELECT id,start,"end",venue,track,format,title,audience,capacity,'
+        'stream,replay,partner FROM program_items WHERE id=?'
+    )
+    if lock and db.backend_name() == "postgres":
+        sql += " FOR UPDATE"
+    return c.execute(sql, (item_id,)).fetchone()
 
 
 def handle_command(c, route, role, email, data):
@@ -57,50 +70,111 @@ def handle_command(c, route, role, email, data):
             return error("forbidden", 403)
         item_id = str(data.get("item_id", ""))[:20]
         action = str(data.get("action", "book"))
-        item = c.execute("SELECT * FROM program_items WHERE id=?", (item_id,)).fetchone()
-        if not item:
-            return error("program_item_not_found", 404)
+        if action not in ("book", "cancel"):
+            return error("bad_action", 400)
+
+        # Owner cancellation is always allowed for an existing row, even after
+        # publication withdrawal. This avoids trapping a participant in state
+        # they can no longer undo.
+        existing = c.execute(
+            "SELECT status FROM activity_bookings WHERE email=? AND item_id=?",
+            (email, item_id),
+        ).fetchone()
+        item = _activity_item(c, item_id, lock=True)
+
         if action == "cancel":
-            old = c.execute("SELECT status FROM activity_bookings WHERE email=? AND item_id=?", (email, item_id)).fetchone()
-            c.execute("DELETE FROM activity_bookings WHERE email=? AND item_id=?", (email, item_id))
-            if old and old["status"] == "booked":
+            if not existing:
+                return error("activity_booking_not_found", 404)
+            c.execute(
+                "DELETE FROM activity_bookings WHERE email=? AND item_id=?",
+                (email, item_id),
+            )
+            if (
+                existing["status"] == "booked"
+                and item is not None
+                and exact_artifact_admitted(c, "event", item)
+            ):
                 waiter = c.execute(
-                    "SELECT email FROM activity_bookings WHERE item_id=? AND status='waitlist' ORDER BY ts,email LIMIT 1",
+                    "SELECT email FROM activity_bookings "
+                    "WHERE item_id=? AND status='waitlist' ORDER BY ts,email LIMIT 1",
                     (item_id,),
                 ).fetchone()
                 if waiter:
                     c.execute(
-                        "UPDATE activity_bookings SET status='booked',ts=? WHERE email=? AND item_id=?",
+                        "UPDATE activity_bookings SET status='booked',ts=? "
+                        "WHERE email=? AND item_id=? AND status='waitlist'",
                         (int(time.time()), waiter["email"], item_id),
                     )
-                    notify(c, waiter["email"], "activity_promoted", "Освободилось место", item["start"] + " · " + item["venue"] + " · " + item["title"])
-                    audit(c, "activity_waitlist_promoted", waiter["email"], {"item_id": item_id})
+                    notify(
+                        c,
+                        waiter["email"],
+                        "activity_promoted",
+                        "Освободилось место",
+                        item["start"] + " · " + item["venue"] + " · " + item["title"],
+                    )
+                    audit(
+                        c,
+                        "activity_waitlist_promoted",
+                        waiter["email"],
+                        {"item_id": item_id},
+                    )
             audit(c, "activity_cancelled", email, {"item_id": item_id})
-        else:
-            conflict = c.execute(
-                "SELECT p.id,p.start,p.\"end\",p.title,p.venue FROM activity_bookings b JOIN program_items p ON p.id=b.item_id "
-                "WHERE b.email=? AND b.status='booked' AND p.id<>? AND p.start<? AND p.\"end\">?",
-                (email, item_id, item["end"], item["start"]),
-            ).fetchone()
-            if conflict:
-                return error(
-                    "schedule_conflict",
-                    409,
-                    conflict=dict(conflict),
-                    requested={"id": item["id"], "start": item["start"], "end": item["end"], "title": item["title"], "venue": item["venue"]},
-                )
-            current = c.execute(
-                "SELECT COUNT(*) n FROM activity_bookings WHERE item_id=? AND status='booked'",
-                (item_id,),
-            ).fetchone()["n"]
-            status = "booked" if current < int(item["capacity"]) else "waitlist"
-            c.execute(
-                "INSERT INTO activity_bookings(email,item_id,status,ts) VALUES(?,?,?,?) "
-                "ON CONFLICT(email,item_id) DO UPDATE SET status=excluded.status,ts=excluded.ts",
-                (email, item_id, status, int(time.time())),
+            return ok()
+
+        # New/repeated booking is intentionally indistinguishable for
+        # missing, withheld, withdrawn and hash-stale event versions.
+        if item is None or not exact_artifact_admitted(c, "event", item):
+            return error("program_item_not_found", 404)
+
+        if existing and existing["status"] in ("booked", "waitlist"):
+            return ok()
+
+        conflict = c.execute(
+            'SELECT p.id,p.start,p."end",p.title,p.venue FROM activity_bookings b '
+            'JOIN program_items p ON p.id=b.item_id '
+            "WHERE b.email=? AND b.status='booked' AND p.id<>? "
+            'AND p.start<? AND p."end">?',
+            (email, item_id, item["end"], item["start"]),
+        ).fetchone()
+        if conflict:
+            return error(
+                "schedule_conflict",
+                409,
+                conflict=dict(conflict),
+                requested={
+                    "id": item["id"],
+                    "start": item["start"],
+                    "end": item["end"],
+                    "title": item["title"],
+                    "venue": item["venue"],
+                },
             )
-            audit(c, "activity_" + status, email, {"item_id": item_id, "venue": item["venue"], "format": item["format"]})
-            notify(c, email, "activity_" + status, "Запись в программу", item["start"] + " · " + item["venue"] + " · " + item["title"])
+        current = c.execute(
+            "SELECT COUNT(*) n FROM activity_bookings "
+            "WHERE item_id=? AND status='booked'",
+            (item_id,),
+        ).fetchone()["n"]
+        status = "booked" if current < int(item["capacity"]) else "waitlist"
+        now = int(time.time())
+        c.execute(
+            "INSERT INTO activity_bookings(email,item_id,status,ts) VALUES(?,?,?,?) "
+            "ON CONFLICT(email,item_id) DO UPDATE "
+            "SET status=excluded.status,ts=excluded.ts",
+            (email, item_id, status, now),
+        )
+        audit(
+            c,
+            "activity_" + status,
+            email,
+            {"item_id": item_id, "venue": item["venue"], "format": item["format"]},
+        )
+        notify(
+            c,
+            email,
+            "activity_" + status,
+            "Запись в программу",
+            item["start"] + " · " + item["venue"] + " · " + item["title"],
+        )
         return ok()
 
     if route == "/api/replay":

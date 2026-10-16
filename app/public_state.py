@@ -83,6 +83,13 @@ def _publishable(c, kind, row):
     }
 
 
+def exact_artifact_admitted(c, kind, row):
+    """Return True only when the exact current public payload is admitted."""
+    if kind not in ("content", "event") or row is None:
+        return False
+    return _publishable(c, kind, row) is not None
+
+
 def snapshot(c):
     content = []
     for row in c.execute(
