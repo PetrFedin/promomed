@@ -24,7 +24,7 @@ def request(path):
 
 class LegacyWriteScopeTests(unittest.TestCase):
     def test_registry_is_exact_and_versioned_routes_are_not_denied(self):
-        self.assertEqual(len(legacy_write_scope.LEGACY_GLOBAL_WRITE_ROUTES),20)
+        self.assertEqual(len(legacy_write_scope.LEGACY_GLOBAL_WRITE_ROUTES),19)
         for route in (
             "/api/my-state/v1/notes",
             "/api/event-registration/v1",
@@ -32,6 +32,7 @@ class LegacyWriteScopeTests(unittest.TestCase):
             "/api/participant-registration/v1/verify",
             "/api/public-state/v1",
             "/api/partner-collaboration",
+            "/api/activity-booking",
         ):
             with self.subTest(route=route):
                 self.assertFalse(legacy_write_scope.requires_demo_authority(route))
