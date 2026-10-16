@@ -267,6 +267,68 @@ class PartnerAppointmentTests(unittest.TestCase):
         )
         self.assertEqual(ok.payload["slot"]["version"],2)
 
+    def test_expired_slot_blocks_booking_and_waitlist_promotion(self):
+        slot=self.create_slot(capacity=1)
+        self.cmd("participant",self.participant_a,action="book",
+                 slot_id=slot,contact_consent=True)
+        self.cmd("participant",self.participant_b,action="book",
+                 slot_id=slot,contact_consent=True)
+        # Advance the persisted slot clock without altering the real clock.
+        self.c.execute(
+            "UPDATE partner_appointment_slots_v1 SET starts_at=?,ends_at=? WHERE id=?",
+            (self.now-7200,self.now-3600,slot),
+        )
+        self.c.commit()
+        denied=self.cmd("participant",self.participant_b,action="book",
+                        slot_id=slot,contact_consent=True)
+        self.assertEqual((denied.status,denied.payload["error"]),
+                         (404,"slot_not_found"))
+        cancelled=self.cmd("participant",self.participant_a,action="cancel",
+                           slot_id=slot)
+        self.assertEqual(cancelled.status,200)
+        self.assertFalse(cancelled.payload["queuePromotionOccurred"])
+        self.assertEqual(self.booking_status(slot,self.participant_b),"waitlist")
+
+    def test_inactive_organization_blocks_booking_and_queue_promotion(self):
+        slot=self.create_slot(capacity=1)
+        self.cmd("participant",self.participant_a,action="book",
+                 slot_id=slot,contact_consent=True)
+        self.cmd("participant",self.participant_b,action="book",
+                 slot_id=slot,contact_consent=True)
+        self.c.execute(
+            "UPDATE institutional_organizations SET status='suspended' WHERE id=?",
+            ("ORG-A",),
+        )
+        self.c.commit()
+        denied=self.cmd("participant",self.participant_b,action="book",
+                        slot_id=slot,contact_consent=True)
+        self.assertEqual((denied.status,denied.payload["error"]),
+                         (404,"slot_not_found"))
+        cancelled=self.cmd("participant",self.participant_a,action="cancel",
+                           slot_id=slot)
+        self.assertEqual(cancelled.status,200)
+        self.assertFalse(cancelled.payload["queuePromotionOccurred"])
+        self.assertEqual(self.booking_status(slot,self.participant_b),"waitlist")
+
+    def test_slot_update_cannot_reopen_expired_interval(self):
+        slot=self.create_slot()
+        denied=self.cmd(
+            "partner",self.partner_a,action="slot_update",slot_id=slot,
+            expected_version=1,starts_at=self.now-7200,
+            ends_at=self.now-3600,capacity=1,status="open",
+        )
+        self.assertEqual((denied.status,denied.payload["error"]),
+                         (422,"invalid_request"))
+
+    def test_structured_slot_state_is_validation_error(self):
+        slot=self.create_slot()
+        for invalid in ([],{},["open"]):
+            out=self.cmd("partner",self.partner_a,action="slot_update",
+                         slot_id=slot,expected_version=1,
+                         starts_at=self.now+3600,ends_at=self.now+5400,
+                         capacity=1,status=invalid)
+            self.assertEqual((out.status,out.payload["error"]),(422,"invalid_request"))
+
     def test_query_selectors_and_foreign_roles_are_rejected(self):
         payload,status=partner_appointments.read(
             self.c,partner_appointments.ROUTE+"?organization_id=ORG-B",
