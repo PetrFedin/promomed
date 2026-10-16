@@ -158,6 +158,25 @@ class PartnerAppointmentV1Tests(unittest.TestCase):
         })
         self.assertEqual((out.status,out.payload["error"]),(404,"slot_not_found"))
 
+    def test_revoked_membership_blocks_idempotent_replay(self):
+        rid=uuid.uuid4().hex
+        slot,_=self.create_slot(request_id=rid)
+        self.c.execute(
+            "UPDATE institutional_memberships SET status='revoked' "
+            "WHERE organization_id='ORG-A' AND account_email=?",(self.partner_a,)
+        )
+        self.c.commit()
+        replay=self.partner(self.partner_a,{
+            "action":"create","organization_id":"ORG-A","item_id":self.item_id,
+            "start":"10:10","end":"10:30","capacity":1,"request_id":rid,
+        })
+        self.assertEqual((replay.status,replay.payload["error"]),(404,"organization_not_found"))
+        self.assertEqual(
+            int(self.c.execute(
+                "SELECT COUNT(*) n FROM partner_appointment_slots_v1 WHERE id=?",(slot,)
+            ).fetchone()["n"]),1
+        )
+
     def test_non_strategic_partner_org_is_not_admitted(self):
         out=self.partner(self.partner_a,{
             "action":"create","organization_id":"ORG-X","item_id":self.item_id,
