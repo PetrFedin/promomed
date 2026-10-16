@@ -45,6 +45,7 @@ MODULES = {
     "self_registration.py",
     "registration_delivery.py",
     "event_registration.py",
+    "partner_commercial.py",
     "legacy_write_scope.py",
     "reviewer_authority.py",
     "evidence_interchange.py",
@@ -88,6 +89,8 @@ class ArchitectureContractTests(unittest.TestCase):
         self.assertIn("handle_self_registration_public", SERVER)
         self.assertIn("serve_event_registration", SERVER)
         self.assertIn("handle_event_registration_command", SERVER)
+        self.assertIn("serve_partner_commercial", SERVER)
+        self.assertIn("handle_partner_commercial_command", SERVER)
         self.assertIn("legacy_write_unavailable", SERVER)
 
     def test_bounded_context_modules_exist(self):
