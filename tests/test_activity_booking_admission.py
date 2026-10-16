@@ -5,6 +5,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from app import programme_commands, public_state
 from app.auth import hash_password
@@ -13,7 +14,7 @@ from app.auth import hash_password
 class ActivityBookingAdmissionTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory()
-        self.env=__import__("unittest").mock.patch.dict(os.environ,{
+        self.env=patch.dict(os.environ,{
             "SQLITE_PATH":str(Path(self.temp.name)/"activity.db"),
             "DATABASE_URL":"",
             "PROMOMED_SEED_DEMO":"false",
