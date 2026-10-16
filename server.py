@@ -216,8 +216,7 @@ class H(SimpleHTTPRequestHandler):
    except Exception as e:
     return self.out({"ready":False,"production_ready":False,"error":type(e).__name__,"backend":db.backend_name()},503)
   if p=="/api/partner-collaboration": return self.out(*partner_collaboration.read_result(urlparse(self.path).query,a,conn))
-  partner_surface=serve_partner_surface(a,self.path)
-  if partner_surface is not None: return self.out(*partner_surface)
+  if (partner_surface:=serve_partner_surface(a,self.path)) is not None: return self.out(*partner_surface)
   if p=="/api/client-365": return self.out(*serve_client365(a,self.path))
   if p==EVENT_REGISTRATION_ROUTE: return self.out(*serve_event_registration(a,self.path))
   if p==MY_STATE_ROUTE or p.startswith(MY_STATE_PAGE_PREFIX):
