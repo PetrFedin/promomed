@@ -19,6 +19,7 @@ TABLES = (
     "participant_registration_requests",
     "event_editions_v1",
     "participant_event_registrations_v1",
+    "event_registration_transitions_v1",
     "partner_commercial_placements_v1",
     "participant_partner_leads_v1",
     "partner_appointment_slots_v1",
