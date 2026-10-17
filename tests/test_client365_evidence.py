@@ -195,6 +195,30 @@ class Client365EvidenceTests(unittest.TestCase):
         self.assertEqual(row["assurance"],"db_observed_not_externally_attested")
         self.assertFalse(d["truthBoundary"]["externalAcceptance"])
 
+    def test_latest_reconfirmation_transition_is_authoritative(self):
+        self.canonical_event(self.EMAIL,"confirmed",self.NOW-900,self.NOW-600)
+        self.c.execute(
+            "UPDATE participant_event_registrations_v1 "
+            "SET status='cancelled',updated_at=? WHERE event_id='EV-C365'",
+            (self.NOW-450,),
+        )
+        self.c.execute(
+            "UPDATE participant_event_registrations_v1 "
+            "SET status='confirmed',updated_at=? WHERE event_id='EV-C365'",
+            (self.NOW-300,),
+        )
+        d=self.snapshot()
+        current=self.c.execute(
+            "SELECT observed_at FROM event_registration_transitions_v1 "
+            "WHERE event_id='EV-C365' AND email=? AND next_status='confirmed' "
+            "ORDER BY transition_no DESC LIMIT 1",(self.EMAIL,),
+        ).fetchone()
+        self.assertEqual(d["registeredAt"],current["observed_at"])
+        self.assertEqual(d["registrationTimeBasis"],"db_observed_confirmation_transition")
+        self.assertEqual(d["counts"]["eventRegistrationsConfirmed"],1)
+        self.assertEqual(len([e for e in d["events"] if e["kind"]=="registration"]),1)
+        self.assertEqual(d["events"][0]["source"],"event_registration_transitions_v1")
+
     def test_waitlisted_or_cancelled_canonical_suppresses_stale_legacy(self):
         self.register(days_ago=35)
         self.canonical_event(self.EMAIL,"waitlist",self.NOW-500,self.NOW-300)
