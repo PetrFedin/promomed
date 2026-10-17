@@ -23,6 +23,7 @@ NEXT = {
     "033_event_registration_authority",
     "034_partner_commercial_authority",
     "035_partner_appointment_authority",
+    "036_event_registration_transition_history",
 }
 TABLES = {
     "commercial_contract_versions",
@@ -44,6 +45,7 @@ TABLES = {
     "participant_partner_leads_v1",
     "partner_appointment_slots_v1",
     "participant_partner_appointments_v1",
+    "event_registration_transitions_v1",
 }
 
 
@@ -66,6 +68,9 @@ def run():
     conn = db.connect()
     try:
         original = list(db._migration_files())
+        expected_versions = {p.stem for p in original}
+        assert len(expected_versions) == len(original), "duplicate_migration_stems"
+        assert NEXT.issubset(expected_versions), expected_versions
         legacy = [p for p in original if p.stem[:3].isdigit()
                   and int(p.stem[:3]) <= 25]
         if len(legacy) != 25:
@@ -87,7 +92,9 @@ def run():
 
         upgraded = db.migrate(conn)
         assert upgraded["schema_ready"] and not upgraded["checksum_drift"], upgraded
-        assert len(upgraded["applied"]) == len(original) == 36, upgraded
+        assert set(upgraded["applied"]) == expected_versions, upgraded
+        assert set(upgraded["available"]) == expected_versions, upgraded
+        assert not upgraded["missing"], upgraded
         assert conn.execute(
             "SELECT v FROM state WHERE k=?", (SENTINEL,)
         ).fetchone()["v"] == "preserve-me"
@@ -107,13 +114,60 @@ def run():
             )
         }
         assert TABLES.issubset(schema), TABLES - schema
+        # REG-03 must work after upgrading historical 001-025 data:
+        # the trigger sequence is a database fact, not a fabricated backfill.
+        participant = "upgrade-pg-participant@example.test"
+        event_id = "UPGRADE-PG-REG-03"
+        fixture_time = 1700000000
+        conn.execute(
+            "INSERT INTO accounts(email,password_hash,role,name,status,created_at,updated_at) "
+            "VALUES(?,?,'participant',?,'active',?,?)",
+            (participant,"migration-fixture-only","Postgres Upgrade",fixture_time,fixture_time),
+        )
+        conn.execute(
+            "INSERT INTO event_editions_v1("
+            "id,title,starts_at,registration_status,capacity,demo_only,created_at,updated_at"
+            ") VALUES(?,?,?,'open',1,0,?,?)",
+            (event_id,"Upgrade proof",2000000000,fixture_time,fixture_time),
+        )
+        conn.execute(
+            "INSERT INTO participant_event_registrations_v1("
+            "event_id,email,status,requested_at,updated_at,source"
+            ") VALUES(?,?,'waitlist',?,?,'participant')",
+            (event_id,participant,fixture_time,fixture_time),
+        )
+        conn.execute(
+            "UPDATE participant_event_registrations_v1 "
+            "SET status='confirmed',updated_at=? WHERE event_id=? AND email=?",
+            (fixture_time+1000,event_id,participant),
+        )
+        conn.commit()
+        transition_rows = list(conn.execute(
+            "SELECT transition_no,previous_status,next_status "
+            "FROM event_registration_transitions_v1 "
+            "WHERE event_id=? AND email=? ORDER BY transition_no",
+            (event_id,participant),
+        ))
+        assert [(r["transition_no"],r["previous_status"],r["next_status"])
+                for r in transition_rows] == [
+            (1,None,"waitlist"),(2,"waitlist","confirmed")
+        ], transition_rows
         rerun = db.migrate(conn)
         assert rerun["schema_ready"] and not rerun["checksum_drift"], rerun
-        assert len(rerun["applied"]) == 36, rerun
+        assert set(rerun["applied"]) == expected_versions, rerun
+        assert set(rerun["available"]) == expected_versions, rerun
         assert conn.execute(
             "SELECT v FROM state WHERE k=?", (SENTINEL,)
         ).fetchone()["v"] == "preserve-me"
-        print("ISOLATED POSTGRES LEGACY 001-025 TO PARALLEL 026-029 PASS")
+        assert conn.execute(
+            "SELECT status FROM participant_event_registrations_v1 "
+            "WHERE event_id=? AND email=?", (event_id,participant),
+        ).fetchone()["status"] == "confirmed"
+        assert conn.execute(
+            "SELECT COUNT(*) n FROM event_registration_transitions_v1 "
+            "WHERE event_id=? AND email=?", (event_id,participant),
+        ).fetchone()["n"] == 2
+        print("ISOLATED POSTGRES LEGACY 001-025 TO CURRENT MIGRATIONS PASS")
     finally:
         conn.close()
 
