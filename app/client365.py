@@ -33,13 +33,21 @@ def _registration_projection(c, email, now):
     """Project current event-registration truth; legacy is a last-resort fallback.
 
     A waitlist, cancelled registration or cancelled edition cannot be the
-    baseline for D1/D7/D30. The current row's updated_at is the recorded last
-    status transition, NOT a separately attested immutable confirmation event.
+    active D1/D7/D30 baseline. For a current confirmation, prefer its latest
+    database-observed transition. The older updated_at fallback is provisional
+    and is never independently attested. The correlated query uses one SQL
+    statement snapshot for status and transition provenance.
     """
     rows = list(c.execute(
         """SELECT r.event_id,r.status,r.requested_at,r.updated_at,
                   e.title,e.starts_at,e.registration_status,
-                  e.updated_at AS edition_updated_at,e.demo_only
+                  e.updated_at AS edition_updated_at,e.demo_only,
+                  (SELECT t.observed_at
+                   FROM event_registration_transitions_v1 t
+                   WHERE t.event_id=r.event_id AND t.email=r.email
+                     AND t.next_status='confirmed'
+                   ORDER BY t.transition_no DESC LIMIT 1)
+                     AS confirmed_observed_at
            FROM participant_event_registrations_v1 r
            JOIN event_editions_v1 e ON e.id=r.event_id
            WHERE r.email=? ORDER BY r.requested_at,r.event_id""",
@@ -67,16 +75,12 @@ def _registration_projection(c, email, now):
         confirmation = None
         confirmation_time_basis = None
         if status == "confirmed":
-            transition = c.execute(
-                "SELECT observed_at FROM event_registration_transitions_v1 "
-                "WHERE event_id=? AND email=? AND next_status='confirmed' "
-                "ORDER BY transition_no DESC LIMIT 1",
-                (row["event_id"], email),
-            ).fetchone()
-            if transition is not None:
-                # Never silently fall back to a mutable timestamp when the
-                # actual recorded transition has an invalid/future clock.
-                confirmation = _timestamp(transition["observed_at"], now)
+            if row["confirmed_observed_at"] is not None:
+                # Same SELECT snapshot as the registration status, avoiding
+                # N+1 reads and an inconsistent status/history interleaving.
+                # An invalid/future DB timestamp never silently falls back
+                # to the mutable application timestamp.
+                confirmation = _timestamp(row["confirmed_observed_at"], now)
                 if confirmation is not None:
                     confirmation_time_basis = "db_observed_confirmation_transition"
             else:
