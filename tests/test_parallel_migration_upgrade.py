@@ -1,4 +1,4 @@
-"""P0: upgrade an existing Promomed 001-025 database to BOTH 026 migrations.
+"""P0: upgrade an existing 001-025 database to every current migration.
 
 Runs in its own SQLite subprocess so other test suites' selected backends,
 connection pools, and module globals cannot change this fixture's behavior.
@@ -22,6 +22,8 @@ from app import db
 c = db.connect()
 try:
     all_migrations = list(db._migration_files())
+    expected_versions = {p.stem for p in all_migrations}
+    assert '036_event_registration_transition_history' in expected_versions
     legacy = [p for p in all_migrations if p.stem[:3].isdigit() and int(p.stem[:3]) <= 25]
     assert len(legacy) == 25, [p.name for p in legacy]
     with patch.object(db, "_migration_files", return_value=legacy):
@@ -48,7 +50,8 @@ try:
     upgraded = db.migrate(c)
     assert upgraded["schema_ready"] and not upgraded["missing"], upgraded
     assert not upgraded["checksum_drift"], upgraded
-    assert len(upgraded["applied"]) == 36, upgraded
+    assert set(upgraded["applied"]) == expected_versions, upgraded
+    assert set(upgraded["available"]) == expected_versions, upgraded
     assert c.execute(
         "SELECT v FROM state WHERE k=?", ("upgrade-sentinel",)
     ).fetchone()["v"] == "before-and-after"
@@ -60,12 +63,51 @@ try:
                 "public_artifact_admissions", "participant_registration_requests", "event_editions_v1",
                 "participant_event_registrations_v1", "partner_commercial_placements_v1",
                 "participant_partner_leads_v1", "partner_appointment_slots_v1",
-                "participant_partner_appointments_v1")
+                "participant_partner_appointments_v1",
+                "event_registration_transitions_v1")
     for table in expected:
         row = c.execute(
             "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)
         ).fetchone()
         assert row, table
+
+    # The newly installed transition triggers must work on an upgraded
+    # database, rather than only on a fresh empty schema.
+    event_id = "UPGRADE-EVENT-01"
+    email = "migration-participant@example.test"
+    c.execute(
+        "INSERT INTO accounts(email,password_hash,role,name,status,created_at,updated_at) "
+        "VALUES(?,?,'participant',?,'active',?,?)",
+        (email, "migration-fixture", "Migration Participant", 1700000000, 1700000000),
+    )
+    c.execute(
+        "INSERT INTO event_editions_v1("
+        "id,title,starts_at,registration_status,capacity,demo_only,created_at,updated_at"
+        ") VALUES(?,?,?,'open',1,0,?,?)",
+        (event_id, "Upgrade event", 2000000000, 1700000000, 1700000000),
+    )
+    c.execute(
+        "INSERT INTO participant_event_registrations_v1("
+        "event_id,email,status,requested_at,updated_at,source"
+        ") VALUES(?,?, 'waitlist', ?,?,'participant')",
+        (event_id,email,1700000000,1700000000),
+    )
+    c.execute(
+        "UPDATE participant_event_registrations_v1 "
+        "SET status='confirmed',updated_at=? WHERE event_id=? AND email=?",
+        (1700001000,event_id,email),
+    )
+    c.commit()
+    transitions = list(c.execute(
+        "SELECT transition_no,previous_status,next_status "
+        "FROM event_registration_transitions_v1 "
+        "WHERE event_id=? AND email=? ORDER BY transition_no",
+        (event_id,email),
+    ))
+    assert [(r["transition_no"],r["previous_status"],r["next_status"])
+            for r in transitions] == [
+        (1,None,"waitlist"),(2,"waitlist","confirmed")
+    ], transitions
 
     version_rows = list(c.execute(
         "SELECT version FROM _schema_migrations WHERE version LIKE '026_%' ORDER BY version"
@@ -75,7 +117,17 @@ try:
     ], version_rows
     repeated = db.migrate(c)
     assert repeated["schema_ready"] and not repeated["checksum_drift"], repeated
-    assert len(repeated["applied"]) == 36, repeated
+    assert set(repeated["applied"]) == expected_versions, repeated
+    assert set(repeated["available"]) == expected_versions, repeated
+    assert c.execute(
+        "SELECT status FROM participant_event_registrations_v1 WHERE event_id=? AND email=?",
+        (event_id,email),
+    ).fetchone()["status"] == "confirmed"
+    assert c.execute(
+        "SELECT COUNT(*) n FROM event_registration_transitions_v1 "
+        "WHERE event_id=? AND email=?",
+        (event_id,email),
+    ).fetchone()["n"] == 2
     assert c.execute(
         "SELECT v FROM state WHERE k=?", ("upgrade-sentinel",)
     ).fetchone()["v"] == "before-and-after"
@@ -87,7 +139,7 @@ finally:
 class ParallelMigrationUpgradeTests(unittest.TestCase):
     def test_existing_25_migrations_upgrade_and_reapply_without_loss(self):
         with tempfile.TemporaryDirectory() as work:
-            db_path = str(Path(work) / "promomed-25-to-30.sqlite")
+            db_path = str(Path(work) / "promomed-25-to-current.sqlite")
             env = dict(os.environ)
             env.update({
                 "DATABASE_URL": "",

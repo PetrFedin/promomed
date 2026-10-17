@@ -8,6 +8,7 @@ on:
     branches:
       - main
       - fix/p0-integrated-admission-evidence-2026-10-16
+      - fix/p0-registration-restore-qualification-2026-10-17
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
