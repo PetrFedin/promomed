@@ -172,6 +172,7 @@ def validate_archive(root, source, sha):
     }
     if source == "preview":
         required_photos.add("screenshots/iphone-personal-demo.png")
+        required_photos.add("screenshots/iphone-personal-confirmed-demo.png")
     expected_paths = required_photos | {"videos/" + name for name in EXPECTED_VIDEOS[source]}
     check(set(paths) == expected_paths,
           "missing or unexpected media: " + str(sorted(expected_paths ^ set(paths))))
