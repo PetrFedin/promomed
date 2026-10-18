@@ -264,6 +264,7 @@ def film_preview_workspace(browser, base, root, assets):
         item = transcode(recording.path(), target, root)
         item["demo_only"] = True
         item["scene"] = "authenticated-personal-workspace"
+        item["verified_action"] = "confirmed_event_registration_with_db_transition"
         assets.append(item)
 
 
