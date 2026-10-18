@@ -21,6 +21,7 @@ EXPECTED_SCENES = {
     "desktop": ("today", "media", "events", "community", "me"),
 }
 VIEWPORT_WIDTH = {"iphone-15": 390, "ipad": 820, "desktop": 1440}
+VIEWPORT_HEIGHT = {"iphone-15": 844, "ipad": 1180, "desktop": 900}
 EXPECTED_VIDEOS = {
     "live": ("desktop-journey-25s.mp4", "iphone-journey-25s.mp4"),
     "preview": (
@@ -158,11 +159,23 @@ def validate_archive(root, source, sha):
             device = item.get("device")
             check(device in VIEWPORT_WIDTH, "unexpected screenshot device")
             attributes = screenshot_ok(file, VIEWPORT_WIDTH[device])
+            if item.get("capture") == "viewport":
+                check(attributes["height"] == VIEWPORT_HEIGHT[device],
+                      "portfolio screenshot not viewport-perfect: " + file.name)
+            elif file.name.startswith("iphone-personal-"):
+                check(item.get("capture") == "full_page",
+                      "demo personal screenshot must be long-form and labeled")
+            else:
+                raise AssertionError("screenshot has no declared capture geometry")
         else:
             check(file.suffix == ".mp4", "non-MP4 video")
             check(file.name in EXPECTED_VIDEOS[source], "unapproved video scene")
             check(bool(item.get("demo_only")) == file.name.startswith("iphone-personal-demo"),
                   "demo video incorrectly marked")
+            if file.name == "iphone-personal-demo-25s.mp4":
+                check(item.get("verified_action") ==
+                      "confirmed_event_registration_with_db_transition",
+                      "demo internal video missing registration/DB evidence flag")
             attributes = video_ok(file, 1440 if file.name.startswith("desktop-") else 390)
         checked.append({"file": item["file"], **attributes})
         paths.append(item["file"])
