@@ -58,14 +58,19 @@ def goto_public(page, base):
 
 
 def choose(page, scene):
-    if scene != "today":
-        button = page.locator('#nav button[data-s="' + scene + '"]')
-        button.click(timeout=12000)
+    if scene == "me":
+        # Guest authentication boundary is functional UI, not a failed page.
+        # Never auto-login in live/public mode or imply a private account view.
+        page.locator('#nav button[data-s="me"]').click(timeout=12000)
+        page.locator("#overlay.on #sheet").wait_for(state="visible", timeout=10000)
+    elif scene != "today":
+        page.locator('#nav button[data-s="' + scene + '"]').click(timeout=12000)
         page.locator("#" + scene + ".on").wait_for(timeout=10000)
     else:
         page.locator('#nav button[data-s="today"]').click(timeout=12000)
         page.locator("#today.on").wait_for(timeout=10000)
-    page.evaluate("window.scrollTo({top: 0, behavior: 'instant'})")
+    if scene != "me":
+        page.evaluate("window.scrollTo({top: 0, behavior: 'instant'})")
     page.wait_for_timeout(350)
 
 
@@ -120,7 +125,7 @@ def photos(browser, base, root, assets):
                 page.screenshot(path=str(filename), full_page=True, animations="disabled")
                 assets.append(metadata(filename, root, "browser-screenshot",
                                        device=name, viewport={"width": width, "height": height},
-                                       scene=scene))
+                                       scene="guest-sign-in-boundary" if scene=="me" else scene))
             if problems:
                 raise RuntimeError(name + " JavaScript errors: " + " / ".join(problems[:3]))
         finally:
