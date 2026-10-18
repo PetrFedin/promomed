@@ -21,6 +21,9 @@ Each GitHub Actions capture produces a versioned archive with:
 - `screenshots/` — iPhone (390 × 844), iPad (820 × 1180) and desktop (1440 × 900);
 - `videos/desktop-journey-25s.mp4` and `videos/iphone-journey-25s.mp4`,
   browser recordings converted to shareable H.264 MP4, muted, 25 seconds;
+- CI-preview-only `videos/iphone-personal-demo-25s.mp4` showing actual sign-in,
+  personal registrations, partner requests and notes in a seeded dummy account.
+  **This recording must never be labeled as a live participant session.**
 - `index.html` — standalone responsive media gallery to curate for the personal website.
 
 The video route is Home → Media → Events → Community → My Space.
