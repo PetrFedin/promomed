@@ -1,0 +1,134 @@
+name: SOSTOYANIE portfolio media evidence
+
+on:
+  workflow_dispatch:
+    inputs:
+      capture_live:
+        description: "Try public Render capture (never log in to production)"
+        required: false
+        default: true
+        type: boolean
+  push:
+    branches:
+      - feat/portfolio-live-media-evidence-2026-10-18
+      - main
+    paths:
+      - ops/capture_portfolio_media.py
+      - .github/workflows/portfolio-media-evidence.yml
+      - public/**
+  schedule:
+    # Applies only after this workflow lands in the default branch.
+    - cron: "37 7 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: portfolio-media-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    name: Versioned, isolated CI preview images and 25s videos
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      SQLITE_PATH: /tmp/promomed-portfolio-preview-${{ github.run_id }}.db
+      PROMOMED_SEED_DEMO: "true"
+      PORT: "10000"
+      RENDER_GIT_COMMIT: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Dependencies
+        run: |
+          pip install -r requirements.txt playwright
+          python -m playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+      - name: Start isolated SQLite preview
+        run: |
+          python server.py > /tmp/sostoyanie-portfolio-preview.log 2>&1 &
+          echo $! > /tmp/sostoyanie-portfolio-preview.pid
+          for i in $(seq 1 35); do
+            if curl --fail --silent http://127.0.0.1:10000/health > /tmp/sostoyanie-portfolio-health.json; then
+              cat /tmp/sostoyanie-portfolio-health.json
+              exit 0
+            fi
+            sleep 1
+          done
+          tail -n 100 /tmp/sostoyanie-portfolio-preview.log
+          exit 1
+      - name: Record original browser screens and demo journey
+        run: |
+          python ops/capture_portfolio_media.py \
+            --source preview \
+            --base-url http://127.0.0.1:10000 \
+            --sha "${{ github.sha }}" \
+            --out artifacts/portfolio/preview
+      - name: Validate archive manifest and provenance
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          manifest=Path("artifacts/portfolio/preview/manifest.json")
+          assert manifest.is_file(), "missing manifest"
+          data=json.loads(manifest.read_text())
+          assert data.get("completed") is True, data.get("error")
+          assets=data["assets"]
+          assert len([x for x in assets if x["type"]=="browser-video"])==2
+          assert len([x for x in assets if x["type"]=="browser-screenshot"])>=13
+          assert data["source"]=="preview" and data["repository_sha"]
+          assert data["health"]["git_commit"]==data["repository_sha"]
+          for item in assets:
+              assert (manifest.parent/item["file"]).is_file(),item["file"]
+          print("PORTFOLIO PREVIEW CAPTURE PASS",len(assets))
+          PY
+      - name: Upload stamped portfolio preview (not production)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sostoyanie-portfolio-preview-${{ github.sha }}
+          path: artifacts/portfolio/preview
+          retention-days: 30
+          if-no-files-found: warn
+      - name: Print preview server errors on failure
+        if: failure()
+        run: tail -n 150 /tmp/sostoyanie-portfolio-preview.log
+
+  live:
+    name: Public Render capture (never substitute preview)
+    if: github.event_name != 'workflow_dispatch' || inputs.capture_live
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      PROMOMED_PUBLIC_BASE_URL: https://sostoyanie-promomed-live.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install real browser/video tools
+        run: |
+          pip install playwright
+          python -m playwright install --with-deps chromium
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+      - name: Capture only when live public server is actually reachable
+        run: |
+          python ops/capture_portfolio_media.py \
+            --source live \
+            --base-url "$PROMOMED_PUBLIC_BASE_URL" \
+            --sha "${{ github.sha }}" \
+            --out artifacts/portfolio/live
+      - name: Upload live media OR explicit HTTP failure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sostoyanie-portfolio-live-${{ github.sha }}
+          path: artifacts/portfolio/live
+          retention-days: 30
+          if-no-files-found: warn
