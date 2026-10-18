@@ -87,7 +87,8 @@ jobs:
           assert data.get("completed") is True, data.get("error")
           assets=data["assets"]
           assert len([x for x in assets if x["type"]=="browser-video"])==3
-          assert len([x for x in assets if x["type"]=="browser-screenshot"])>=13
+          assert len([x for x in assets if x["type"]=="browser-screenshot"])==15
+          assert data["quality_gate"]["passed"] is True
           assert data["source"]=="preview" and data["repository_sha"]
           assert data["health"]["git_commit"]==data["repository_sha"]
           for item in assets:
