@@ -17,7 +17,7 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, expect
 
 SCENES = ("today", "media", "events", "community", "me")
 DEVICES = (
@@ -122,10 +122,11 @@ def photos(browser, base, root, assets):
             for scene in scenes:
                 choose(page, scene)
                 filename = root / "screenshots" / (name + "-" + scene + ".png")
-                page.screenshot(path=str(filename), full_page=True, animations="disabled")
+                page.screenshot(path=str(filename), full_page=False, animations="disabled")
                 assets.append(metadata(filename, root, "browser-screenshot",
                                        device=name, viewport={"width": width, "height": height},
-                                       scene="guest-sign-in-boundary" if scene=="me" else scene))
+                                       scene="guest-sign-in-boundary" if scene=="me" else scene,
+                                       capture="viewport"))
             if problems:
                 raise RuntimeError(name + " JavaScript errors: " + " / ".join(problems[:3]))
         finally:
@@ -143,7 +144,14 @@ def film_public(browser, base, root, name, width, height, assets):
             goto_public(page, base)
             for scene in VIDEO_SCENES:
                 choose(page, scene)
-                page.wait_for_timeout(5100)
+                if scene == "me":
+                    # Show the actual guest login boundary; do not authenticate
+                    # to production or create an imaginary user session.
+                    page.wait_for_timeout(5100)
+                else:
+                    page.wait_for_timeout(1200)
+                    page.mouse.wheel(0, 540)
+                    page.wait_for_timeout(3500)
             recording = page.video
             page.close()
         finally:
@@ -170,7 +178,7 @@ def preview_account(browser, base, root, assets):
         path = root / "screenshots" / "iphone-personal-demo.png"
         page.screenshot(path=str(path), full_page=True, animations="disabled")
         assets.append(metadata(path, root, "browser-screenshot", device="iphone-15",
-                               scene="personal-signed-in-demo-only"))
+                               scene="personal-signed-in-demo-only", capture="full_page"))
     finally:
         ctx.close()
 
@@ -200,17 +208,50 @@ def film_preview_workspace(browser, base, root, assets):
             page.locator("#password").fill("demo2027")
             page.locator("#login-button").click(timeout=12000)
             page.locator("#workspace").wait_for(state="visible", timeout=20000)
-            page.wait_for_timeout(5000)
+            page.wait_for_timeout(2500)
+            event = page.locator(".eventRegistration").filter(
+                has_text="СОСТОЯНИЕ / 2027"
+            ).first
+            event.scroll_into_view_if_needed(timeout=10000)
+            expect(event.locator(".eventStatus")).to_have_text(
+                "Не зарегистрирован", timeout=10000
+            )
+            event.locator(".eventAction").click(timeout=12000)
+            expect(event.locator(".eventStatus")).to_have_text(
+                "Место подтверждено", timeout=12000
+            )
+            page.wait_for_timeout(4000)
+            proof = root / "screenshots" / "iphone-personal-confirmed-demo.png"
+            page.screenshot(path=str(proof), full_page=True, animations="disabled")
+            assets.append(metadata(
+                proof, root, "browser-screenshot", device="iphone-15",
+                scene="confirmed-registration-demo-only", capture="full_page"
+            ))
             for section, duration in (
-                ("#event-registration-list", 5000),
-                ("#partner-appointments", 4500),
-                ("#partner-leads", 3500),
-                ("#notes", 4600),
+                ("#partner-appointments", 3500),
+                ("#partner-leads", 3000),
+                ("#notes", 4000),
             ):
                 page.locator(section).scroll_into_view_if_needed(timeout=10000)
                 page.wait_for_timeout(duration)
             page.evaluate("window.scrollTo({top:0,behavior:'instant'})")
-            page.wait_for_timeout(3500)
+            page.wait_for_timeout(2900)
+            # Independently confirm the UI action persisted through the API
+            # into the isolated test DB and generated registration evidence.
+            import sqlite3
+            with sqlite3.connect(os.environ["SQLITE_PATH"]) as conn:
+                actual = conn.execute(
+                    "SELECT status FROM participant_event_registrations_v1 "
+                    "WHERE event_id=? AND email=?",
+                    ("SOSTOYANIE-2027", "participant@demo.ru"),
+                ).fetchone()
+                assert actual is not None and actual[0] == "confirmed", actual
+                transition = conn.execute(
+                    "SELECT COUNT(*) FROM event_registration_transitions_v1 "
+                    "WHERE event_id=? AND email=? AND next_status='confirmed'",
+                    ("SOSTOYANIE-2027", "participant@demo.ru"),
+                ).fetchone()
+                assert transition is not None and transition[0] >= 1, transition
             if errors:
                 raise RuntimeError("personal demo JS error: " + " / ".join(errors[:3]))
             recording = page.video
