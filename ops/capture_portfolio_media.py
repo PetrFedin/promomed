@@ -175,7 +175,7 @@ def preview_account(browser, base, root, assets):
         ctx.close()
 
 
-def gallery(root, assets, source, sha, stamp):
+def gallery(root, assets, source, sha, stamp, deployed_sha=None, sha_verified=False):
     images = [v for v in assets if v["type"] == "browser-screenshot"]
     videos = [v for v in assets if v["type"] == "browser-video"]
     from html import escape
@@ -185,7 +185,16 @@ def gallery(root, assets, source, sha, stamp):
     videos_html = "".join("<figure><video controls playsinline preload='metadata' src='" +
                           escape(x["file"], quote=True) + "'></video><figcaption>" +
                           escape(x["file"]) + "</figcaption></figure>" for x in videos)
-    title = "PUBLISHED WEB" if source == "live" else "CI PREVIEW · NOT PRODUCTION"
+    if source == "live":
+        title = "ПУБЛИЧНО ОПУБЛИКОВАННАЯ СБОРКА · НЕ ДОКАЗАТЕЛЬСТВО PRODUCTION READY"
+        version_note = (
+            "Git SHA текущего Render: " + str(deployed_sha or "не предоставлен")
+            + " · SHA исходников сценария съёмки: " + sha[:12]
+            + " · SHA совпадают: " + ("ДА" if sha_verified else "НЕТ")
+        )
+    else:
+        title = "ИЗОЛИРОВАННАЯ ТЕСТОВАЯ СБОРКА · НЕ PRODUCTION"
+        version_note = "SHA проверенного CI preview: " + sha
     html = ("<!doctype html><html lang='ru'><meta charset='utf-8'>"
             "<meta name='viewport' content='width=device-width,initial-scale=1'>"
             "<title>СОСТОЯНИЕ — доказательства интерфейса</title>"
@@ -195,7 +204,8 @@ def gallery(root, assets, source, sha, stamp):
             "figure{margin:0;background:#102f54;padding:12px;border-radius:18px}"
             "img,video{display:block;width:100%;max-height:650px;object-fit:contain;border-radius:10px}"
             "figcaption{padding:10px;font-size:14px;color:#c8d9ea}</style><h1>СОСТОЯНИЕ</h1>"
-            "<p>" + title + " · " + escape(stamp) + " · SHA " + escape(sha[:12]) + "</p>"
+            "<p>" + title + " · " + escape(stamp) + "</p>"
+            "<p>" + escape(version_note) + "</p>"
             "<p>Кадры записаны Playwright из браузера. Для публикации на лендинге проверяйте "
             "источник, лицензию медиа и отсутствие персональных данных.</p>"
             "<section><h2>Видео · 25 секунд</h2><div class='grid'>" + videos_html +
@@ -219,7 +229,8 @@ def main():
     manifest = {"product": "SOSTOYANIE / Promomed",
                 "captured_at_utc": stamp, "source": args.source,
                 "source_url": base, "repository_sha": args.sha,
-                "production_claim": args.source == "live",
+                "production_claim": False,
+                "published_endpoint_capture": args.source == "live",
                 "completed": False, "assets": []}
     try:
         health = probe(base)
@@ -241,7 +252,8 @@ def main():
             finally:
                 browser.close()
         manifest["completed"] = True
-        gallery(output, manifest["assets"], args.source, args.sha, stamp)
+        gallery(output, manifest["assets"], args.source, args.sha, stamp,
+                manifest["health"].get("git_commit"), bool(manifest.get("live_sha_verified")))
         print(json.dumps({"ok": True, "source": args.source,
                           "screenshots": sum(a["type"] == "browser-screenshot" for a in manifest["assets"]),
                           "videos": sum(a["type"] == "browser-video" for a in manifest["assets"]),
