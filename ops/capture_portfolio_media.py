@@ -175,6 +175,57 @@ def preview_account(browser, base, root, assets):
         ctx.close()
 
 
+def film_preview_workspace(browser, base, root, assets):
+    """Record an actual, authorized demo owner's internal workspace journey.
+
+    Runs only against a fresh CI SQLite seeded demo account, never the live URL.
+    It reads sections without changing registration or transferring contacts.
+    """
+    with tempfile.TemporaryDirectory() as temp:
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844}, locale="ru-RU",
+            device_scale_factor=1, record_video_dir=temp,
+            record_video_size={"width": 390, "height": 844},
+        )
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda exc: errors.append(str(exc)))
+        recording = None
+        try:
+            response = page.goto(base + "/personal/", wait_until="domcontentloaded", timeout=45000)
+            if response is None or response.status != 200:
+                raise RuntimeError("demo workspace not reachable")
+            page.wait_for_timeout(2500)
+            page.locator("#email").fill("participant@demo.ru")
+            page.locator("#password").fill("demo2027")
+            page.locator("#login-button").click(timeout=12000)
+            page.locator("#workspace").wait_for(state="visible", timeout=20000)
+            page.wait_for_timeout(5000)
+            for section, duration in (
+                ("#event-registration-list", 5000),
+                ("#partner-appointments", 4500),
+                ("#partner-leads", 3500),
+                ("#notes", 4600),
+            ):
+                page.locator(section).scroll_into_view_if_needed(timeout=10000)
+                page.wait_for_timeout(duration)
+            page.evaluate("window.scrollTo({top:0,behavior:'instant'})")
+            page.wait_for_timeout(3500)
+            if errors:
+                raise RuntimeError("personal demo JS error: " + " / ".join(errors[:3]))
+            recording = page.video
+            page.close()
+        finally:
+            context.close()
+        if recording is None:
+            raise RuntimeError("No owner-journey recording captured")
+        target = root / "videos" / "iphone-personal-demo-25s.mp4"
+        item = transcode(recording.path(), target, root)
+        item["demo_only"] = True
+        item["scene"] = "authenticated-personal-workspace"
+        assets.append(item)
+
+
 def gallery(root, assets, source, sha, stamp, deployed_sha=None, sha_verified=False):
     images = [v for v in assets if v["type"] == "browser-screenshot"]
     videos = [v for v in assets if v["type"] == "browser-video"]
@@ -249,6 +300,7 @@ def main():
                 film_public(browser, base, output, "iphone", 390, 844, manifest["assets"])
                 if args.source == "preview":
                     preview_account(browser, base, output, manifest["assets"])
+                    film_preview_workspace(browser, base, output, manifest["assets"])
             finally:
                 browser.close()
         manifest["completed"] = True
