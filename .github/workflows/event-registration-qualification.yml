@@ -10,6 +10,7 @@ on:
       - fix/p0-event-admission-journey-2026-10-16
       - fix/p0-client365-crossmodule-lineage-2026-10-16
       - fix/p0-integrated-admission-evidence-2026-10-16
+      - feat/portfolio-live-media-evidence-2026-10-18
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

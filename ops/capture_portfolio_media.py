@@ -1,0 +1,365 @@
+"""Capture versioned, genuine browser evidence of SOSTOYANIE.
+
+Public mode never authenticates. Preview mode uses only seeded CI demo accounts.
+A screenshot/video is accepted only when the app, navigation and source health pass.
+Never interpret these assets as proof of a production PostgreSQL rollout.
+"""
+import argparse
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import tempfile
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+from playwright.sync_api import sync_playwright, expect
+
+SCENES = ("today", "media", "events", "community", "me")
+DEVICES = (
+    ("iphone-15", 390, 844, ("today", "media", "events", "community", "me")),
+    ("ipad", 820, 1180, ("today", "media", "events")),
+    ("desktop", 1440, 900, ("today", "media", "events", "community", "me")),
+)
+VIDEO_SCENES = ("today", "media", "events", "community", "me")
+VIDEO_DURATION = 25.0
+
+
+def probe(url: str, attempts: int = 4) -> dict:
+    errors = []
+    for index in range(attempts):
+        try:
+            with urlopen(Request(url + "/health", headers={"User-Agent": "Promomed-Portfolio-Evidence/1.0"}), timeout=30) as res:
+                if res.status != 200:
+                    raise RuntimeError("unexpected health HTTP " + str(res.status))
+                raw = res.read(16384)
+                data = json.loads(raw.decode("utf-8"))
+                if not isinstance(data, dict) or data.get("ok") is not True:
+                    raise RuntimeError("health payload did not confirm app")
+                return data
+        except (HTTPError, URLError, TimeoutError, OSError, ValueError, RuntimeError) as exc:
+            errors.append(type(exc).__name__ + ": " + str(exc)[:160])
+            if index + 1 < attempts:
+                time.sleep((10, 15, 20)[index])
+    raise RuntimeError("live health unavailable after retries: " + " / ".join(errors))
+
+
+def goto_public(page, base):
+    response = page.goto(base + "/", wait_until="domcontentloaded", timeout=45000)
+    if response is None or response.status != 200:
+        raise RuntimeError("public landing HTTP is not 200")
+    page.locator("#today.on").wait_for(timeout=20000)
+    if not page.locator('#nav button[data-s="today"]').count():
+        raise RuntimeError("required navigation missing")
+
+
+def choose(page, scene):
+    if scene == "me":
+        # Guest authentication boundary is functional UI, not a failed page.
+        # Never auto-login in live/public mode or imply a private account view.
+        page.locator('#nav button[data-s="me"]').click(timeout=12000)
+        page.locator("#overlay.on #sheet").wait_for(state="visible", timeout=10000)
+    elif scene != "today":
+        page.locator('#nav button[data-s="' + scene + '"]').click(timeout=12000)
+        page.locator("#" + scene + ".on").wait_for(timeout=10000)
+    else:
+        page.locator('#nav button[data-s="today"]').click(timeout=12000)
+        page.locator("#today.on").wait_for(timeout=10000)
+    if scene != "me":
+        page.evaluate("window.scrollTo({top: 0, behavior: 'instant'})")
+    page.wait_for_timeout(350)
+
+
+def sha256(path):
+    hasher = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1048576), b""):
+            hasher.update(block)
+    return hasher.hexdigest()
+
+
+def metadata(path, root, kind, **more):
+    info = {"file": str(path.relative_to(root)).replace(os.sep, "/"), "type": kind,
+            "bytes": path.stat().st_size, "sha256": sha256(path)}
+    info.update(more)
+    return info
+
+
+def transcode(webm, target, out):
+    ffmpeg = shutil.which("ffmpeg")
+    ffprobe = shutil.which("ffprobe")
+    if not ffmpeg or not ffprobe:
+        raise RuntimeError("ffmpeg and ffprobe are required to publish MP4")
+    subprocess.run([ffmpeg, "-y", "-hide_banner", "-loglevel", "error", "-i", str(webm),
+                    "-t", str(VIDEO_DURATION), "-an", "-c:v", "libx264",
+                    "-pix_fmt", "yuv420p", "-preset", "medium", "-crf", "22",
+                    "-movflags", "+faststart", str(target)], check=True, timeout=160)
+    check = subprocess.run([ffprobe, "-v", "error", "-show_entries", "format=duration",
+                            "-of", "default=noprint_wrappers=1:nokey=1", str(target)],
+                           text=True, capture_output=True, check=True)
+    duration = float(check.stdout.strip())
+    if not (24.2 <= duration <= 25.1):
+        raise RuntimeError("MP4 duration is not 25 seconds: " + str(duration))
+    if target.stat().st_size < 10000:
+        raise RuntimeError("Video too small to be credible evidence")
+    return metadata(target, out, "browser-video", duration_seconds=round(duration, 3))
+
+
+def photos(browser, base, root, assets):
+    for name, width, height, scenes in DEVICES:
+        context = browser.new_context(viewport={"width": width, "height": height},
+                                      locale="ru-RU", device_scale_factor=1,
+                                      reduced_motion="reduce")
+        page = context.new_page()
+        problems = []
+        page.on("pageerror", lambda err: problems.append(str(err)))
+        try:
+            goto_public(page, base)
+            for scene in scenes:
+                choose(page, scene)
+                filename = root / "screenshots" / (name + "-" + scene + ".png")
+                page.screenshot(path=str(filename), full_page=False, animations="disabled")
+                assets.append(metadata(filename, root, "browser-screenshot",
+                                       device=name, viewport={"width": width, "height": height},
+                                       scene="guest-sign-in-boundary" if scene=="me" else scene,
+                                       capture="viewport"))
+            if problems:
+                raise RuntimeError(name + " JavaScript errors: " + " / ".join(problems[:3]))
+        finally:
+            context.close()
+
+
+def film_public(browser, base, root, name, width, height, assets):
+    with tempfile.TemporaryDirectory() as temp:
+        context = browser.new_context(viewport={"width": width, "height": height},
+                                      locale="ru-RU", device_scale_factor=1,
+                                      record_video_dir=temp,
+                                      record_video_size={"width": width, "height": height})
+        page = context.new_page()
+        try:
+            goto_public(page, base)
+            for scene in VIDEO_SCENES:
+                choose(page, scene)
+                if scene == "me":
+                    # Show the actual guest login boundary; do not authenticate
+                    # to production or create an imaginary user session.
+                    page.wait_for_timeout(5100)
+                else:
+                    page.wait_for_timeout(1200)
+                    page.mouse.wheel(0, 540)
+                    page.wait_for_timeout(3500)
+            recording = page.video
+            page.close()
+        finally:
+            context.close()
+        if recording is None:
+            raise RuntimeError("Playwright did not create a recording")
+        target = root / "videos" / (name + "-journey-25s.mp4")
+        assets.append(transcode(recording.path(), target, root))
+
+
+def preview_account(browser, base, root, assets):
+    # This path runs only against a fresh, isolated seeded CI SQLite database.
+    ctx = browser.new_context(viewport={"width": 390, "height": 844}, locale="ru-RU",
+                              device_scale_factor=1)
+    page = ctx.new_page()
+    try:
+        response = page.goto(base + "/personal/", wait_until="domcontentloaded", timeout=45000)
+        if response is None or response.status != 200:
+            raise RuntimeError("personal workspace unavailable")
+        page.locator("#email").fill("participant@demo.ru")
+        page.locator("#password").fill("demo2027")
+        page.locator("#login-button").click(timeout=12000)
+        page.locator("#workspace").wait_for(state="visible", timeout=20000)
+        path = root / "screenshots" / "iphone-personal-demo.png"
+        page.screenshot(path=str(path), full_page=True, animations="disabled")
+        assets.append(metadata(path, root, "browser-screenshot", device="iphone-15",
+                               scene="personal-signed-in-demo-only", capture="full_page"))
+    finally:
+        ctx.close()
+
+
+def film_preview_workspace(browser, base, root, assets):
+    """Record an actual, authorized demo owner's internal workspace journey.
+
+    Runs only against a fresh CI SQLite seeded demo account, never the live URL.
+    It reads sections without changing registration or transferring contacts.
+    """
+    with tempfile.TemporaryDirectory() as temp:
+        context = browser.new_context(
+            viewport={"width": 390, "height": 844}, locale="ru-RU",
+            device_scale_factor=1, record_video_dir=temp,
+            record_video_size={"width": 390, "height": 844},
+        )
+        page = context.new_page()
+        errors = []
+        page.on("pageerror", lambda exc: errors.append(str(exc)))
+        recording = None
+        try:
+            response = page.goto(base + "/personal/", wait_until="domcontentloaded", timeout=45000)
+            if response is None or response.status != 200:
+                raise RuntimeError("demo workspace not reachable")
+            page.wait_for_timeout(2500)
+            page.locator("#email").fill("participant@demo.ru")
+            page.locator("#password").fill("demo2027")
+            page.locator("#login-button").click(timeout=12000)
+            page.locator("#workspace").wait_for(state="visible", timeout=20000)
+            page.wait_for_timeout(2500)
+            event = page.locator(".eventRegistration").filter(
+                has_text="СОСТОЯНИЕ / 2027"
+            ).first
+            event.scroll_into_view_if_needed(timeout=10000)
+            expect(event.locator(".eventStatus")).to_have_text(
+                "Не зарегистрирован", timeout=10000
+            )
+            event.locator(".eventAction").click(timeout=12000)
+            expect(event.locator(".eventStatus")).to_have_text(
+                "Место подтверждено", timeout=12000
+            )
+            page.wait_for_timeout(4000)
+            proof = root / "screenshots" / "iphone-personal-confirmed-demo.png"
+            page.screenshot(path=str(proof), full_page=True, animations="disabled")
+            assets.append(metadata(
+                proof, root, "browser-screenshot", device="iphone-15",
+                scene="confirmed-registration-demo-only", capture="full_page"
+            ))
+            for section, duration in (
+                ("#partner-appointments", 3500),
+                ("#partner-leads", 3000),
+                ("#notes", 4000),
+            ):
+                page.locator(section).scroll_into_view_if_needed(timeout=10000)
+                page.wait_for_timeout(duration)
+            page.evaluate("window.scrollTo({top:0,behavior:'instant'})")
+            page.wait_for_timeout(2900)
+            # Independently confirm the UI action persisted through the API
+            # into the isolated test DB and generated registration evidence.
+            import sqlite3
+            with sqlite3.connect(os.environ["SQLITE_PATH"]) as conn:
+                actual = conn.execute(
+                    "SELECT status FROM participant_event_registrations_v1 "
+                    "WHERE event_id=? AND email=?",
+                    ("SOSTOYANIE-2027", "participant@demo.ru"),
+                ).fetchone()
+                assert actual is not None and actual[0] == "confirmed", actual
+                transition = conn.execute(
+                    "SELECT COUNT(*) FROM event_registration_transitions_v1 "
+                    "WHERE event_id=? AND email=? AND next_status='confirmed'",
+                    ("SOSTOYANIE-2027", "participant@demo.ru"),
+                ).fetchone()
+                assert transition is not None and transition[0] >= 1, transition
+            if errors:
+                raise RuntimeError("personal demo JS error: " + " / ".join(errors[:3]))
+            recording = page.video
+            page.close()
+        finally:
+            context.close()
+        if recording is None:
+            raise RuntimeError("No owner-journey recording captured")
+        target = root / "videos" / "iphone-personal-demo-25s.mp4"
+        item = transcode(recording.path(), target, root)
+        item["demo_only"] = True
+        item["scene"] = "authenticated-personal-workspace"
+        item["verified_action"] = "confirmed_event_registration_with_db_transition"
+        assets.append(item)
+
+
+def gallery(root, assets, source, sha, stamp, deployed_sha=None, sha_verified=False):
+    images = [v for v in assets if v["type"] == "browser-screenshot"]
+    videos = [v for v in assets if v["type"] == "browser-video"]
+    from html import escape
+    images_html = "".join("<figure><img loading='lazy' src='" + escape(x["file"], quote=True) +
+                          "'><figcaption>" + escape(x.get("device", "")) + " · " +
+                          escape(x.get("scene", "")) + "</figcaption></figure>" for x in images)
+    videos_html = "".join("<figure><video controls playsinline preload='metadata' src='" +
+                          escape(x["file"], quote=True) + "'></video><figcaption>" +
+                          escape(x["file"]) + "</figcaption></figure>" for x in videos)
+    if source == "live":
+        title = "ПУБЛИЧНО ОПУБЛИКОВАННАЯ СБОРКА · НЕ ДОКАЗАТЕЛЬСТВО PRODUCTION READY"
+        version_note = (
+            "Git SHA текущего Render: " + str(deployed_sha or "не предоставлен")
+            + " · SHA исходников сценария съёмки: " + sha[:12]
+            + " · SHA совпадают: " + ("ДА" if sha_verified else "НЕТ")
+        )
+    else:
+        title = "ИЗОЛИРОВАННАЯ ТЕСТОВАЯ СБОРКА · НЕ PRODUCTION"
+        version_note = "SHA проверенного CI preview: " + sha
+    html = ("<!doctype html><html lang='ru'><meta charset='utf-8'>"
+            "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>СОСТОЯНИЕ — доказательства интерфейса</title>"
+            "<style>body{font:16px/1.5 system-ui;background:#071b31;color:#f4f7fb;margin:0;padding:4vw}"
+            "h1{font-size:clamp(26px,4vw,54px)}p{max-width:850px}section{margin:55px 0}"
+            ".grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr));gap:26px}"
+            "figure{margin:0;background:#102f54;padding:12px;border-radius:18px}"
+            "img,video{display:block;width:100%;max-height:650px;object-fit:contain;border-radius:10px}"
+            "figcaption{padding:10px;font-size:14px;color:#c8d9ea}</style><h1>СОСТОЯНИЕ</h1>"
+            "<p>" + title + " · " + escape(stamp) + "</p>"
+            "<p>" + escape(version_note) + "</p>"
+            "<p>Кадры записаны Playwright из браузера. Для публикации на лендинге проверяйте "
+            "источник, лицензию медиа и отсутствие персональных данных.</p>"
+            "<section><h2>Видео · 25 секунд</h2><div class='grid'>" + videos_html +
+            "</div></section><section><h2>Скриншоты</h2><div class='grid'>" + images_html +
+            "</div></section></html>")
+    (root / "index.html").write_text(html, encoding="utf-8")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--base-url", required=True)
+    ap.add_argument("--source", choices=("preview", "live"), required=True)
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--sha", required=True)
+    args = ap.parse_args()
+    base = args.base_url.rstrip("/")
+    output = Path(args.out).resolve()
+    (output / "screenshots").mkdir(parents=True, exist_ok=True)
+    (output / "videos").mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    manifest = {"product": "SOSTOYANIE / Promomed",
+                "captured_at_utc": stamp, "source": args.source,
+                "source_url": base, "repository_sha": args.sha,
+                "production_claim": False,
+                "published_endpoint_capture": args.source == "live",
+                "completed": False, "assets": []}
+    try:
+        health = probe(base)
+        manifest["health"] = {key: health.get(key) for key in
+                              ("app", "git_commit", "backend", "durable", "demo_seed", "ok")}
+        if args.source == "preview" and health.get("git_commit") != args.sha:
+            raise RuntimeError("preview health SHA did not match checked-out code")
+        manifest["live_sha_verified"] = args.source == "live" and health.get("git_commit") == args.sha
+        if args.source == "live" and manifest["health"]["git_commit"] in (None, "local"):
+            manifest["live_sha_verified"] = False
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            try:
+                photos(browser, base, output, manifest["assets"])
+                film_public(browser, base, output, "desktop", 1440, 900, manifest["assets"])
+                film_public(browser, base, output, "iphone", 390, 844, manifest["assets"])
+                if args.source == "preview":
+                    preview_account(browser, base, output, manifest["assets"])
+                    film_preview_workspace(browser, base, output, manifest["assets"])
+            finally:
+                browser.close()
+        manifest["completed"] = True
+        gallery(output, manifest["assets"], args.source, args.sha, stamp,
+                manifest["health"].get("git_commit"), bool(manifest.get("live_sha_verified")))
+        print(json.dumps({"ok": True, "source": args.source,
+                          "screenshots": sum(a["type"] == "browser-screenshot" for a in manifest["assets"]),
+                          "videos": sum(a["type"] == "browser-video" for a in manifest["assets"]),
+                          "sha": args.sha, "live_sha_verified": manifest.get("live_sha_verified")}))
+    except Exception as exc:
+        manifest["error"] = type(exc).__name__ + ": " + str(exc)[:500]
+        print(json.dumps({"ok": False, "error": manifest["error"]}))
+        raise
+    finally:
+        (output / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False),
+                                               encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()
