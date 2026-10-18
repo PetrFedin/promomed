@@ -14,6 +14,7 @@ on:
       - main
     paths:
       - ops/capture_portfolio_media.py
+      - ops/verify_portfolio_media.py
       - .github/workflows/portfolio-media-evidence.yml
       - public/**
   schedule:
@@ -68,6 +69,12 @@ jobs:
             --base-url http://127.0.0.1:10000 \
             --sha "${{ github.sha }}" \
             --out artifacts/portfolio/preview
+      - name: Verify media integrity and visual evidence
+        run: |
+          python ops/verify_portfolio_media.py \
+            --source preview \
+            --root artifacts/portfolio/preview \
+            --sha "${{ github.sha }}"
       - name: Validate archive manifest and provenance
         if: always()
         run: |
@@ -124,6 +131,12 @@ jobs:
             --base-url "$PROMOMED_PUBLIC_BASE_URL" \
             --sha "${{ github.sha }}" \
             --out artifacts/portfolio/live
+      - name: Verify real public media without claiming candidate deployed
+        run: |
+          python ops/verify_portfolio_media.py \
+            --source live \
+            --root artifacts/portfolio/live \
+            --sha "${{ github.sha }}"
       - name: Upload live media OR explicit HTTP failure report
         if: always()
         uses: actions/upload-artifact@v4
