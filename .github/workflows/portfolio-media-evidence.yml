@@ -79,7 +79,7 @@ jobs:
           data=json.loads(manifest.read_text())
           assert data.get("completed") is True, data.get("error")
           assets=data["assets"]
-          assert len([x for x in assets if x["type"]=="browser-video"])==2
+          assert len([x for x in assets if x["type"]=="browser-video"])==3
           assert len([x for x in assets if x["type"]=="browser-screenshot"])>=13
           assert data["source"]=="preview" and data["repository_sha"]
           assert data["health"]["git_commit"]==data["repository_sha"]
