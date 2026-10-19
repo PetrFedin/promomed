@@ -89,6 +89,22 @@ def _generic_request(request_id=None):
     }, 202
 
 
+def _lock_registration_identity(c, email):
+    """Serialize request/resend/verify transactions for the same email.
+
+    PostgreSQL: one transaction-scoped advisory lock keyed by normalized email.
+    SQLite: BEGIN IMMEDIATE before the first read of mutable signup state.
+    Do not store or log the email or verification code in lock metadata.
+    """
+    if db.backend_name() == "postgres":
+        c.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(CAST(? AS TEXT), 0))",
+            (email,),
+        )
+    else:
+        c.execute("BEGIN IMMEDIATE")
+
+
 def request_registration(data):
     identity = _identity(data)
     if identity is None:
@@ -99,9 +115,10 @@ def request_registration(data):
         return {"error": "registration_delivery_unavailable"}, 503
 
     email, name, password = identity
-    now = int(time.time())
     c = db.connect()
     try:
+        _lock_registration_identity(c, email)
+        now = int(time.time())
         account = c.execute(
             "SELECT 1 FROM accounts WHERE email=?", (email,)
         ).fetchone()
@@ -175,13 +192,30 @@ def verify_registration(data):
     if _secret() is None:
         return {"error": "registration_delivery_unavailable"}, 503
 
-    now = int(time.time())
     c = db.connect()
     try:
-        row = c.execute(
-            "SELECT * FROM participant_registration_requests WHERE id=?",
-            (request_id,),
-        ).fetchone()
+        if db.backend_name() == "postgres":
+            # An unprotected read resolves only the lock key. State is re-read
+            # after acquiring the same lock as request/resend transactions.
+            identity = c.execute(
+                "SELECT email FROM participant_registration_requests WHERE id=?",
+                (request_id,),
+            ).fetchone()
+            if identity is None:
+                return {"error": "invalid_verification"}, 422
+            _lock_registration_identity(c, identity["email"])
+            row = c.execute(
+                "SELECT * FROM participant_registration_requests WHERE id=? FOR UPDATE",
+                (request_id,),
+            ).fetchone()
+        else:
+            # Do not read the request before the SQLite write lock.
+            _lock_registration_identity(c, None)
+            row = c.execute(
+                "SELECT * FROM participant_registration_requests WHERE id=?",
+                (request_id,),
+            ).fetchone()
+        now = int(time.time())
         if not row or row["status"] != "pending":
             return {"error": "invalid_verification"}, 422
         if int(row["expires_at"]) <= now:
