@@ -10,6 +10,7 @@ import json
 import re
 import shutil
 import struct
+import zlib
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
@@ -47,12 +48,52 @@ def digest(path):
 
 def safe_path(root, name):
     check(isinstance(name, str) and name, "asset missing relative path")
-    check(not Path(name).is_absolute(), "absolute asset path forbidden")
-    check(".." not in Path(name).parts, "parent traversal forbidden")
-    path = (root / name).resolve()
-    check(path.is_relative_to(root.resolve()), "asset outside archive")
-    check(path.is_file() and not path.is_symlink(), "asset absent/symlink: " + name)
-    return path
+    relative = Path(name)
+    check(not relative.is_absolute(), "absolute asset path forbidden")
+    check(".." not in relative.parts, "parent traversal forbidden")
+    archive = root.resolve()
+    path = archive
+    # Resolve only AFTER rejecting symlinks at every intermediate path.
+    # A final .resolve().is_symlink() check would never catch a symlink.
+    for part in relative.parts:
+        path = path / part
+        check(not path.is_symlink(), "archive symlink forbidden: " + name)
+    resolved = path.resolve()
+    check(resolved.is_relative_to(archive), "asset outside archive")
+    check(resolved.is_file(), "asset absent: " + name)
+    return resolved
+
+
+def validate_png_chunks(path):
+    """Verify the complete PNG stream, CRCs and terminal IEND chunk."""
+    raw = path.read_bytes()
+    pos = 8
+    seen_ihdr = seen_idat = seen_iend = False
+    while pos + 12 <= len(raw):
+        length = struct.unpack(">I", raw[pos:pos + 4])[0]
+        end = pos + 12 + length
+        check(end <= len(raw), "truncated PNG chunk: " + path.name)
+        kind = raw[pos + 4:pos + 8]
+        check(all(65 <= b <= 90 or 97 <= b <= 122 for b in kind),
+              "invalid PNG chunk type: " + path.name)
+        actual_crc = struct.unpack(">I", raw[end - 4:end])[0]
+        expected_crc = zlib.crc32(raw[pos + 4:end - 4]) & 0xffffffff
+        check(actual_crc == expected_crc, "PNG CRC mismatch: " + path.name)
+        if kind == b"IHDR":
+            check(pos == 8 and length == 13 and not seen_ihdr,
+                  "unexpected PNG IHDR: " + path.name)
+            seen_ihdr = True
+        elif kind == b"IDAT":
+            seen_idat = True
+        elif kind == b"IEND":
+            check(length == 0 and end == len(raw),
+                  "trailing bytes or invalid PNG IEND: " + path.name)
+            seen_iend = True
+            break
+        pos = end
+    check(seen_ihdr and seen_idat and seen_iend,
+          "incomplete PNG chunk stream: " + path.name)
+
 
 
 def screenshot_ok(path, width):
@@ -66,6 +107,16 @@ def screenshot_ok(path, width):
     check(h >= 540, "unexpectedly short screenshot %s height=%s" % (path.name, h))
     check(h <= 30000, "unexpectedly tall screenshot " + path.name)
     check(path.stat().st_size >= 6000, "screenshot unexpectedly small " + path.name)
+    validate_png_chunks(path)
+    tool = shutil.which("ffmpeg")
+    check(tool is not None, "ffmpeg is required to decode PNG screenshots")
+    decoded = subprocess.run(
+        [tool, "-hide_banner", "-loglevel", "error", "-xerror",
+         "-i", str(path), "-frames:v", "1", "-f", "null", "-"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=45,
+    )
+    check(decoded.returncode == 0,
+          "PNG decode failed: " + path.name)
     return {"width": w, "height": h}
 
 
@@ -92,6 +143,10 @@ def frames_differ(video):
 
 
 def video_ok(path, expected_width):
+    with path.open("rb") as fh:
+        header = fh.read(12)
+    check(len(header) == 12 and header[4:8] == b"ftyp",
+          "video is not an MP4 container: " + path.name)
     tool = shutil.which("ffprobe")
     check(tool is not None, "ffprobe is required for MP4 inspection")
     info = run_json([tool, "-v", "error", "-show_streams", "-show_format",
@@ -106,7 +161,10 @@ def video_ok(path, expected_width):
     check(video.get("pix_fmt") == "yuv420p", "mobile-safe pixel format missing")
     check(video.get("width") == expected_width, "MP4 width mismatch " + path.name)
     height = int(video.get("height", 0))
-    check(height >= 600, "MP4 height unexpected " + path.name)
+    expected_height = 900 if expected_width == 1440 else 844
+    check(height == expected_height,
+          "MP4 viewport height mismatch %s: %s != %s" %
+          (path.name, height, expected_height))
     seconds = float(info.get("format", {}).get("duration", 0))
     check(24.2 <= seconds <= 25.1, "MP4 duration unexpected %s %.3fs" %
           (path.name, seconds))
@@ -117,7 +175,8 @@ def video_ok(path, expected_width):
 
 def validate_archive(root, source, sha):
     manifest_path = root / "manifest.json"
-    check(manifest_path.is_file(), "missing manifest.json")
+    check(manifest_path.is_file() and not manifest_path.is_symlink(),
+          "missing or symlinked manifest.json")
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
     check(source in EXPECTED_VIDEOS, "unknown source")
     check(data.get("completed") is True, "incomplete capture: " + str(data.get("error")))
@@ -193,7 +252,8 @@ def validate_archive(root, source, sha):
     check(len(set(photo_hashes)) >= 5, "screenshots do not vary between scenes")
 
     gallery = root / "index.html"
-    check(gallery.is_file() and gallery.stat().st_size > 1000, "missing media gallery")
+    check(gallery.is_file() and not gallery.is_symlink() and gallery.stat().st_size > 1000,
+          "missing or symlinked media gallery")
     gallery_text = gallery.read_text(encoding="utf-8")
     for rel in paths:
         check(rel in gallery_text, "gallery omits " + rel)
@@ -221,8 +281,10 @@ def main():
         "video_count": sum(x["file"].endswith(".mp4") for x in inspected),
         "screenshot_count": sum(x["file"].endswith(".png") for x in inspected),
         "checks": [
-            "source-and-SHA", "all-files-present", "checksum", "PNG-dimensions",
-            "H264-yuv420p", "video-25s", "non-static-video", "gallery-coverage",
+            "source-and-SHA", "all-files-present", "checksum", "symlink-rejection",
+            "PNG-chunk-CRC-and-full-decode", "PNG-dimensions",
+            "MP4-container", "H264-yuv420p", "video-viewport", "video-25s",
+            "non-static-video", "gallery-coverage",
             "live-vs-preview-labels",
         ],
     }
