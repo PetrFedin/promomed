@@ -74,3 +74,20 @@ As of 2026-10-18 external probes intermittently returned HTTP 503, but GitHub-ho
 Render workspace/service/deploy verification, robust public health and PostgreSQL
 production admission remain separate release requirements. A passing CI preview
 cannot close them.
+
+
+## Integrity hardening — proposed branch, 2026-10-19
+
+The archive gate now rejects symlinks at *every path component* (including
+directory aliases), and rejects symlinked manifest/gallery files. Screenshots
+must carry a complete PNG chunk stream with valid CRCs **and** decode as actual
+pixels using ffmpeg; an IHDR-only file is not proof of a valid screenshot.
+Video must have an MP4 container and an exact 390×844 or 1440×900 viewport,
+in addition to the existing H.264, duration and non-static-frame checks.
+Adversarial regression tests run before both media capture channels are
+considered releasable.
+
+This is proposed GitHub-only hardening, not a claim of improved live Render
+configuration, durable portfolio-hosting, or production PostgreSQL readiness.
+Published media still require rights/privacy/editorial review and permanent
+approved storage; CI artifacts still expire.
