@@ -1,5 +1,7 @@
 """REG-01 qualification for fail-closed participant self-registration."""
 import importlib
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event, Lock
 import os
 import tempfile
 import time
@@ -241,6 +243,128 @@ class ParticipantSelfRegistrationTests(unittest.TestCase):
                     return_value=(expected, 202),
                 ):
                     self.assertEqual(server.H.do_POST(h), (expected, 202))
+
+    def test_parallel_wrong_codes_do_not_lose_attempts(self):
+        submitted, sent = self.request_with_code()
+        bad = "000000" if sent["code"] != "000000" else "111111"
+        entered, second_started, release = Event(), Event(), Event()
+        guard, count = Lock(), [0]
+        original_hash = self_registration._code_hash
+
+        def held_hash(request_id, code):
+            with guard:
+                count[0] += 1
+                is_first = count[0] == 1
+            if is_first:
+                entered.set()
+                if not release.wait(8):
+                    raise AssertionError("first verification was not released")
+            return original_hash(request_id, code)
+
+        payload = {"request_id": submitted["requestId"], "code": bad}
+
+        def second_verify():
+            second_started.set()
+            return self_registration.verify_registration(dict(payload))
+
+        with patch("app.self_registration._code_hash", side_effect=held_hash):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(self_registration.verify_registration, dict(payload))
+                try:
+                    self.assertTrue(entered.wait(6), "first verifier did not start")
+                    second = pool.submit(second_verify)
+                    self.assertTrue(second_started.wait(6))
+                    time.sleep(0.25)
+                    with guard:
+                        self.assertEqual(count[0], 1, "second verifier bypassed the lock")
+                finally:
+                    release.set()
+                self.assertEqual(first.result(timeout=12)[1], 422)
+                self.assertEqual(second.result(timeout=12)[1], 422)
+
+        c = self.db.connect()
+        try:
+            record = c.execute(
+                "SELECT attempts,status FROM participant_registration_requests WHERE id=?",
+                (submitted["requestId"],),
+            ).fetchone()
+            self.assertEqual(record["attempts"], 2)
+            self.assertEqual(record["status"], "pending")
+        finally:
+            c.close()
+
+    def test_parallel_signup_delivers_only_one_pending_code(self):
+        delivered, second_started, release = Event(), Event(), Event()
+        guard, count = Lock(), [0]
+
+        def held_delivery(email, code, request_id):
+            with guard:
+                count[0] += 1
+            delivered.set()
+            if not release.wait(8):
+                raise AssertionError("first delivery was not released")
+
+        def second_request():
+            second_started.set()
+            return self_registration.request_registration(dict(self.payload))
+
+        with patch("app.self_registration.delivery_configured", return_value=True):
+            with patch("app.self_registration.send_verification", side_effect=held_delivery):
+                with ThreadPoolExecutor(max_workers=2) as pool:
+                    first = pool.submit(self_registration.request_registration, dict(self.payload))
+                    try:
+                        self.assertTrue(delivered.wait(6))
+                        second = pool.submit(second_request)
+                        self.assertTrue(second_started.wait(6))
+                        time.sleep(0.25)
+                        with guard:
+                            self.assertEqual(count[0], 1)
+                    finally:
+                        release.set()
+                    result1 = first.result(timeout=12)
+                    result2 = second.result(timeout=12)
+
+        self.assertEqual((result1[1], result2[1]), (202, 202))
+        with guard:
+            self.assertEqual(count[0], 1)
+        self.assertNotEqual(result1[0]["requestId"], result2[0]["requestId"])
+        self.assertEqual(
+            self.count("participant_registration_requests",
+                       "email=? AND status='pending'", (self.email,)),
+            1,
+        )
+
+    def test_parallel_correct_code_creates_only_one_account(self):
+        submitted, sent = self.request_with_code()
+        entered, second_started, release = Event(), Event(), Event()
+        original_hash = self_registration._code_hash
+
+        def held_hash(request_id, code):
+            entered.set()
+            if not release.wait(8):
+                raise AssertionError("verification was not released")
+            return original_hash(request_id, code)
+
+        payload = {"request_id": submitted["requestId"], "code": sent["code"]}
+
+        def second_verify():
+            second_started.set()
+            return self_registration.verify_registration(dict(payload))
+
+        with patch("app.self_registration._code_hash", side_effect=held_hash):
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                first = pool.submit(self_registration.verify_registration, dict(payload))
+                try:
+                    self.assertTrue(entered.wait(6))
+                    second = pool.submit(second_verify)
+                    self.assertTrue(second_started.wait(6))
+                finally:
+                    release.set()
+                results = [first.result(timeout=12), second.result(timeout=12)]
+
+        self.assertEqual(sorted(status for _, status in results), [201, 422])
+        self.assertEqual(self.count("accounts", "email=?", (self.email,)), 1)
+        self.assertEqual(self.count("auth_sessions", "email=?", (self.email,)), 1)
 
 
 if __name__ == "__main__":
