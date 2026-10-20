@@ -178,24 +178,31 @@ def handle_command(c,route,role,email,data):
             if expected!=0:
                 return error("version_conflict",409)
             version=1
-            c.execute(
+            inserted=c.execute(
                 "INSERT INTO partner_commercial_placements_v1("
                 "organization_id,status,version,updated_at,updated_by,demo_only"
-                ") VALUES(?,?,?,?,?,?)",
+                ") VALUES(?,?,?,?,?,?) "
+                "ON CONFLICT(organization_id) DO NOTHING",
                 (organization_id,state,version,now,email,int(admission["demo_only"])),
             )
+            # Another transaction may have won the initial insert.
+            if inserted.rowcount!=1:
+                return error("version_conflict",409)
         else:
             if int(existing["version"])!=expected:
                 return error("version_conflict",409)
             if existing["status"]=="ended":
                 return error("placement_ended",409)
             version=expected+1
-            c.execute(
+            changed=c.execute(
                 "UPDATE partner_commercial_placements_v1 "
                 "SET status=?,version=?,updated_at=?,updated_by=? "
-                "WHERE organization_id=? AND version=?",
+                "WHERE organization_id=? AND version=? AND status<>'ended'",
                 (state,version,now,email,organization_id,expected),
             )
+            # Compare-and-swap: the read version is not proof of a write.
+            if changed.rowcount!=1:
+                return error("version_conflict",409)
         row=_placement(c,organization_id)
         return custom({
             "placement":dict(row),
@@ -229,15 +236,28 @@ def handle_command(c,route,role,email,data):
             return custom({"lead":dict(prior),"replayed":True})
 
         lead_id=secrets.token_hex(16)
-        c.execute(
+        inserted=c.execute(
             "INSERT INTO participant_partner_leads_v1("
             "id,organization_id,email,request_key,kind,status,consent_at,created_at,"
-            "withdrawn_at,demo_only) VALUES(?,?,?,?,?,'submitted',?,?,NULL,?)",
+            "withdrawn_at,demo_only) VALUES(?,?,?,?,?,'submitted',?,?,NULL,?) "
+            "ON CONFLICT(email,request_key) DO NOTHING",
             (
                 lead_id,organization_id,email,request_key,kind,now,now,
                 int(org["demo_only"]),
             ),
         )
+        if inserted.rowcount!=1:
+            # First transaction committed the same idempotency key after
+            # our pre-read. A losing concurrent request must never crash
+            # with a unique constraint error or claim a second lead.
+            winner=c.execute(
+                "SELECT id,organization_id,kind,status,consent_at,created_at,withdrawn_at "
+                "FROM participant_partner_leads_v1 WHERE email=? AND request_key=?",
+                (email,request_key),
+            ).fetchone()
+            if not winner or winner["organization_id"]!=organization_id or winner["kind"]!=kind:
+                return error("idempotency_conflict",409)
+            return custom({"lead":dict(winner),"replayed":True})
         row=c.execute(
             "SELECT id,organization_id,kind,status,consent_at,created_at,withdrawn_at "
             "FROM participant_partner_leads_v1 WHERE id=?",
@@ -259,10 +279,12 @@ def handle_command(c,route,role,email,data):
         return error("lead_not_found",404)
     if row["status"]=="withdrawn":
         return custom({"leadId":lead_id,"status":"withdrawn","replayed":True})
-    c.execute(
+    changed=c.execute(
         "UPDATE participant_partner_leads_v1 "
         "SET status='withdrawn',withdrawn_at=? WHERE id=? AND email=? "
         "AND status='submitted'",
         (now,lead_id,email),
     )
-    return custom({"leadId":lead_id,"status":"withdrawn","replayed":False})
+    # Two concurrent withdrawals must not both report a new transition.
+    return custom({"leadId":lead_id,"status":"withdrawn",
+                   "replayed":changed.rowcount!=1})

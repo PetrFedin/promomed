@@ -295,6 +295,41 @@ class PartnerCommercialTests(unittest.TestCase):
         )
         self.assertEqual(withdrawn.status,200)
 
+    def test_stale_placement_and_withdraw_replay_are_not_new_transitions(self):
+        first=self.enable_org_a()
+        self.assertEqual(first.payload["placement"]["version"],1)
+        duplicate=self.cmd(
+            "partner",self.partner_a,action="placement_update",
+            organization_id="ORG-A",status="enabled",expected_version=0,
+        )
+        self.assertEqual(
+            (duplicate.status,duplicate.payload["error"]),
+            (409,"version_conflict"),
+        )
+        created=self.cmd(
+            "participant",self.participant,action="lead_submit",
+            organization_id="ORG-A",request_id="8"*32,
+            kind="materials",consent=True,
+        )
+        self.assertEqual(created.status,201)
+        lead_id=created.payload["lead"]["id"]
+        withdrawal=self.cmd(
+            "participant",self.participant,action="lead_withdraw",lead_id=lead_id
+        )
+        self.assertEqual(withdrawal.status,200)
+        self.assertFalse(withdrawal.payload["replayed"])
+        replay=self.cmd(
+            "participant",self.participant,action="lead_withdraw",lead_id=lead_id
+        )
+        self.assertEqual(replay.status,200)
+        self.assertTrue(replay.payload["replayed"])
+        self.assertEqual(
+            self.c.execute(
+                "SELECT COUNT(*) n FROM participant_partner_leads_v1 "
+                "WHERE email=? AND request_key=?",(self.participant,"8"*32),
+            ).fetchone()["n"],1,
+        )
+
 
 if __name__=="__main__":
     unittest.main()
