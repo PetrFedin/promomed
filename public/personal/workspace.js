@@ -4,10 +4,11 @@
   const EVENT_API="/api/event-registration/v1";
   const PARTNER_APPT="/api/partner-appointments/v1";
   const PARTNER_LEAD="/api/partner-commercial/v1";
+  const AGENDA="/api/participant-agenda/v1";
   const REG_REQUEST="/api/participant-registration/v1/request";
   const REG_VERIFY="/api/participant-registration/v1/verify";
   const $=id=>document.getElementById(id);
-  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,eventBusy:false,partnerBusy:false,registration:null,eventEditions:[]};
+  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,eventBusy:false,partnerBusy:false,registration:null,eventEditions:[],agenda:null};
 
   function message(text="",error=false){
     const n=$("notice");n.hidden=!text;n.textContent=text;n.classList.toggle("error",!!error);
@@ -30,10 +31,10 @@
     showAuthMode(mode);message("");
   }
   function clearSession(){
-    state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.eventBusy=false;state.partnerBusy=false;state.registration=null;state.eventEditions=[];
+    state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.eventBusy=false;state.partnerBusy=false;state.registration=null;state.eventEditions=[];state.agenda=null;
     $("workspace").hidden=true;$("signed-out").hidden=false;$("logout").hidden=true;
     $("login-button").disabled=false;$("signup-button").disabled=false;$("verify-button").disabled=false;$("save-note").disabled=true;$("logout-all").disabled=false;
-    $("password").value="";$("signup-name").value="";$("signup-email").value="";$("signup-password").value="";$("verify-code").value="";$("verify-email").textContent="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();$("event-registration-list").replaceChildren();$("partner-appointments").replaceChildren();$("partner-leads").replaceChildren();
+    $("password").value="";$("signup-name").value="";$("signup-email").value="";$("signup-password").value="";$("verify-code").value="";$("verify-email").textContent="";$("note-text").value="";$("notes").replaceChildren();$("bookings").replaceChildren();$("event-registration-list").replaceChildren();$("partner-appointments").replaceChildren();$("partner-leads").replaceChildren();$("participant-agenda").replaceChildren();$("agenda-export").disabled=true;
     showAuthMode("login");updateCount();
   }
   function stale(g,token){return g!==state.generation||token!==state.token;}
@@ -198,6 +199,62 @@
     }catch(e){fail(e,generation,"Изменение не подтверждено. Обновите данные и проверьте статус.");}
     finally{if(generation===state.generation){state.partnerBusy=false;button.disabled=false;}}
   }
+  function renderAgenda(data){
+    const root=$("participant-agenda");root.replaceChildren();
+    state.agenda=data;
+    const eligible=(data.items||[]).filter(x=>x.calendarEligible);
+    $("agenda-export").disabled=!state.token||eligible.length===0||!data.calendarIcs;
+    const conflictIds=new Set((data.conflicts||[]).flatMap(x=>[x.first,x.second]));
+    if(!data.items?.length){root.append(el("p","fine","Подтверждённых событий и встреч пока нет."));return;}
+    const labels={confirmed:"Подтверждено",booked:"Встреча подтверждена",
+      waitlist:"Лист ожидания",cancelled:"Отменено",unavailable:"Недоступно"};
+    const ordered=data.items.slice().sort((a,b)=>a.startsAt-b.startsAt);
+    for(const item of ordered){
+      const card=el("article","agendaItem");
+      const head=el("div","agendaItemHead");
+      const title=el("strong","",item.title);
+      const status=el("span","agendaStatus",labels[item.state]||item.state);
+      head.append(title,status);card.append(head);
+      const start=new Date(item.startsAt*1000).toLocaleString("ru-RU",
+        {day:"numeric",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+      const end=item.endsAt?new Date(item.endsAt*1000).toLocaleTimeString("ru-RU",
+        {hour:"2-digit",minute:"2-digit"}):null;
+      card.append(el("p","fine",end?start+" — "+end:start+" · Время окончания не указано"));
+      if(conflictIds.has(item.id))card.append(el("p","agendaWarning",
+        "Есть пересечение с другой подтверждённой встречей."));
+      if(item.kind==="event_edition")card.append(el("p","fine",
+        "Регистрация на событие не означает посещение."));
+      root.append(card);
+    }
+    if(data.truncated)root.append(el("p","agendaWarning",
+      "Показана часть записей. Экспорт может быть неполным."));
+    if(eligible.some(x=>x.kind==="event_edition"))root.append(el("p","fine",
+      "Для событий известен только момент начала. Конфликты с ними определить нельзя."));
+  }
+  async function refreshAgenda(){
+    const g=state.generation;
+    try{
+      const data=await request(AGENDA);
+      if(stale(g,state.token)||!state.token)return;
+      renderAgenda(data);
+    }catch(e){
+      if(e?.stale||g!==state.generation)return;
+      if(e?.status===401||e?.status===403){fail(e,g);return;}
+      const root=$("participant-agenda");root.replaceChildren(
+        el("p","fine","Расписание временно недоступно. Обновите данные."));
+      state.agenda=null;$("agenda-export").disabled=true;
+    }
+  }
+  $("agenda-export").addEventListener("click",()=>{
+    if(!state.token||!state.agenda?.calendarIcs)return;
+    const link=document.createElement("a");
+    const file=new Blob([state.agenda.calendarIcs],{type:"text/calendar;charset=utf-8"});
+    const href=URL.createObjectURL(file);
+    link.href=href;link.download="sostoyanie-my-agenda.ics";
+    document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(href),1500);
+  });
+
   async function refreshPartner(){
     const generation=state.generation;
     const responses=await Promise.allSettled([request(PARTNER_APPT),request(PARTNER_LEAD)]);
@@ -217,7 +274,7 @@
     const g=state.generation;
     const [data,eventData]=await Promise.all([request(API),request(EVENT_API)]);
     if(g!==state.generation)return;render(data);renderEventRegistrations(eventData);
-    await refreshPartner();
+    await Promise.all([refreshPartner(),refreshAgenda()]);
   }
   $("login-form").addEventListener("submit",async e=>{
     e.preventDefault();
