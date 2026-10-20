@@ -11,6 +11,7 @@ on:
       - feat/portfolio-live-media-evidence-2026-10-18
       - fix/p0-portfolio-media-archive-integrity-2026-10-19
       - fix/p0-partner-binding-revocation-2026-10-20
+      - fix/p0-commercial-write-atomicity-2026-10-20
       - fix/p0-registration-restore-qualification-2026-10-17
 
 concurrency:

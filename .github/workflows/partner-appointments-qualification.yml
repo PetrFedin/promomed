@@ -9,6 +9,7 @@ on:
       - fix/p0-partner-appointment-lifecycle-2026-10-16
       - feat/p0-participant-partner-links-2026-10-16
       - fix/p0-partner-binding-revocation-2026-10-20
+      - fix/p0-commercial-write-atomicity-2026-10-20
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

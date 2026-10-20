@@ -22,3 +22,13 @@ This is a confirmed source-level authority-revocation inconsistency, not evidenc
 
 ## Release boundaries
 Nonempty partner_id is not sufficient alone: verified staff membership continues to be mandatory. This change is scoped to the partner commercial and appointment surfaces; broader institutional access requires separate review. Production remains HOLD until #64 (Render configuration), #65 (isolated PostgreSQL), #94 (release governance), complete exact-SHA CI and independent privacy/security approval.
+
+## Next stacked admission: parallel commercial writes, 2026-10-20
+
+Concurrent placement create uses INSERT ON CONFLICT DO NOTHING plus rowcount CAS.
+Concurrent placement updates add version AND status guard and check rowcount.
+Concurrent participant lead submissions with one idempotency key return the same existing lead, not a duplicate or database exception.
+Repeated withdrawals use the affected-row count so only the first change reports replayed=false.
+PostgreSQL 17 tests coordinate independent database connections at the stale read boundary and verify exactly one successful placement transition and one durable lead.
+SQLite tests cover first placement conflict and withdrawal idempotency.
+These controls do not determine collaboration project authorization; issue #133 remains open.
