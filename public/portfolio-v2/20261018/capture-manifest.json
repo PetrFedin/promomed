@@ -1,0 +1,38 @@
+{
+  "project": "sostoyanie",
+  "source_sha": "42ad14b9e356a10a39dea4c983783affc7d7a05c",
+  "source_action_artifact": 12148448455,
+  "source_kind": "independent-public-preview",
+  "captured_on": "2026-10-18",
+  "files": [
+    {
+      "name": "desktop-today.png",
+      "sha256": "f69f2d7005878998dfb137abcf24a28c66aed4c92a0919615351d393f1d9b195"
+    },
+    {
+      "name": "desktop-media.png",
+      "sha256": "61eae7ed19ec310c33046ef30ce3e51d9968738b8690ba5d85238a024b7f522e"
+    },
+    {
+      "name": "desktop-events.png",
+      "sha256": "22c1098910d418a846498ce3d56f7b0c5689a8f23d48acf870160b87a1b3e5fc"
+    },
+    {
+      "name": "iphone-15-today.png",
+      "sha256": "f9bd28b2c1f3df670c8c441ee5ee22131d8f930d2268fa94295522e48092d56c"
+    },
+    {
+      "name": "iphone-15-events.png",
+      "sha256": "1baf7d75cdc15b281ab5055c5c09f4cb948b781408c2f716fa9a8e8fd142f235"
+    },
+    {
+      "name": "desktop-journey-25s.mp4",
+      "sha256": "71b0f5eb5e0919adc8b7f1a975456c6ba3b116f96cfbb772f5fa6fc27373b82e"
+    },
+    {
+      "name": "iphone-journey-25s.mp4",
+      "sha256": "d94944ba53023d58857e2e647ae36e603582ccb32629c3f226e8c30635dcbdfe"
+    }
+  ],
+  "production_admitted": false
+}
