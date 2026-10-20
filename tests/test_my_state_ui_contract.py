@@ -45,6 +45,17 @@ class MyStateUiContractTests(unittest.TestCase):
         self.assertIn('Promise.allSettled([request(PARTNER_APPT),request(PARTNER_LEAD)])',JS)
         self.assertNotIn('innerHTML',JS)
 
+    def test_unified_agenda_is_scoped_and_calendar_download_is_explicit(self):
+        self.assertIn('const AGENDA="/api/participant-agenda/v1"',JS)
+        self.assertIn('request(AGENDA)',JS)
+        self.assertIn('id="participant-agenda"',HTML)
+        self.assertIn('id="agenda-export"',HTML)
+        self.assertIn('new Blob([state.agenda.calendarIcs]',JS)
+        self.assertIn('eligible.length===0',JS)
+        self.assertIn("refreshAgenda()",JS)
+        self.assertIn("textContent",JS)
+        self.assertNotIn("innerHTML",JS)
+
     def test_bearer_token_is_memory_only(self):
         self.assertNotIn("localStorage", JS)
         self.assertNotIn("sessionStorage", JS)

@@ -87,6 +87,16 @@
         </div>
         <p class="fine">Регистрация подтверждает место или очередь, но не является фактом посещения.</p>
       </section>
+      <section class="card agendaCard" aria-labelledby="agenda-heading">
+        <div class="agendaHeader">
+          <div><p class="eyebrow">МОЁ РАСПИСАНИЕ</p><h3 class="sideTitle" id="agenda-heading">События и встречи</h3></div>
+          <button id="agenda-export" class="outline agendaExport" type="button" disabled>Календарь .ics</button>
+        </div>
+        <div id="participant-agenda" aria-live="polite" aria-atomic="false">
+          <p class="fine">Загрузка записей…</p>
+        </div>
+        <p class="fine">В календарь входят только подтверждённые записи с известным временем. Очередь ожидания, отмены и недоступные встречи не экспортируются. Время окончания мероприятия не выдумывается.</p>
+      </section>
       <section class="card">
         <p class="eyebrow">МОИ ЗАПИСИ</p><div id="bookings"></div>
         <p class="fine">Идентификатор бронирования и статус — без подстановки непроверенного публичного каталога.</p>

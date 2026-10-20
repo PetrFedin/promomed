@@ -12,6 +12,7 @@ on:
       - fix/p0-portfolio-media-archive-integrity-2026-10-19
       - fix/p0-partner-binding-revocation-2026-10-20
       - fix/p0-commercial-write-atomicity-2026-10-20
+      - feat/participant-unified-agenda-2026-10-20
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -63,6 +64,7 @@ jobs:
           python tests/test_pilot_revenue_browser.py
           python tests/test_session_revocation_browser.py
           python tests/test_my_state_browser.py
+          python tests/test_participant_agenda_browser.py
           python tests/test_registration_ui_browser.py
           python tests/test_event_registration_ui_browser.py
           python tests/test_public_guest_browser.py
