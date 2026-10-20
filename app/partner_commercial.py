@@ -170,7 +170,7 @@ def handle_command(c,route,role,email,data):
         expected=data.get("expected_version")
         if not organization_id or not isinstance(state,str) or state not in PLACEMENT_STATES or type(expected) is not int or expected<0:
             return error("invalid_request",422)
-        admission=partner_org_scope.member(c,organization_id,email)
+        admission=partner_org_scope.commercial_member(c,organization_id,email)
         if admission is None:
             return error("organization_not_found",404)
         existing=_placement(c,organization_id)
