@@ -41,7 +41,7 @@ def _target_org(c,organization_id):
         "WHERE id=? AND status='active'",
         (organization_id,),
     ).fetchone()
-    if not row or not row["partner_id"]:
+    if not row or not isinstance(row["partner_id"], str) or not row["partner_id"].strip():
         return None
     if not db.demo_seed_enabled() and int(row["demo_only"] or 0)!=0:
         return None
@@ -65,6 +65,7 @@ def _partner_snapshot(c,email):
            JOIN accounts a ON a.email=m.account_email
            WHERE m.account_email=? AND a.status='active' AND a.role='partner'
              AND o.status='active' AND m.status='active'
+             AND LENGTH(TRIM(o.partner_id))>0
              AND m.member_role IN ('operator','administrator')
              AND m.effective_at<=?
              AND (m.expires_at IS NULL OR m.expires_at>?)
@@ -169,7 +170,7 @@ def handle_command(c,route,role,email,data):
         expected=data.get("expected_version")
         if not organization_id or not isinstance(state,str) or state not in PLACEMENT_STATES or type(expected) is not int or expected<0:
             return error("invalid_request",422)
-        admission=partner_org_scope.member(c,organization_id,email)
+        admission=partner_org_scope.commercial_member(c,organization_id,email)
         if admission is None:
             return error("organization_not_found",404)
         existing=_placement(c,organization_id)

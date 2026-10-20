@@ -173,6 +173,57 @@ class PartnerAppointmentPostgresTests(unittest.TestCase):
         finally:
             c.close()
 
+    def test_partner_unbinding_hides_slot_and_keeps_owner_cancellation(self):
+        c=db.connect()
+        try:
+            first=partner_appointments.handle_command(
+                c,partner_appointments.ROUTE,"participant",self.users[0],
+                {"action":"book","slot_id":self.slot_id,"contact_consent":True},
+            )
+            self.assertEqual(first.status,201)
+            c.commit()
+            second=partner_appointments.handle_command(
+                c,partner_appointments.ROUTE,"participant",self.users[1],
+                {"action":"book","slot_id":self.slot_id,"contact_consent":True},
+            )
+            self.assertEqual(second.status,201)
+            self.assertEqual(second.payload["appointment"]["status"],"waitlist")
+            c.commit()
+            c.execute(
+                "UPDATE institutional_organizations SET partner_id=NULL WHERE id=?",
+                (self.org,),
+            )
+            c.commit()
+            hidden,status=partner_appointments.read(
+                c,partner_appointments.ROUTE,"partner",self.partner
+            )
+            self.assertEqual(status,200)
+            self.assertEqual(hidden["organizations"],[])
+            denied=partner_appointments.handle_command(
+                c,partner_appointments.ROUTE,"partner",self.partner,
+                {"action":"slot_update","slot_id":self.slot_id,"expected_version":1,
+                 "starts_at":self.now+3600,"ends_at":self.now+5400,
+                 "capacity":1,"status":"closed"},
+            )
+            self.assertEqual(
+                (denied.status,denied.payload["error"]), (404,"slot_not_found")
+            )
+            c.rollback()
+            cancelled=partner_appointments.handle_command(
+                c,partner_appointments.ROUTE,"participant",self.users[0],
+                {"action":"cancel","slot_id":self.slot_id},
+            )
+            self.assertEqual(cancelled.status,200)
+            self.assertFalse(cancelled.payload["queuePromotionOccurred"])
+            c.commit()
+            still_waiting=c.execute(
+                "SELECT status FROM participant_partner_appointments_v1 "
+                "WHERE slot_id=? AND email=?",(self.slot_id,self.users[1])
+            ).fetchone()
+            self.assertEqual(still_waiting["status"],"waitlist")
+        finally:
+            c.close()
+
 
 if __name__=="__main__":
     unittest.main()

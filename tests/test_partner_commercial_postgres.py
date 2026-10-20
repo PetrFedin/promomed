@@ -180,6 +180,56 @@ class PartnerCommercialPostgresTests(unittest.TestCase):
         finally:
             c.close()
 
+    def test_partner_unbinding_revokes_existing_lead_and_placement_access(self):
+        c=db.connect()
+        try:
+            enabled=self.command(
+                c,"partner",self.partner_a,action="placement_update",
+                organization_id=self.org_a,status="enabled",expected_version=0,
+            )
+            self.assertEqual(enabled.status,201)
+            lead=self.command(
+                c,"participant",self.participant,action="lead_submit",
+                organization_id=self.org_a,request_id="d"*32,
+                kind="materials",consent=True,
+            )
+            self.assertEqual(lead.status,201)
+            lead_id=lead.payload["lead"]["id"]
+            c.execute(
+                "UPDATE institutional_organizations SET partner_id=NULL WHERE id=?",
+                (self.org_a,),
+            )
+            c.commit()
+            hidden,status=partner_commercial.read(
+                c,partner_commercial.ROUTE,"partner",self.partner_a
+            )
+            self.assertEqual(status,200)
+            self.assertEqual(hidden["organizations"],[])
+            denied=self.command(
+                c,"partner",self.partner_a,action="placement_update",
+                organization_id=self.org_a,status="paused",expected_version=1,
+            )
+            self.assertEqual(
+                (denied.status,denied.payload["error"]),
+                (404,"organization_not_found"),
+            )
+            new_lead=self.command(
+                c,"participant",self.participant,action="lead_submit",
+                organization_id=self.org_a,request_id="a"*32,
+                kind="follow_up",consent=True,
+            )
+            self.assertEqual(
+                (new_lead.status,new_lead.payload["error"]),
+                (404,"organization_not_found"),
+            )
+            withdrawn=self.command(
+                c,"participant",self.participant,action="lead_withdraw",
+                lead_id=lead_id,
+            )
+            self.assertEqual(withdrawn.status,200)
+        finally:
+            c.close()
+
 
 if __name__=="__main__":
     unittest.main()

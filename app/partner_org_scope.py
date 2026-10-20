@@ -96,3 +96,24 @@ def partner_organizations(c,email):
     )
     # At this stage the collaboration lifecycle is demonstrational only.
     return [dict(row) for row in q if int(row["demo_only"])==1]
+
+
+def commercial_member(c, organization_id, email):
+    """Partner-scoped commercial authority requires a current partner binding.
+
+    Verified membership alone does not authorize access after a partner is
+    unassigned from the organization. Other collaboration authorities keep
+    their existing, independent membership rules.
+    """
+    admission = member(c, organization_id, email)
+    if admission is None:
+        return None
+    row = c.execute(
+        "SELECT partner_id,demo_only FROM institutional_organizations "
+        "WHERE id=? AND status='active'", (organization_id,),
+    ).fetchone()
+    if not row or not isinstance(row["partner_id"], str) or not row["partner_id"].strip():
+        return None
+    if not db.demo_seed_enabled() and int(row["demo_only"] or 0) != 0:
+        return None
+    return admission

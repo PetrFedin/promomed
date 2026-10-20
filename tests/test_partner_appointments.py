@@ -377,6 +377,49 @@ class PartnerAppointmentTests(unittest.TestCase):
         )
         self.assertEqual(out.status,403)
 
+    def test_unbound_partner_cannot_read_or_change_slot_but_owner_can_cancel(self):
+        slot=self.create_slot(capacity=1)
+        self.assertEqual(
+            self.cmd("participant",self.participant_a,action="book",
+                     slot_id=slot,contact_consent=True).status,201
+        )
+        self.assertEqual(
+            self.cmd("participant",self.participant_b,action="book",
+                     slot_id=slot,contact_consent=True).status,201
+        )
+        self.c.execute(
+            "UPDATE institutional_organizations SET partner_id=NULL WHERE id='ORG-A'"
+        )
+        self.c.commit()
+        hidden,status=partner_appointments.read(
+            self.c,partner_appointments.ROUTE,"partner",self.partner_a
+        )
+        self.assertEqual(status,200)
+        self.assertNotIn(self.participant_a,str(hidden))
+        self.assertEqual(
+            [x["organizationId"] for x in hidden["organizations"]],[]
+        )
+        denied=self.cmd(
+            "partner",self.partner_a,action="slot_update",slot_id=slot,
+            expected_version=1,starts_at=self.now+3600,
+            ends_at=self.now+5400,capacity=1,status="closed",
+        )
+        self.assertEqual((denied.status,denied.payload["error"]),
+                         (404,"slot_not_found"))
+        denied_create=self.cmd(
+            "partner",self.partner_a,action="slot_create",
+            organization_id="ORG-A",starts_at=self.now+7200,
+            ends_at=self.now+8100,capacity=1,
+        )
+        self.assertEqual((denied_create.status,denied_create.payload["error"]),
+                         (404,"organization_not_found"))
+        cancelled=self.cmd(
+            "participant",self.participant_a,action="cancel",slot_id=slot
+        )
+        self.assertEqual(cancelled.status,200)
+        self.assertFalse(cancelled.payload["queuePromotionOccurred"])
+        self.assertEqual(self.booking_status(slot,self.participant_b),"waitlist")
+
 
 if __name__=="__main__":
     unittest.main()
