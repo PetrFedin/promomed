@@ -244,6 +244,57 @@ class PartnerCommercialTests(unittest.TestCase):
         self.assertFalse(payload["truthBoundary"]["revenueClaimed"])
         self.assertNotIn("contracted",str(payload).lower())
 
+    def test_unbound_partner_cannot_read_contacts_or_modify_placement(self):
+        self.enable_org_a()
+        lead=self.cmd(
+            "participant",self.participant,
+            action="lead_submit",organization_id="ORG-A",
+            request_id="f"*32,kind="follow_up",consent=True,
+        )
+        self.assertEqual(lead.status,201)
+        lead_id=lead.payload["lead"]["id"]
+        before,_=partner_commercial.read(
+            self.c,partner_commercial.ROUTE,"partner",self.partner_a
+        )
+        self.assertIn(self.participant,str(before))
+        for unbound_value in (None, "   "):
+            with self.subTest(value=unbound_value):
+                self.c.execute(
+                    "UPDATE institutional_organizations SET partner_id=? WHERE id='ORG-A'",
+                    (unbound_value,),
+                )
+                self.c.commit()
+                hidden,status=partner_commercial.read(
+                    self.c,partner_commercial.ROUTE,"partner",self.partner_a
+                )
+                self.assertEqual(status,200)
+                self.assertEqual(hidden["organizations"],[])
+                denied=self.cmd(
+                    "partner",self.partner_a,action="placement_update",
+                    organization_id="ORG-A",status="paused",expected_version=1,
+                )
+                self.assertEqual(
+                    (denied.status,denied.payload["error"]),
+                    (404,"organization_not_found"),
+                )
+                no_new_lead=self.cmd(
+                    "participant",self.participant,action="lead_submit",
+                    organization_id="ORG-A",request_id="d"*32,
+                    kind="materials",consent=True,
+                )
+                self.assertEqual(
+                    (no_new_lead.status,no_new_lead.payload["error"]),
+                    (404,"organization_not_found"),
+                )
+        owner,_=partner_commercial.read(
+            self.c,partner_commercial.ROUTE,"participant",self.participant
+        )
+        self.assertEqual(owner["myLeads"][0]["id"],lead_id)
+        withdrawn=self.cmd(
+            "participant",self.participant,action="lead_withdraw",lead_id=lead_id
+        )
+        self.assertEqual(withdrawn.status,200)
+
 
 if __name__=="__main__":
     unittest.main()

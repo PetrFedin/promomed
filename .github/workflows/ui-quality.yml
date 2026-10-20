@@ -13,6 +13,7 @@ on:
       - fix/p0-integrated-admission-evidence-2026-10-16
       - feat/portfolio-live-media-evidence-2026-10-18
       - fix/p0-portfolio-media-archive-integrity-2026-10-19
+      - fix/p0-partner-binding-revocation-2026-10-20
   pull_request:
     branches:
       - main

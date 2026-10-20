@@ -75,6 +75,7 @@ def _partner_snapshot(c,email):
            JOIN accounts a ON a.email=m.account_email
            WHERE m.account_email=? AND a.status='active' AND a.role='partner'
              AND o.status='active' AND m.status='active'
+             AND LENGTH(TRIM(o.partner_id))>0
              AND m.member_role IN ('operator','administrator')
              AND m.effective_at<=?
              AND (m.expires_at IS NULL OR m.expires_at>?)
@@ -225,7 +226,7 @@ def handle_command(c,route,role,email,data):
             or capacity>1000
         ):
             return error("invalid_request",422)
-        membership=partner_org_scope.member(c,organization_id,email)
+        membership=partner_org_scope.commercial_member(c,organization_id,email)
         if membership is None or not _placement_enabled(c,organization_id):
             return error("organization_not_found",404)
         slot_id=secrets.token_hex(16)
@@ -266,7 +267,7 @@ def handle_command(c,route,role,email,data):
         ):
             return error("invalid_request",422)
         slot=_slot(c,slot_id,lock=True)
-        if slot is None or partner_org_scope.member(c,slot["organization_id"],email) is None:
+        if slot is None or partner_org_scope.commercial_member(c,slot["organization_id"],email) is None:
             return error("slot_not_found",404)
         if slot["status"]=="cancelled":
             return error("slot_cancelled",409)

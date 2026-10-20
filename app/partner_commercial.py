@@ -41,7 +41,7 @@ def _target_org(c,organization_id):
         "WHERE id=? AND status='active'",
         (organization_id,),
     ).fetchone()
-    if not row or not row["partner_id"]:
+    if not row or not isinstance(row["partner_id"], str) or not row["partner_id"].strip():
         return None
     if not db.demo_seed_enabled() and int(row["demo_only"] or 0)!=0:
         return None
