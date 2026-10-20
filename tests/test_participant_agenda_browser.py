@@ -5,11 +5,14 @@ Synthetic fixture is written into the isolated GitHub browser CI SQLite only.
 import os
 import secrets
 import sqlite3
+import sys
 import time
 from pathlib import Path
 
 from playwright.sync_api import expect, sync_playwright
 
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 from app.auth import hash_password
 
 BASE=os.environ.get("PROMOMED_BASE_URL","http://127.0.0.1:10000").rstrip("/")

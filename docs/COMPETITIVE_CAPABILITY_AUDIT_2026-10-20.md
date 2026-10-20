@@ -102,3 +102,19 @@ For each feature demand: source URL + source date (when known); exact code SHA; 
 - Latest source code is stacked Draft PR, not public Render. No production deployment or commercial offer implied.
 - Medical/health personalization, drug recommendation, diagnosis and patient records are outside MVP.
 - No cost/ROI/business outcome has been established by these source comparisons.
+
+## 7. Medical-professional platforms — supplementary functional comparison
+
+The event SaaS category is not enough for health media. Medical-learning and professional tools expose additional mechanisms that must be **governed separately** from consumer participation and commercial partner leads.
+
+| Reference | Region | Publicly described specialty/medical function | Promomed comparison and disposition | Source |
+|---|---|---|---|---|
+| Medpoint | Russia | Physician-targeted educational portal, webinar activity and an NMO code workflow (provider's claim; program-level confirmation required) | **GAP / GATED** for verified HCP identity and accredited education; define provider-level accreditation proof before awarding credits | https://medpoint.pro/about |
+| Врачи РФ | Russia | Doctor-edited professional newsfeed, specialty-specific digest and upcoming medical-event mailings | **CODE + P1 GAP:** content subscriptions exist, verified HCP segmentation and profession-only digest still gated | https://vrachirf.ru/ |
+| Росмедлиб / Консультант врача | Russia | Professional medical literature, categorized guidelines, reference materials and AI-assisted navigation | **CODE + GATED:** evidence graph/semantic discovery patterns; external content requires a valid licence, and guidance is not automatically a clinical recommendation | https://www.rosmedlib.ru/index.html |
+| Medscape Education | International (US) | CME/CE activities with objectives, financial relationship disclosures, assessments and activity-specific completion certificates | **CODE + GATED:** reviewed learning artifacts exist in code; accredited certificates/CME provider authority not proven; US accreditation is not Russian NMO | https://www.medscape.org/viewarticle/570242 |
+| Doximity | International (US) | Professional identity/network, relevant medical information and communications | **GATED:** legal HCP identity and doctor-only communication are distinct from ordinary consumer community and patient data | https://www.doximity.com/ |
+
+Source caveat: Medscape activity URL is an earlier educational illustration; no assertion of the provider's latest course list or current credit count. Medpoint, Врачи РФ and Росмедлиб descriptions are publisher self-descriptions, not third-party audits. Medical usage must not conflate professional educational evidence with medicine prescribing, patient-level data or sales influence.
+
+**P1 physician-education backlog:** governed identity and verification of qualifications; specialist opt-in digest; disclosure of sponsors and conflicts; licensed links to clinical sources and human-reviewed material; content change/retraction alerts; assessment outcome evidence; clear separation of course-completion statement from accredited credit. Professional use case and validation are tracked in [Issue #138](https://github.com/PetrFedin/promomed/issues/138); production remains gated.
