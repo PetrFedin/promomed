@@ -281,6 +281,45 @@ class EvidenceInterchangeTests(unittest.TestCase):
         self.assertFalse(one["truthBoundary"]["medicalEfficacyCertified"])
         self.assertEqual(one["lifecycle"][-1]["event"],"corrected_package_published")
 
+    def test_metadata_refresh_never_implicitly_unbinds_partner(self):
+        """The optional binding must not mean revocation when omitted."""
+        organization_id="INST-BINDING-TEST"
+        args={
+            "organization_id":organization_id,
+            "name":"Synthetic partner institution",
+            "organization_type":"strategic_partner",
+            "actor":"governance@test",
+            "external_ref":"urn:synthetic:binding",
+            "credential_source":"test-only",
+            "demo_only":True,
+        }
+        created=evidence_interchange.register_organization(self.c,**args)
+        self.assertIsNone(created["partner_id"])
+        # A separately governed binding exists before routine metadata refresh.
+        self.c.execute(
+            "UPDATE institutional_organizations SET partner_id=? WHERE id=?",
+            ("synthetic-bound-partner",organization_id),
+        )
+        self.c.commit()
+        refreshed=evidence_interchange.register_organization(
+            self.c,**{**args,"name":"Synthetic partner institution v2"}
+        )
+        self.assertEqual(refreshed["partner_id"],"synthetic-bound-partner")
+        self.assertEqual(refreshed["name"],"Synthetic partner institution v2")
+        with self.assertRaisesRegex(ValueError,"partner_id_invalid"):
+            evidence_interchange.register_organization(
+                self.c,**{**args,"partner_id":" "}
+            )
+        self.assertEqual(
+            evidence_interchange.organization(self.c,organization_id)["partner_id"],
+            "synthetic-bound-partner",
+        )
+        unbound=evidence_interchange.register_organization(
+            self.c,**{**args,"partner_id":None}
+        )
+        self.assertIsNone(unbound["partner_id"])
+
+
 
 if __name__=="__main__":
     unittest.main()

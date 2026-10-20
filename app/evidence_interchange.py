@@ -24,6 +24,9 @@ ORGANIZATION_TYPES={
 }
 ROLE_SCOPES={"publisher","consumer","contributor"}
 
+# Omission is not a revocation. Explicit None remains a separate operation.
+_PARTNER_BINDING_UNSPECIFIED=object()
+
 
 def _canonical(value):
     return json.dumps(value,ensure_ascii=False,sort_keys=True,separators=(",",":"),default=str)
@@ -46,7 +49,8 @@ def _demo_only(c,artifact_kind,artifact_ref):
 
 def register_organization(
     c,*,organization_id,name,organization_type,actor,
-    external_ref="",credential_source="",partner_id=None,demo_only=False,
+    external_ref="",credential_source="",partner_id=_PARTNER_BINDING_UNSPECIFIED,
+    demo_only=False,
 ):
     organization_id=str(organization_id or "").strip()[:100]
     name=str(name or "").strip()[:240]
@@ -64,10 +68,15 @@ def register_organization(
             raise ValueError("organization_not_active")
         if int(existing["demo_only"])!=int(bool(demo_only)):
             raise ValueError("organization_demo_boundary_mismatch")
-    if partner_id:
-        partner=c.execute("SELECT id FROM partners WHERE id=?",(str(partner_id),)).fetchone()
+    binding_supplied=partner_id is not _PARTNER_BINDING_UNSPECIFIED
+    if binding_supplied and partner_id is not None:
+        if not isinstance(partner_id,str) or not partner_id.strip():
+            raise ValueError("partner_id_invalid")
+        partner_id=partner_id.strip()
+        partner=c.execute("SELECT id FROM partners WHERE id=?",(partner_id,)).fetchone()
         if not partner:
             raise ValueError("partner_not_found")
+    inserted_partner_id=partner_id if binding_supplied else None
     now=int(time.time())
     c.execute(
         """INSERT INTO institutional_organizations(
@@ -79,10 +88,12 @@ def register_organization(
              organization_type=excluded.organization_type,
              external_ref=excluded.external_ref,
              credential_source=excluded.credential_source,
-             partner_id=excluded.partner_id""",
+             partner_id=CASE WHEN ?=1 THEN excluded.partner_id
+                              ELSE institutional_organizations.partner_id END""",
         (
             organization_id,name,organization_type,str(external_ref or "")[:400],
-            str(credential_source or "")[:400],partner_id,now,actor,int(bool(demo_only)),
+            str(credential_source or "")[:400],inserted_partner_id,
+            now,actor,int(bool(demo_only)),int(binding_supplied),
         ),
     )
     return organization(c,organization_id)
