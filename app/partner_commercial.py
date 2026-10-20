@@ -65,6 +65,7 @@ def _partner_snapshot(c,email):
            JOIN accounts a ON a.email=m.account_email
            WHERE m.account_email=? AND a.status='active' AND a.role='partner'
              AND o.status='active' AND m.status='active'
+             AND LENGTH(TRIM(o.partner_id))>0
              AND m.member_role IN ('operator','administrator')
              AND m.effective_at<=?
              AND (m.expires_at IS NULL OR m.expires_at>?)
