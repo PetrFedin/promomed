@@ -93,7 +93,7 @@ def register_organization(
             raise ValueError("partner_not_found")
     inserted_partner_id=partner_id if binding_supplied else None
     now=int(time.time())
-    c.execute(
+    changed=c.execute(
         """INSERT INTO institutional_organizations(
              id,name,organization_type,status,external_ref,credential_source,partner_id,
              created_at,created_by,demo_only
@@ -106,7 +106,9 @@ def register_organization(
              credential_source=CASE WHEN ?=1 THEN excluded.credential_source
                                     ELSE institutional_organizations.credential_source END,
              partner_id=CASE WHEN ?=1 THEN excluded.partner_id
-                              ELSE institutional_organizations.partner_id END""",
+                              ELSE institutional_organizations.partner_id END
+           WHERE institutional_organizations.status='active'
+             AND institutional_organizations.demo_only=excluded.demo_only""",
         (
             organization_id,name,organization_type,external_value,
             credential_value,inserted_partner_id,
@@ -114,6 +116,11 @@ def register_organization(
             int(credential_supplied),int(binding_supplied),
         ),
     )
+    # A pre-read is advisory only: another process may concurrently insert an
+    # organization or revoke/reclassify it. The UPSERT predicate is atomic
+    # across PostgreSQL and SQLite, so a conflicting row never mutates.
+    if changed.rowcount!=1:
+        raise ValueError("organization_concurrent_boundary_conflict")
     return organization(c,organization_id)
 
 

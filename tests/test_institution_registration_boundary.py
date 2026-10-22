@@ -249,6 +249,61 @@ class InstitutionRegistrationBoundaryTests(unittest.TestCase):
         ).fetchone()["n"])
         self.assertEqual(unchanged,after)
 
+    def test_atomic_upsert_rejects_stale_demo_or_revoked_row(self):
+        # Simulate a second process inserting/changing an organization after
+        # the caller's pre-read but before ON CONFLICT executes.
+        class Missing:
+            def fetchone(self):
+                return None
+        class Stale:
+            def __init__(self,raw):
+                self.raw=raw
+            def execute(self,sql,params=()):
+                if "SELECT status,demo_only FROM institutional_organizations" in sql:
+                    return Missing()
+                return self.raw.execute(sql,params)
+        stale=Stale(self.c)
+        args={
+            "organization_id":self.org,
+            "name":"Disallowed stale class",
+            "organization_type":"strategic_partner",
+            "actor":self.governance,
+        }
+        with self.assertRaisesRegex(ValueError,"organization_concurrent_boundary_conflict"):
+            evidence_interchange.register_organization(
+                stale,**args,demo_only=True,
+            )
+        self.c.rollback()
+        org=self.institution()
+        self.assertEqual(org["demo_only"],0)
+        self.assertEqual(org["name"],"Synthetic Institution")
+        self.assertEqual(org["partner_id"],self.partner_id)
+
+        self.c.execute(
+            "UPDATE institutional_organizations SET status='revoked' WHERE id=?",
+            (self.org,),
+        )
+        self.c.commit()
+        with self.assertRaisesRegex(ValueError,"organization_concurrent_boundary_conflict"):
+            evidence_interchange.register_organization(
+                stale,**args,demo_only=False,
+            )
+        self.c.rollback()
+        self.assertEqual(self.institution()["status"],"revoked")
+        self.c.execute(
+            "UPDATE institutional_organizations SET status='active' WHERE id=?",
+            (self.org,),
+        )
+        self.c.commit()
+        # Matching active authority is allowed even with a stale pre-read.
+        updated=evidence_interchange.register_organization(
+            stale,**{**args,"name":"Permitted stale same-class rename"},
+            demo_only=False,
+        )
+        self.assertEqual(updated["partner_id"],self.partner_id)
+        self.assertEqual(updated["name"],"Permitted stale same-class rename")
+        self.c.commit()
+
     def test_real_http_post_path_preserves_partner_binding(self):
         data={**self.base,"name":"From authenticated HTTP"}
         encoded=json.dumps(data).encode("utf-8")

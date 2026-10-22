@@ -25,6 +25,7 @@ Commercial partner membership/appointment projections require a nonblank institu
 - Existing `demo_only` classification is preserved when omitted. Explicit change is rejected; invalid types are rejected. New institutions default to non-demo if no classification is given. A privileged identity cannot reclassify demo evidence through ordinary metadata renewal.
 - Only the existing role `governance` can invoke this route. Successful create/update writes a transactional, non-sensitive `events` audit entry with organization ID and an explicit `binding_changed=False`; rejected calls write neither institution changes nor success-audit records.
 - An initial or subsequent partner binding change **cannot** be performed through this metadata API, even by supplying a new ID to create. A separate authenticated, version-checked, approved and auditable binding lifecycle remains to be designed/verified under #135 and collaboration implications under #133.
+- The SQL UPSERT conflict branch includes `WHERE status='active' AND demo_only=excluded.demo_only`. A concurrent writer cannot reclassify or update a revoked organization after the Python pre-read. Zero affected rows raise `organization_concurrent_boundary_conflict` instead of falsely reporting success.
 
 This is defense in depth for an existing code path, not a substitute for a governance approval system. Internal `register_organization` still accepts explicit binding actions from trusted callers; every caller and actor requires independent code review. No claim that a current local log is immutable.
 
@@ -37,6 +38,7 @@ This is defense in depth for an existing code path, not a substitute for a gover
 5. Explicit null, reassignment, invalid demo flag, wrong role and invalid request body fail closed; original binding/contact scope persists.
 6. Confirm the accepted update writes exactly one audit event; rejected attempts do not create success events.
 7. On independent real PostgreSQL 17 connections, run two concurrent metadata updates and check that both succeed without clearing binding or provenance.
+8. Force conflicting simultaneous new registrations of one organization with different demo classes. Exactly one must be created and the other rejected; no metadata crossing the classification boundary. Verify stale-read SQLite protection and revoked state.
 
 ## CI/admission checklist
 

@@ -100,6 +100,7 @@ class InstitutionRegistrationPostgresTests(unittest.TestCase):
             c.execute("DELETE FROM partner_appointment_slots_v1 WHERE id=?",(self.slot,))
             c.execute("DELETE FROM partner_commercial_placements_v1 WHERE organization_id=?",(self.org,))
             c.execute("DELETE FROM institutional_memberships WHERE organization_id=?",(self.org,))
+            c.execute("DELETE FROM institutional_organizations WHERE id=?",(self.org+"-RACE",))
             c.execute("DELETE FROM institutional_organizations WHERE id=?",(self.org,))
             for email in (self.partner,self.participant,self.governance):
                 c.execute("DELETE FROM auth_sessions WHERE email=?",(email,))
@@ -155,6 +156,69 @@ class InstitutionRegistrationPostgresTests(unittest.TestCase):
                 c.rollback()
             org=evidence_interchange.organization(c,self.org)
             self.assertEqual(org["partner_id"],self.partner_id)
+        finally:
+            c.close()
+
+    def test_simultaneous_create_cannot_cross_demo_classification(self):
+        race_id=self.org+"-RACE"
+        barrier=threading.Barrier(2)
+        outcomes=[]
+        errors=[]
+        class BarrierConnection:
+            def __init__(self,raw):
+                self.raw=raw
+            def execute(self,sql,params=()):
+                result=self.raw.execute(sql,params)
+                if "SELECT status,demo_only FROM institutional_organizations" in sql:
+                    barrier.wait(timeout=10)
+                return result
+
+        def create(label,demo_only):
+            c=db.connect()
+            try:
+                bound=BarrierConnection(c)
+                organization=evidence_interchange.register_organization(
+                    bound,organization_id=race_id,
+                    name="Race "+label,organization_type="strategic_partner",
+                    actor="governance-race",
+                    external_ref="urn:race:"+label,demo_only=demo_only,
+                )
+                c.commit()
+                outcomes.append(("created",label,organization["demo_only"]))
+            except ValueError as exc:
+                c.rollback()
+                outcomes.append(("conflict",label,str(exc)))
+            except Exception as exc:
+                try:c.rollback()
+                except Exception:pass
+                errors.append(repr(exc))
+            finally:
+                c.close()
+
+        threads=[
+            threading.Thread(target=create,args=("non-demo",False)),
+            threading.Thread(target=create,args=("demo",True)),
+        ]
+        for t in threads:t.start()
+        for t in threads:t.join(timeout=25)
+        self.assertFalse(any(t.is_alive() for t in threads))
+        self.assertFalse(errors,errors)
+        self.assertEqual(sorted(x[0] for x in outcomes),["conflict","created"])
+        self.assertIn("organization_concurrent_boundary_conflict",
+                      next(x[2] for x in outcomes if x[0]=="conflict"))
+        winning=next(x for x in outcomes if x[0]=="created")
+        c=db.connect()
+        try:
+            row=c.execute(
+                "SELECT name,demo_only,external_ref,partner_id,status "
+                "FROM institutional_organizations WHERE id=?",(race_id,),
+            ).fetchone()
+            self.assertIsNotNone(row)
+            self.assertEqual(row["name"],"Race "+winning[1])
+            self.assertEqual(row["demo_only"],winning[2])
+            self.assertEqual(row["external_ref"],"urn:race:"+winning[1])
+            self.assertIsNone(row["partner_id"])
+            self.assertEqual(row["status"],"active")
         finally:
             c.close()
 
