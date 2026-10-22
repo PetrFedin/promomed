@@ -1,4 +1,5 @@
 from app.commanding import custom, error
+from app.core import audit
 from app import evidence_interchange
 
 
@@ -18,19 +19,53 @@ def handle_command(c,route,role,email,data):
 
     if role!="governance":
         return error("forbidden",403)
+    if not isinstance(data,dict):
+        return error("invalid_request",422)
 
     try:
         if route=="/api/institution/register":
-            result=evidence_interchange.register_organization(
+            # Registration/metadata is NOT the authority to revoke/reassign a
+            # commercial partner.  Previously it always forwarded None when
+            # partner_id was absent and accidentally unbound existing tenants.
+            organization_id=str(data.get("organization_id") or "").strip()[:100]
+            old=c.execute(
+                "SELECT partner_id FROM institutional_organizations WHERE id=?",
+                (organization_id,),
+            ).fetchone()
+            if "partner_id" in data:
+                requested=data["partner_id"]
+                if requested is not None and (
+                    not isinstance(requested,str) or not requested.strip()
+                ):
+                    return error("partner_id_invalid",422)
+                requested=requested.strip() if isinstance(requested,str) else None
+                if requested!=(old["partner_id"] if old else None):
+                    return error("partner_binding_change_requires_review",409)
+            args={
+                "organization_id":organization_id,
+                "name":str(data.get("name") or "")[:240],
+                "organization_type":str(data.get("organization_type") or "")[:80],
+                "actor":email,
+            }
+            for field in ("external_ref","credential_source"):
+                if field in data:
+                    value=data[field]
+                    if value is not None and not isinstance(value,str):
+                        return error("institution_metadata_invalid",422)
+                    args[field]=(value or "")[:400]
+            if "demo_only" in data:
+                if type(data["demo_only"]) is not bool:
+                    return error("organization_demo_boundary_invalid",422)
+                args["demo_only"]=data["demo_only"]
+            # Intentionally never forward partner_id, even if its supplied
+            # value equals the current binding; avoid lost-update races.
+            result=evidence_interchange.register_organization(c,**args)
+            audit(
                 c,
-                organization_id=str(data.get("organization_id") or "")[:100],
-                name=str(data.get("name") or "")[:240],
-                organization_type=str(data.get("organization_type") or "")[:80],
-                actor=email,
-                external_ref=str(data.get("external_ref") or "")[:400],
-                credential_source=str(data.get("credential_source") or "")[:400],
-                partner_id=(str(data.get("partner_id") or "")[:80] or None),
-                demo_only=bool(data.get("demo_only",False)),
+                "institution_metadata_updated" if old else "institution_registered",
+                email,
+                {"organization_id":organization_id,"binding_changed":False,
+                 "demo_only":result["demo_only"]},
             )
             return custom({"data":result},201)
 

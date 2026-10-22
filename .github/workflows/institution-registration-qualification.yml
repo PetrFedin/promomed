@@ -1,0 +1,63 @@
+name: Promomed institutional registration API qualification
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - fix/p0-institution-registration-no-implicit-unbind-2026-10-22
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sqlite-institution-api:
+    runs-on: ubuntu-latest
+    env:
+      SQLITE_PATH: /tmp/promomed-institution-api-ci.sqlite
+      DATABASE_URL: ""
+      PROMOMED_SEED_DEMO: "false"
+      PROMOMED_REQUIRE_POSTGRES: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Qualify authenticated HTTP, metadata preservation, RBAC and cross-module access
+        run: python -m unittest -v tests/test_institution_registration_boundary.py
+
+  postgres17-institution-api:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: promomed
+          POSTGRES_PASSWORD: promomed
+          POSTGRES_DB: promomed_institution_api_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U promomed -d promomed_institution_api_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgresql://promomed:promomed@127.0.0.1:5432/promomed_institution_api_ci
+      PROMOMED_REQUIRE_POSTGRES: "true"
+      PROMOMED_SEED_DEMO: "false"
+      PROMOMED_ORG_ROUTE_PG_TEST: "1"
+      PROMOMED_ORG_UPSERT_PG_TEST: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Qualify organization metadata and concurrent PostgreSQL updates
+        run: python -m unittest -v tests/test_institution_registration_postgres.py tests/test_organization_binding_postgres.py
