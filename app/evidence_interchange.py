@@ -26,6 +26,7 @@ ROLE_SCOPES={"publisher","consumer","contributor"}
 
 # Omission is not a revocation. Explicit None remains a separate operation.
 _PARTNER_BINDING_UNSPECIFIED=object()
+_METADATA_UNSPECIFIED=object()
 
 
 def _canonical(value):
@@ -49,8 +50,10 @@ def _demo_only(c,artifact_kind,artifact_ref):
 
 def register_organization(
     c,*,organization_id,name,organization_type,actor,
-    external_ref="",credential_source="",partner_id=_PARTNER_BINDING_UNSPECIFIED,
-    demo_only=False,
+    external_ref=_METADATA_UNSPECIFIED,
+    credential_source=_METADATA_UNSPECIFIED,
+    partner_id=_PARTNER_BINDING_UNSPECIFIED,
+    demo_only=None,
 ):
     organization_id=str(organization_id or "").strip()[:100]
     name=str(name or "").strip()[:240]
@@ -63,11 +66,23 @@ def register_organization(
         "SELECT status,demo_only FROM institutional_organizations WHERE id=?",
         (organization_id,),
     ).fetchone()
+    if demo_only is not None and type(demo_only) is not bool:
+        raise ValueError("organization_demo_boundary_invalid")
+    # An omitted demo boundary on update is not a request to reclassify data.
+    effective_demo=bool(existing["demo_only"]) if existing and demo_only is None else bool(demo_only)
     if existing:
         if existing["status"]!="active":
             raise ValueError("organization_not_active")
-        if int(existing["demo_only"])!=int(bool(demo_only)):
+        if int(existing["demo_only"])!=int(effective_demo):
             raise ValueError("organization_demo_boundary_mismatch")
+    external_supplied=external_ref is not _METADATA_UNSPECIFIED
+    credential_supplied=credential_source is not _METADATA_UNSPECIFIED
+    if external_supplied and external_ref is not None and not isinstance(external_ref,str):
+        raise ValueError("organization_external_ref_invalid")
+    if credential_supplied and credential_source is not None and not isinstance(credential_source,str):
+        raise ValueError("organization_credential_source_invalid")
+    external_value=(external_ref or "")[:400] if external_supplied else ""
+    credential_value=(credential_source or "")[:400] if credential_supplied else ""
     binding_supplied=partner_id is not _PARTNER_BINDING_UNSPECIFIED
     if binding_supplied and partner_id is not None:
         if not isinstance(partner_id,str) or not partner_id.strip():
@@ -78,7 +93,7 @@ def register_organization(
             raise ValueError("partner_not_found")
     inserted_partner_id=partner_id if binding_supplied else None
     now=int(time.time())
-    c.execute(
+    changed=c.execute(
         """INSERT INTO institutional_organizations(
              id,name,organization_type,status,external_ref,credential_source,partner_id,
              created_at,created_by,demo_only
@@ -86,16 +101,26 @@ def register_organization(
            ON CONFLICT(id) DO UPDATE SET
              name=excluded.name,
              organization_type=excluded.organization_type,
-             external_ref=excluded.external_ref,
-             credential_source=excluded.credential_source,
+             external_ref=CASE WHEN ?=1 THEN excluded.external_ref
+                               ELSE institutional_organizations.external_ref END,
+             credential_source=CASE WHEN ?=1 THEN excluded.credential_source
+                                    ELSE institutional_organizations.credential_source END,
              partner_id=CASE WHEN ?=1 THEN excluded.partner_id
-                              ELSE institutional_organizations.partner_id END""",
+                              ELSE institutional_organizations.partner_id END
+           WHERE institutional_organizations.status='active'
+             AND institutional_organizations.demo_only=excluded.demo_only""",
         (
-            organization_id,name,organization_type,str(external_ref or "")[:400],
-            str(credential_source or "")[:400],inserted_partner_id,
-            now,actor,int(bool(demo_only)),int(binding_supplied),
+            organization_id,name,organization_type,external_value,
+            credential_value,inserted_partner_id,
+            now,actor,int(effective_demo),int(external_supplied),
+            int(credential_supplied),int(binding_supplied),
         ),
     )
+    # A pre-read is advisory only: another process may concurrently insert an
+    # organization or revoke/reclassify it. The UPSERT predicate is atomic
+    # across PostgreSQL and SQLite, so a conflicting row never mutates.
+    if changed.rowcount!=1:
+        raise ValueError("organization_concurrent_boundary_conflict")
     return organization(c,organization_id)
 
 
