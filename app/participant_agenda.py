@@ -10,7 +10,7 @@ import hashlib
 import time
 from urllib.parse import urlparse
 
-from app import db
+from app import db, appointment_projection
 
 ROUTE = "/api/participant-agenda/v1"
 MAX_ROWS = 200
@@ -37,8 +37,9 @@ def _event_rows(c, email, now):
         "r.status AS my_status "
         "FROM participant_event_registrations_v1 r "
         "JOIN event_editions_v1 e ON e.id=r.event_id "
-        "WHERE r.email=? ORDER BY e.starts_at DESC,e.id DESC LIMIT 201",
-        (email,),
+        "WHERE r.email=? AND (?=1 OR e.demo_only=0) "
+        "ORDER BY CASE WHEN e.starts_at>? THEN 0 ELSE 1 END,e.starts_at,e.id LIMIT 201",
+        (email,int(db.demo_seed_enabled()),now),
     ))
     truncated = len(rows) > MAX_ROWS
     result = []
@@ -70,42 +71,11 @@ def _event_rows(c, email, now):
 
 
 def _appointment_rows(c, email, now):
-    rows = list(c.execute(
-        "SELECT b.slot_id,b.status AS booking_status,"
-        "s.starts_at,s.ends_at,s.status AS slot_status,s.demo_only,"
-        "o.name AS organization_name,o.status AS org_status,"
-        "o.partner_id,o.demo_only AS org_demo_only,"
-        "p.status AS placement_status,p.demo_only AS placement_demo_only "
-        "FROM participant_partner_appointments_v1 b "
-        "JOIN partner_appointment_slots_v1 s ON s.id=b.slot_id "
-        "JOIN institutional_organizations o ON o.id=s.organization_id "
-        "LEFT JOIN partner_commercial_placements_v1 p ON p.organization_id=o.id "
-        "WHERE b.email=? ORDER BY s.starts_at DESC,b.slot_id DESC LIMIT 201",
-        (email,),
-    ))
-    truncated = len(rows) > MAX_ROWS
+    rows,truncated=appointment_projection.owned(c,email,now)
     result = []
-    for row in rows[:MAX_ROWS]:
-        if not db.demo_seed_enabled() and int(row["demo_only"] or 0):
-            continue
-        start, end = _positive_time(row["starts_at"]), _positive_time(row["ends_at"])
-        if start is None or end is None or end <= start:
-            continue
-        admitted = (
-            row["org_status"] == "active"
-            and isinstance(row["partner_id"], str)
-            and bool(row["partner_id"].strip())
-            and int(row["demo_only"]) == int(row["org_demo_only"])
-            and row["placement_status"] == "enabled"
-            and row["placement_demo_only"] is not None
-            and int(row["demo_only"]) == int(row["placement_demo_only"])
-            and row["slot_status"] in ("open", "closed")
-        )
-        state = (
-            "cancelled" if row["booking_status"] == "cancelled"
-            else "unavailable" if not admitted
-            else row["booking_status"]
-        )
+    for row in rows:
+        start,end=row['starts_at'],row['ends_at']
+        state=row['effective_status']
         result.append({
             "id": "appointment:" + row["slot_id"],
             "kind": "partner_appointment",
@@ -121,7 +91,7 @@ def _appointment_rows(c, email, now):
     return result, truncated
 
 
-def _conflicts(items):
+def _conflicts(items,now=0):
     """Only known partner appointment intervals can prove overlaps."""
     appointments = [
         item for item in items
@@ -140,8 +110,30 @@ def _conflicts(items):
                     "first": first["id"],
                     "second": other["id"],
                     "kind": "known_interval_overlap",
+                    "startsAt":max(now,first['startsAt'],other['startsAt']),
+                    "endsAt":min(first['endsAt'],other['endsAt']),
+                    "overlapSeconds":max(0,min(first['endsAt'],other['endsAt'])-max(now,first['startsAt'],other['startsAt'])),
                 })
     return conflicts
+
+
+def _workload(items,now):
+    intervals=[(max(now,x['startsAt']),x['endsAt']) for x in items
+               if x['kind']=='partner_appointment' and x['calendarEligible']]
+    edges={}
+    for start,end in intervals:
+        edges[start]=edges.get(start,0)+1
+        edges[end]=edges.get(end,0)-1
+    active=occupied=overlap=0
+    previous=now
+    for stamp,delta in sorted(edges.items()):
+        duration=stamp-previous
+        if active>0:occupied+=duration
+        if active>1:overlap+=duration
+        active+=delta;previous=stamp
+    return {'confirmedAppointments':len(intervals),'scheduledSeconds':sum(b-a for a,b in intervals),
+            'occupiedSeconds':occupied,'overlapSeconds':overlap,
+            'upcomingWaitlist':sum(x['state']=='waitlist' and x['startsAt']>now for x in items)}
 
 
 def _escape(value):
@@ -211,7 +203,9 @@ def snapshot(c, email, now=None):
     return {
         "version": "participant-agenda-v1",
         "items": combined,
-        "conflicts": _conflicts(combined),
+        "conflicts": _conflicts(combined,now),
+        "summary":_workload(combined,now),
+        "asOf":now,
         "calendarIcs": _ics(combined, now),
         "truncated": events_truncated or appointments_truncated,
         "truthBoundary": {

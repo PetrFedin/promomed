@@ -84,7 +84,7 @@ def _partner_snapshot(c,email):
             "SELECT id,email,kind,consent_at,created_at "
             "FROM participant_partner_leads_v1 "
             "WHERE organization_id=? AND status='submitted' "
-            "ORDER BY created_at,id LIMIT 200",
+            "ORDER BY created_at,id LIMIT 201",
             (row["id"],),
         )]
         organizations.append({
@@ -92,7 +92,9 @@ def _partner_snapshot(c,email):
             "organizationName":row["name"],
             "memberRole":row["member_role"],
             "placement":dict(placement) if placement else None,
-            "leads":leads,
+            "leads":leads[:200],
+            "leadsTruncated":len(leads)>200,
+            "activeLeadCount":int(c.execute("SELECT COUNT(*) n FROM participant_partner_leads_v1 WHERE organization_id=? AND status='submitted'",(row['id'],)).fetchone()['n']),
         })
     return {
         "version":"partner-commercial-v1",

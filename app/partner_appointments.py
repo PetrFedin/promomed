@@ -6,12 +6,13 @@ contract acceptance.
 """
 import secrets
 import time
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
-from app import db, partner_org_scope
+from app import db, partner_org_scope, appointment_projection
 from app.commanding import custom, error
 
 ROUTE="/api/partner-appointments/v1"
+AVAILABLE_ROUTE=ROUTE+"/available"
 SLOT_STATES=frozenset(("open","closed","cancelled"))
 
 
@@ -90,25 +91,34 @@ def _partner_snapshot(c,email):
         if not db.demo_seed_enabled() and int(membership["demo_only"] or 0)!=0:
             continue
         slots=[]
-        for slot in c.execute(
+        source_slots=list(c.execute(
             "SELECT id,starts_at,ends_at,capacity,status,version,updated_at "
             "FROM partner_appointment_slots_v1 "
-            "WHERE organization_id=? ORDER BY starts_at,id LIMIT 200",
-            (membership["id"],),
-        ):
+            "WHERE organization_id=? AND demo_only=? "
+            "ORDER BY CASE WHEN ends_at>? THEN 0 ELSE 1 END,starts_at,id LIMIT 201",
+            (membership["id"],int(membership["demo_only"]),now),
+        ))
+        for slot in source_slots[:200]:
+            counts=c.execute("SELECT SUM(CASE WHEN status='booked' THEN 1 ELSE 0 END) booked,"
+                "SUM(CASE WHEN status='waitlist' THEN 1 ELSE 0 END) waitlist "
+                "FROM participant_partner_appointments_v1 WHERE slot_id=?",(slot["id"],)).fetchone()
             bookings=[dict(x) for x in c.execute(
                 "SELECT email,status,contact_consent_at,requested_at,updated_at "
                 "FROM participant_partner_appointments_v1 "
                 "WHERE slot_id=? AND status IN ('booked','waitlist') "
-                "ORDER BY requested_at,email LIMIT 500",
+                "ORDER BY requested_at,email LIMIT 501",
                 (slot["id"],),
             )]
-            slots.append({**dict(slot),"bookings":bookings})
+            booked,waiting=int(counts['booked'] or 0),int(counts['waitlist'] or 0)
+            slots.append({**dict(slot),"bookings":bookings[:500],"bookingsTruncated":len(bookings)>500,
+                "counts":{"booked":booked,"waitlist":waiting,"available":max(0,slot['capacity']-booked),
+                          "overCapacity":max(0,booked-slot['capacity'])}})
         organizations.append({
             "organizationId":membership["id"],
             "organizationName":membership["name"],
             "memberRole":membership["member_role"],
             "slots":slots,
+            "slotsTruncated":len(source_slots)>200,
         })
     return {
         "version":"partner-appointments-v1",
@@ -123,20 +133,11 @@ def _partner_snapshot(c,email):
 
 
 def _participant_snapshot(c,email):
-    rows=[dict(x) for x in c.execute(
-        """SELECT b.slot_id,b.status,b.contact_consent_at,b.requested_at,b.updated_at,
-                  s.organization_id,s.starts_at,s.ends_at,s.status slot_status,
-                  o.name organization_name
-           FROM participant_partner_appointments_v1 b
-           JOIN partner_appointment_slots_v1 s ON s.id=b.slot_id
-           JOIN institutional_organizations o ON o.id=s.organization_id
-           WHERE b.email=?
-           ORDER BY s.starts_at,b.slot_id LIMIT 200""",
-        (email,),
-    )]
+    rows,truncated=appointment_projection.owned(c,email,int(time.time()))
     return {
         "version":"partner-appointments-v1",
         "myAppointments":rows,
+        "truncated":truncated,
         "truthBoundary":{
             "appointmentIsNotAttendance":True,
             "waitlistIsNotBooking":True,
@@ -146,8 +147,44 @@ def _participant_snapshot(c,email):
     }
 
 
+def _available(c,organization_id,email):
+    if not partner_org_scope.org_id(organization_id):
+        return {"error":"invalid_organization"},422
+    if not _placement_enabled(c,organization_id):
+        return {"error":"organization_not_found"},404
+    org=c.execute("SELECT id,name,demo_only FROM institutional_organizations WHERE id=?",(organization_id,)).fetchone()
+    now=int(time.time())
+    rows=list(c.execute("SELECT s.id,s.starts_at,s.ends_at,s.capacity,s.version,b.status my_status,"
+        "(SELECT COUNT(*) FROM participant_partner_appointments_v1 n WHERE n.slot_id=s.id AND n.status='booked') booked "
+        "FROM partner_appointment_slots_v1 s LEFT JOIN participant_partner_appointments_v1 b ON b.slot_id=s.id AND b.email=? "
+        "WHERE s.organization_id=? AND s.status='open' AND s.starts_at>? AND s.demo_only=? "
+        "ORDER BY s.starts_at,s.id LIMIT 201",(email,organization_id,now,org['demo_only'])))
+    own,partial=appointment_projection.owned(c,email,now)
+    slots=[]
+    for row in rows[:200]:
+        if not appointment_projection.positive_time(row['starts_at']) or not appointment_projection.positive_time(row['ends_at']) or row['ends_at']<=row['starts_at'] or type(row['capacity']) is not int or row['capacity']<1:
+            continue
+        conflicts=[]
+        for other in own:
+            overlap=min(row['ends_at'],other['ends_at'])-max(row['starts_at'],other['starts_at'])
+            if other['slot_id']!=row['id'] and other['effective_status']=='booked' and overlap>0:
+                conflicts.append({'slotId':other['slot_id'],'title':other['organization_name'],'overlapSeconds':overlap})
+        slots.append({'id':row['id'],'version':row['version'],'startsAt':row['starts_at'],'endsAt':row['ends_at'],
+            'availableSeats':max(0,row['capacity']-row['booked']),
+            'myStatus':row['my_status'] if row['my_status'] in ('booked','waitlist') else None,'knownConflicts':conflicts})
+    return {'organization':{'id':org['id'],'name':org['name']},'slots':slots,'asOf':now,
+            'truncated':len(rows)>200,'conflictsComplete':not partial},200
+
+
 def read(c,raw_path,role,email):
     parsed=urlparse(raw_path)
+    if parsed.path==AVAILABLE_ROUTE:
+        args=parse_qs(parsed.query,keep_blank_values=True)
+        if parsed.fragment or set(args)!={'organization_id'} or len(args['organization_id'])!=1:
+            return {'error':'unsupported_query'},422
+        if role!='participant' or not _participant(c,email) or (not db.demo_seed_enabled() and email.lower().endswith('@demo.ru')):
+            return {'error':'forbidden'},403
+        return _available(c,args['organization_id'][0],email)
     if parsed.path!=ROUTE:
         return None
     if parsed.query or parsed.fragment:
@@ -282,20 +319,29 @@ def handle_command(c,route,role,email,data):
         ).fetchone()["n"])
         if capacity<booked:
             return error("capacity_below_booked",409)
-        c.execute(
+        changed=c.execute(
             "UPDATE partner_appointment_slots_v1 "
             "SET starts_at=?,ends_at=?,capacity=?,status=?,version=version+1,"
             "updated_at=? WHERE id=? AND version=?",
             (starts,ends,capacity,state,now,slot_id,expected),
         )
+        if changed.rowcount!=1:
+            return error("version_conflict",409)
         updated=_slot(c,slot_id)
-        return custom({"slot":dict(updated)})
+        promoted=0
+        for _ in range(max(0,capacity-booked)):
+            if not _promote_one(c,updated):break
+            promoted+=1
+        return custom({"slot":dict(updated),"queuePromotions":promoted})
 
     if role!="participant" or _participant(c,email) is None:
         return error("forbidden",403)
 
     if action=="book":
-        if set(data)!={"action","slot_id","contact_consent"}:
+        required={"action","slot_id","contact_consent"}
+        if not required.issubset(data) or set(data)-required-{"expected_version"}:
+            return error("invalid_request",422)
+        if "expected_version" in data and (type(data['expected_version']) is not int or data['expected_version']<1):
             return error("invalid_request",422)
         slot_id=data.get("slot_id")
         if not isinstance(slot_id,str) or len(slot_id)!=32:
@@ -310,6 +356,8 @@ def handle_command(c,route,role,email,data):
             or not _placement_enabled(c,slot["organization_id"])
         ):
             return error("slot_not_found",404)
+        if 'expected_version' in data and data['expected_version']!=slot['version']:
+            return error('version_conflict',409)
         own=_own_booking(c,slot_id,email)
         if own and own["status"] in ("booked","waitlist"):
             return custom({"appointment":dict(own),"replayed":True})
