@@ -5,7 +5,7 @@
   const labels={planned:'Планируется',enabled:'Включено',paused:'Приостановлено',ended:'Завершено',open:'Открыта',closed:'Запись закрыта',cancelled:'Отменена'};
   function el(tag,text){const node=document.createElement(tag);if(text!==undefined)node.textContent=text;return node;}
   function notice(text='',error=false){$('notice').textContent=text;$('notice').hidden=!text;$('notice').classList.toggle('error',error);}
-  function clear(){state.generation++;state.read++;state.token=null;state.role=null;state.busy=false;state.organizations=[];state.appointments=[];$('workspace').hidden=true;$('logout').hidden=true;$('login-form').hidden=false;$('password').value='';$('organization').replaceChildren();$('owner-metrics').replaceChildren();$('slots').replaceChildren();$('leads').replaceChildren();$('owner-data').hidden=true;$('partner-data').hidden=true;}
+  function clear(){state.generation++;state.read++;state.token=null;state.role=null;state.busy=false;state.organizations=[];state.appointments=[];$('workspace').hidden=true;$('logout').hidden=true;$('login-form').hidden=false;$('login').disabled=false;$('password').value='';$('organization').replaceChildren();$('owner-metrics').replaceChildren();$('slots').replaceChildren();$('leads').replaceChildren();$('owner-data').hidden=true;$('partner-data').hidden=true;}
   async function request(url,body){
     const g=state.generation,controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
     try{const response=await fetch(url,{method:body?'POST':'GET',headers:{...(state.token?{Authorization:'Bearer '+state.token}:{}),...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,credentials:'omit',cache:'no-store',signal:controller.signal});

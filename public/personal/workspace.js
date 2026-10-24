@@ -495,7 +495,13 @@
     catch(err){if(g===state.generation){state.busy=false;fail(err,g,"Не удалось подтвердить отзыв всех сессий.");}}
   });
   window.addEventListener("pagehide",clearSession);
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&state.token&&!state.busy){const g=state.generation;refresh().catch(e=>fail(e,g));}});
-  setInterval(()=>{if(state.token&&!state.busy){const g=state.generation;refresh().catch(e=>fail(e,g));}},30000);
+  function backgroundRefresh(){
+    if(!state.token||state.busy||state.partnerBusy||state.eventBusy||state.authBusy||state.agendaExportBusy)return;
+    if($('available-organization').value.trim()!==state.availabilityOrg)return;
+    if($('available-slots').querySelector('input:checked'))return;
+    const g=state.generation;refresh().catch(e=>fail(e,g));
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")backgroundRefresh();});
+  setInterval(backgroundRefresh,30000);
   showAuthMode("login");updateCount();
 })();

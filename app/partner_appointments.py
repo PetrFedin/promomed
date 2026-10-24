@@ -153,6 +153,7 @@ def _available(c,organization_id,email):
     if not _placement_enabled(c,organization_id):
         return {"error":"organization_not_found"},404
     org=c.execute("SELECT id,name,demo_only FROM institutional_organizations WHERE id=?",(organization_id,)).fetchone()
+    if not org:return {'error':'organization_not_found'},404
     now=int(time.time())
     rows=list(c.execute("SELECT s.id,s.starts_at,s.ends_at,s.capacity,s.version,b.status my_status,"
         "(SELECT COUNT(*) FROM participant_partner_appointments_v1 n WHERE n.slot_id=s.id AND n.status='booked') booked "
@@ -209,6 +210,7 @@ def serve(actor,raw_path):
 def _promote_one(c,slot):
     if (
         slot["status"]!="open"
+        or int(slot["starts_at"])<=int(time.time())
         or int(slot["ends_at"])<=int(time.time())
         or not _placement_enabled(c,slot["organization_id"])
     ):
@@ -256,6 +258,8 @@ def handle_command(c,route,role,email,data):
             not organization_id
             or type(starts) is not int
             or type(ends) is not int
+            or not appointment_projection.positive_time(starts)
+            or not appointment_projection.positive_time(ends)
             or type(capacity) is not int
             or starts<=now
             or ends<=starts
@@ -296,6 +300,8 @@ def handle_command(c,route,role,email,data):
             or state not in SLOT_STATES
             or type(starts) is not int
             or type(ends) is not int
+            or not appointment_projection.positive_time(starts)
+            or not appointment_projection.positive_time(ends)
             or type(capacity) is not int
             or ends<=starts
             or (state=="open" and ends<=now)
@@ -352,12 +358,16 @@ def handle_command(c,route,role,email,data):
         if (
             slot is None
             or slot["status"]!="open"
+            or int(slot["starts_at"])<=now
             or int(slot["ends_at"])<=now
             or not _placement_enabled(c,slot["organization_id"])
         ):
             return error("slot_not_found",404)
         if 'expected_version' in data and data['expected_version']!=slot['version']:
             return error('version_conflict',409)
+        # Existing eligible waiters have priority over a new or cancelled request.
+        for _ in range(int(slot['capacity'])):
+            if not _promote_one(c,slot):break
         own=_own_booking(c,slot_id,email)
         if own and own["status"] in ("booked","waitlist"):
             return custom({"appointment":dict(own),"replayed":True})

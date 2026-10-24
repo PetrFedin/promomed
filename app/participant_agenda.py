@@ -28,7 +28,7 @@ def _account(c, role, email):
 
 
 def _positive_time(value):
-    return int(value) if type(value) is int and value > 0 else None
+    return appointment_projection.positive_time(value)
 
 
 def _event_rows(c, email, now):

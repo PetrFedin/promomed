@@ -1,4 +1,5 @@
 from urllib.parse import unquote
+from app import db,partner_org_scope,organization_operations
 
 from app import capital_optimizer, capital_plan, capital_execution, intervention_engine, recovery_reforecast, reallocation_authority, contract_builder, deal_room, investment_proof, portfolio_control, institutional_command_center, institutional_pilot_proposal, institutional_buyer_fit, institutional_outreach_pack, institutional_evidence_export, pilot_revenue_ladder
 
@@ -83,6 +84,17 @@ def read(c, path, role, actor_email=None):
         organization_id = unquote(path[len(COMMAND_CENTER_PREFIX):]).strip()[:100]
         if not organization_id:
             return {"error": "organization_id_required"}, 422
+        target=c.execute('SELECT demo_only FROM institutional_organizations WHERE id=?',(organization_id,)).fetchone()
+        legacy_demo=bool(db.demo_seed_enabled() and target and target['demo_only'])
+        if not legacy_demo:
+            if role=='partner':
+                if partner_org_scope.commercial_member(c,organization_id,actor_email) is None:
+                    return {'error':'organization_not_found'},404
+            elif role=='organizer':
+                from urllib.parse import quote
+                _,status=organization_operations.read(c,organization_operations.ROUTE+'?organization_id='+quote(organization_id,safe=''),role,actor_email or '')
+                if status!=200:return {'error':'organization_not_found'},404
+            else:return {'error':'forbidden'},403
         try:
             return institutional_command_center.snapshot(c, organization_id), 200
         except ValueError as exc:

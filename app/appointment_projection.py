@@ -3,7 +3,7 @@ from app import db
 
 
 def positive_time(value):
-    return value if type(value) is int and value > 0 else None
+    return value if type(value) is int and 0 < value <= 253402300799 else None
 
 
 def owned(c,email,now):

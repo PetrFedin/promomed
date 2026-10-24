@@ -1,5 +1,13 @@
 """Cross-role source-backed appointment and reporting regression."""
 import unittest
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+import urllib.error
 from tests import test_partner_appointments as fixtures
 from app import partner_appointments as appt,partner_commercial as commercial
 from app import organization_operations as operations,participant_agenda as agenda
@@ -15,6 +23,12 @@ class RoleOperationsTests(unittest.TestCase):
 
     def available(self,email=None,org='ORG-A'):
         return appt.read(self.c,appt.AVAILABLE_ROUTE+'?organization_id='+org,'participant',email or self.participant_a)
+
+    def test_command_center_cannot_read_foreign_organization(self):
+        from app import strategic_reads
+        path='/api/institutional-command-center/ORG-B'
+        self.assertEqual(strategic_reads.read(self.c,path,'partner',self.partner_a)[1],404)
+        self.assertEqual(strategic_reads.read(self.c,path,'sales',self.partner_a)[1],403)
 
     def owner(self):
         email='owner@example.test'
@@ -54,6 +68,21 @@ class RoleOperationsTests(unittest.TestCase):
         self.assertEqual((result.status,result.payload['error']),(409,'version_conflict'))
         self.assertIsNone(self.booking_status(slot,self.participant_a))
         self.assertEqual(self.book(slot,version=2).status,201)
+
+    def test_out_of_range_dates_cannot_break_calendar(self):
+        result=self.cmd('partner',self.partner_a,action='slot_create',organization_id='ORG-A',starts_at=1000000000000,ends_at=1000000001800,capacity=1)
+        self.assertEqual(result.status,422)
+        slot=self.create_slot();self.book(slot)
+        self.c.execute('UPDATE partner_appointment_slots_v1 SET starts_at=?,ends_at=? WHERE id=?',(1000000000000,1000000001800,slot));self.c.commit()
+        self.assertEqual(agenda.snapshot(self.c,self.participant_a)['items'],[])
+
+    def test_rebooking_cannot_bypass_existing_waiter_after_pause(self):
+        slot=self.create_slot();self.book(slot);self.book(slot,self.participant_b)
+        self.c.execute("UPDATE partner_commercial_placements_v1 SET status='paused' WHERE organization_id='ORG-A'");self.c.commit()
+        self.cmd('participant',self.participant_a,action='cancel',slot_id=slot)
+        self.c.execute("UPDATE partner_commercial_placements_v1 SET status='enabled' WHERE organization_id='ORG-A'");self.c.commit()
+        self.assertEqual(self.book(slot).payload['appointment']['status'],'waitlist')
+        self.assertEqual(self.booking_status(slot,self.participant_b),'booked')
 
     def test_malformed_booking_versions_rejected(self):
         slot=self.create_slot()
@@ -125,6 +154,53 @@ class RoleOperationsTests(unittest.TestCase):
         self.assertEqual(self.report(owner)[0]['metrics']['activeLeads'],0)
         partner=commercial.read(self.c,commercial.ROUTE,'partner',self.partner_a)[0]['organizations'][0]
         self.assertEqual(partner['leads'],[]);self.assertEqual(partner['activeLeadCount'],0)
+
+    def test_http_login_booking_partner_capacity_and_owner_metrics(self):
+        owner=self.owner();slot=self.create_slot()
+        self.c.execute('UPDATE accounts SET password_hash=(SELECT password_hash FROM accounts WHERE email=?) WHERE email=?',(self.participant_a,owner));self.c.commit()
+        with socket.socket() as probe:
+            probe.bind(('127.0.0.1',0));port=probe.getsockname()[1]
+        base='http://127.0.0.1:'+str(port)
+        def request(path,token=None,body=None):
+            headers={'Content-Type':'application/json'}
+            if token:headers['Authorization']='Bearer '+token
+            req=urllib.request.Request(base+path,data=json.dumps(body).encode() if body is not None else None,headers=headers)
+            try:
+                with urllib.request.urlopen(req,timeout=10) as response:return json.load(response),response.status
+            except urllib.error.HTTPError as response:return json.load(response),response.code
+        server=subprocess.Popen([sys.executable,'server.py'],env=dict(os.environ,PORT=str(port)),stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+        try:
+            for _ in range(100):
+                try:request('/health');break
+                except OSError:time.sleep(.1)
+            else:self.fail('HTTP server did not start')
+            tokens={}
+            for email in (self.participant_a,self.participant_b,self.partner_a,owner):
+                data,status=request('/api/login',body={'email':email,'password':'StrongAppointment!42'})
+                self.assertEqual(status,200);tokens[email]=data['token']
+            a,b,partner,admin=(tokens[x] for x in (self.participant_a,self.participant_b,self.partner_a,owner))
+            self.assertEqual(request(operations.ROUTE+'?organization_id=ORG-A',a)[1],403)
+            for token,expected in ((a,'booked'),(b,'waitlist')):
+                data,status=request(appt.ROUTE,token,{'action':'book','slot_id':slot,'contact_consent':True,'expected_version':1})
+                self.assertEqual(status,201);self.assertEqual(data['appointment']['status'],expected)
+            data,status=request(appt.ROUTE,partner,{'action':'slot_update','slot_id':slot,'expected_version':1,'starts_at':self.now+3600,'ends_at':self.now+5400,'capacity':2,'status':'open'})
+            self.assertEqual(status,200);self.assertEqual(data['queuePromotions'],1)
+            self.assertEqual(request(appt.ROUTE,b)[0]['myAppointments'][0]['effective_status'],'booked')
+            metrics,status=request(operations.ROUTE+'?organization_id=ORG-A',admin)
+            self.assertEqual(status,200);self.assertEqual(metrics['metrics']['occupancyPercent'],100.0)
+            self.assertNotIn(self.participant_a,str(metrics))
+            with urllib.request.urlopen(base+'/partner/',timeout=10) as page:
+                self.assertEqual(page.status,200)
+                self.assertIn('Рабочий кабинет',page.read().decode())
+        finally:server.terminate();server.wait(timeout=10)
+
+    def test_started_slot_rejects_new_booking_and_queue_promotion(self):
+        slot=self.create_slot();self.book(slot);self.book(slot,self.participant_b)
+        self.c.execute('UPDATE partner_appointment_slots_v1 SET starts_at=?,ends_at=? WHERE id=?',(self.now-10,self.now+600,slot));self.c.commit()
+        self.assertEqual(self.book(slot,self.participant_b).status,404)
+        result=self.cmd('participant',self.participant_a,action='cancel',slot_id=slot)
+        self.assertEqual(result.status,200);self.assertFalse(result.payload['queuePromotionOccurred'])
+        self.assertEqual(self.booking_status(slot,self.participant_b),'waitlist')
 
 
 class WorkloadMathTests(unittest.TestCase):
