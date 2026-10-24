@@ -14,13 +14,12 @@
 <a class="skip" href="#main">К содержанию</a>
 <header class="top">
   <a class="brand" href="/personal/" aria-label="Моё СОСТОЯНИЕ"><b>СОСТОЯНИЕ</b><span>Личное пространство</span></a>
-  <button id="logout" class="quiet" type="button" hidden>Выйти из этой вкладки</button>
+  <nav><a class="quiet" href="/partner/">Партнёру и организатору</a> <button id="logout" class="quiet" type="button" hidden>Выйти</button></nav>
 </header>
 <main id="main" class="shell">
   <section class="hero">
-    <div><p class="eyebrow">МОЁ СОСТОЯНИЕ</p><h1>То, что стоит<br><em>сохранить.</em></h1>
+    <div><p class="eyebrow">МОЁ СОСТОЯНИЕ</p><h1>Личный кабинет</h1>
     <p>Ваши записи и личные заметки — отдельно от общей аналитики и партнёрских отчётов.</p></div>
-    <div class="heroMark" aria-hidden="true">01</div>
   </section>
 
   <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
@@ -66,7 +65,7 @@
       </form>
     </div>
     <aside class="card promise">
-      <p class="eyebrow">ПРОДОЛЖЕНИЕ</p><h2>Мысль сегодня.<br>Следующий шаг завтра.</h2>
+      <p class="eyebrow">ЛИЧНОЕ ПРОСТРАНСТВО</p><h2>События, встречи и заметки</h2>
       <p>Заметки принадлежат текущему аккаунту. Бронирование не считается посещением, а личная заметка — медицинским фактом.</p>
     </aside>
   </section>
@@ -86,16 +85,6 @@
           <p class="fine">Загрузка доступных событий…</p>
         </div>
         <p class="fine">Регистрация подтверждает место или очередь, но не является фактом посещения.</p>
-      </section>
-      <section class="card agendaCard" aria-labelledby="agenda-heading">
-        <div class="agendaHeader">
-          <div><p class="eyebrow">МОЁ РАСПИСАНИЕ</p><h3 class="sideTitle" id="agenda-heading">События и встречи</h3></div>
-          <button id="agenda-export" class="outline agendaExport" type="button" disabled>Календарь .ics</button>
-        </div>
-        <div id="participant-agenda" aria-live="polite" aria-atomic="false">
-          <p class="fine">Загрузка записей…</p>
-        </div>
-        <p class="fine">В календарь входят только подтверждённые записи с известным временем. Очередь ожидания, отмены и недоступные встречи не экспортируются. Время окончания мероприятия не выдумывается.</p>
       </section>
       <section class="card">
         <p class="eyebrow">МОИ ЗАПИСИ</p><div id="bookings"></div>
@@ -117,6 +106,17 @@
     </aside>
 
     <div class="content">
+      <section class="card agendaCard" aria-labelledby="agenda-heading">
+        <div class="agendaHeader"><div><p class="eyebrow">МОЁ РАСПИСАНИЕ</p><h3 class="sideTitle" id="agenda-heading">События и встречи</h3></div><button id="agenda-export" class="outline agendaExport" type="button" disabled>Скачать календарь</button></div>
+        <div id="participant-agenda" aria-live="polite" aria-atomic="false"><p class="fine">Загрузка записей…</p></div>
+        <p class="fine">В календарь входят только подтверждённые записи с известным временем. Очередь ожидания, отмены и недоступные встречи не экспортируются. Время окончания мероприятия не выдумывается.</p>
+      </section>
+      <section class="card" aria-labelledby="available-heading">
+        <h2 id="available-heading">Выбрать время встречи</h2>
+        <form id="available-form"><label for="available-organization">Код организации из приглашения</label><input id="available-organization" maxlength="100" required autocomplete="off"><button class="outline" type="submit">Показать время</button></form>
+        <div id="available-slots" aria-live="polite"></div>
+        <p class="fine">Согласие на передачу email — отдельно для каждой встречи. Проверяются известные пересечения; события без времени окончания в проверку не входят.</p>
+      </section>
       <section class="card composer">
         <p class="eyebrow">ЛИЧНАЯ ЗАПИСЬ</p><h2>Новая заметка</h2>
         <p id="editing-account" class="fine"></p>

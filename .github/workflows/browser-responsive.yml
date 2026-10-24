@@ -7,6 +7,7 @@ on:
   push:
     branches:
       - main
+      - feat/role-statistics-recovery-2026-10-23
       - fix/p0-integrated-admission-evidence-2026-10-16
       - feat/portfolio-live-media-evidence-2026-10-18
       - fix/p0-portfolio-media-archive-integrity-2026-10-19
@@ -66,6 +67,7 @@ jobs:
           python tests/test_session_revocation_browser.py
           python tests/test_my_state_browser.py
           python tests/test_participant_agenda_browser.py
+          python tests/test_role_operations_browser.py
           python tests/test_registration_ui_browser.py
           python tests/test_event_registration_ui_browser.py
           python tests/test_public_guest_browser.py

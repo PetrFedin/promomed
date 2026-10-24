@@ -8,7 +8,8 @@
   const REG_REQUEST="/api/participant-registration/v1/request";
   const REG_VERIFY="/api/participant-registration/v1/verify";
   const $=id=>document.getElementById(id);
-  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,eventBusy:false,partnerBusy:false,registration:null,eventEditions:[],agenda:null};
+  const state={token:null,account:null,generation:0,controllers:new Set(),notes:[],next:null,pending:null,busy:false,authBusy:false,eventBusy:false,partnerBusy:false,registration:null,eventEditions:[],agenda:null,agendaExportBusy:false,availabilityOrg:'',availabilityRead:0};
+  const invitation=window.location?new URLSearchParams(window.location.search).get('partner'):null;
 
   function message(text="",error=false){
     const n=$("notice");n.hidden=!text;n.textContent=text;n.classList.toggle("error",!!error);
@@ -31,6 +32,8 @@
     showAuthMode(mode);message("");
   }
   function clearSession(){
+    state.availabilityOrg='';state.availabilityRead++;state.agendaExportBusy=false;
+    $('available-slots').replaceChildren();$('available-organization').value=invitation||'';
     state.generation++;abortAll();state.token=null;state.account=null;state.notes=[];state.next=null;state.pending=null;state.busy=false;state.authBusy=false;state.eventBusy=false;state.partnerBusy=false;state.registration=null;state.eventEditions=[];state.agenda=null;
     $("workspace").hidden=true;$("signed-out").hidden=false;$("logout").hidden=true;
     $("login-button").disabled=false;$("signup-button").disabled=false;$("verify-button").disabled=false;$("save-note").disabled=true;$("logout-all").disabled=false;
@@ -169,15 +172,16 @@
     if(!items.length){root.append(el("p","fine",kind==="appointment"?"Встреч пока нет.":"Заявок пока нет."));return;}
     for(const item of items){
       const card=el("div","partnerRecord");
-      const status=item.status||"";
+      const status=item.effective_status||item.status||"";
+      if(kind==='appointment')card.id='appointment-record-'+item.slot_id;
       if(kind==="appointment"){
         const name=item.organization_name||item.organization_id||"Партнёр";
         const stamp=item.starts_at?new Date(item.starts_at*1000).toLocaleString("ru-RU"):"";
-        card.append(el("strong","",name),el("span","fine",stamp),el("span","",status==="booked"?"Место подтверждено":status==="waitlist"?"Лист ожидания":"Отменено"));
+        card.append(el("strong","",name),el("span","fine",stamp),el("span","",status==="booked"?"Место подтверждено":status==="waitlist"?"Лист ожидания":status==='unavailable'?'Встреча недоступна':'Отменено'));
       }else{
         card.append(el("strong","",item.kind||"Заявка"),el("span","fine","Организация: "+(item.organization_id||"")),el("span","",status==="submitted"?"Контакт передан":"Согласие отозвано"));
       }
-      if((kind==="appointment"&&["booked","waitlist"].includes(status))||(kind==="lead"&&status==="submitted")){
+      if((kind==="appointment"&&(item.can_cancel||["booked","waitlist"].includes(status)))||(kind==="lead"&&status==="submitted")){
         const button=el("button","outline",kind==="appointment"?"Отменить встречу":"Отозвать заявку");
         button.type="button";button.disabled=state.partnerBusy;
         button.addEventListener("click",()=>changePartnerRecord(kind,item,button));
@@ -195,6 +199,7 @@
         ?{action:"cancel",slot_id:item.slot_id}:{action:"lead_withdraw",lead_id:item.id}});
       if(generation!==state.generation)return;
       message(appointment?"Встреча отменена.":"Заявка отозвана.");
+      state.partnerBusy=false;
       await refresh();
     }catch(e){fail(e,generation,"Изменение не подтверждено. Обновите данные и проверьте статус.");}
     finally{if(generation===state.generation){state.partnerBusy=false;button.disabled=false;}}
@@ -205,6 +210,12 @@
     const eligible=(data.items||[]).filter(x=>x.calendarEligible);
     $("agenda-export").disabled=!state.token||eligible.length===0||!data.calendarIcs;
     const conflictIds=new Set((data.conflicts||[]).flatMap(x=>[x.first,x.second]));
+    if(data.summary){
+      const metrics=el('dl','agendaMetrics');
+      for(const [label,value] of [['Подтверждённые встречи',data.summary.confirmedAppointments],['Занятое время',duration(data.summary.occupiedSeconds)],['Пересечения',duration(data.summary.overlapSeconds)],['Ожидание',data.summary.upcomingWaitlist]]){
+        const metric=el('div','');metric.append(el('dt','',label),el('dd','',String(value)));metrics.append(metric);
+      }root.append(metrics);
+    }
     if(!data.items?.length){root.append(el("p","fine","Подтверждённых событий и встреч пока нет."));return;}
     const labels={confirmed:"Подтверждено",booked:"Встреча подтверждена",
       waitlist:"Лист ожидания",cancelled:"Отменено",unavailable:"Недоступно"};
@@ -220,8 +231,13 @@
       const end=item.endsAt?new Date(item.endsAt*1000).toLocaleTimeString("ru-RU",
         {hour:"2-digit",minute:"2-digit"}):null;
       card.append(el("p","fine",end?start+" — "+end:start+" · Время окончания не указано"));
-      if(conflictIds.has(item.id))card.append(el("p","agendaWarning",
-        "Есть пересечение с другой подтверждённой встречей."));
+      if(conflictIds.has(item.id))for(const conflict of data.conflicts.filter(x=>x.first===item.id||x.second===item.id)){
+        const other=data.items.find(x=>x.id===(conflict.first===item.id?conflict.second:conflict.first));
+        card.append(el('p','agendaWarning','Пересечение: '+(other?.title||'Встреча')+' · '+duration(conflict.overlapSeconds)));
+      }
+      if(item.kind==='partner_appointment'){
+        const link=el('a','fine','Управление записью');link.href='#appointment-record-'+item.id.slice('appointment:'.length);card.append(link);
+      }
       if(item.kind==="event_edition")card.append(el("p","fine",
         "Регистрация на событие не означает посещение."));
       root.append(card);
@@ -245,14 +261,22 @@
       state.agenda=null;$("agenda-export").disabled=true;
     }
   }
-  $("agenda-export").addEventListener("click",()=>{
-    if(!state.token||!state.agenda?.calendarIcs)return;
+  $("agenda-export").addEventListener("click",async()=>{
+    if(!state.token||state.agendaExportBusy)return;
+    const g=state.generation;state.agendaExportBusy=true;$('agenda-export').disabled=true;
+    try{
+    const fresh=await request(AGENDA);
+    if(g!==state.generation||!state.token)return;
+    renderAgenda(fresh);
+    if(!fresh.items.some(x=>x.calendarEligible)||!fresh.calendarIcs)return;
     const link=document.createElement("a");
     const file=new Blob([state.agenda.calendarIcs],{type:"text/calendar;charset=utf-8"});
     const href=URL.createObjectURL(file);
     link.href=href;link.download="sostoyanie-my-agenda.ics";
     document.body.append(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(href),1500);
+    }catch(e){fail(e,g,'Не удалось получить актуальный календарь. Повторите попытку.');}
+    finally{if(g===state.generation){state.agendaExportBusy=false;$('agenda-export').disabled=!state.token||!state.agenda?.items?.some(x=>x.calendarEligible);}}
   });
 
   async function refreshPartner(){
@@ -269,12 +293,93 @@
       }
     }
   }
+  function duration(seconds){
+    seconds=Math.max(0,seconds||0);
+    return seconds%60?Math.floor(seconds/60)+' мин '+seconds%60+' с':(seconds/60)+' мин';
+  }
+  function renderAvailable(data){
+    const root=$('available-slots');root.replaceChildren(el('h3','',data.organization.name));
+    const contactForm=el('form','contactRequest'),contactLabel=el('label','consent'),contactConsent=el('input',''),contactButton=el('button','outline','Запросить связь');
+    contactConsent.type='checkbox';contactButton.disabled=true;contactButton.type='submit';
+    contactLabel.append(contactConsent,document.createTextNode('Разрешаю отдельно передать мой email организации «'+data.organization.name+'» для ответа на заявку.'));
+    contactConsent.addEventListener('change',()=>{contactButton.disabled=!contactConsent.checked||state.partnerBusy;});
+    contactForm.append(contactLabel,contactButton);root.append(contactForm);
+    let requestId=null;
+    contactForm.addEventListener('submit',async e=>{
+      e.preventDefault();if(!contactConsent.checked||state.partnerBusy||!state.token)return;
+      const g=state.generation;state.partnerBusy=true;contactButton.disabled=true;
+      try{
+        requestId=requestId||crypto.randomUUID().replaceAll('-','');
+        await request(PARTNER_LEAD,{method:'POST',body:{action:'lead_submit',organization_id:data.organization.id,kind:'contact_request',consent:true,request_id:requestId}});
+        if(g!==state.generation)return;state.partnerBusy=false;
+        try{await refresh();if(g===state.generation)message('Заявка передана. Отозвать согласие можно в разделе «Мои заявки».');}
+        catch(e){fail(e,g,'Заявка принята сервером. Обновите кабинет, чтобы проверить статус.');}
+      }catch(e){fail(e,g,'Передача заявки не подтверждена. Обновите кабинет и проверьте свои заявки.');}
+      finally{if(g===state.generation){state.partnerBusy=false;contactButton.disabled=!contactConsent.checked;}}
+    });
+    if(data.truncated||!data.conflictsComplete)root.append(el('p','agendaWarning','Показана часть данных. Проверка пересечений может быть неполной.'));
+    if(!data.slots.length)root.append(el('p','fine','Доступного времени пока нет.'));
+    for(const slot of data.slots){
+      const card=el('article','availableSlot');card.dataset.slot=slot.id;
+      card.append(el('strong','',new Date(slot.startsAt*1000).toLocaleString('ru-RU')+' — '+new Date(slot.endsAt*1000).toLocaleString('ru-RU')),
+        el('p','fine',slot.myStatus?'Вы уже записаны.':slot.availableSeats?'Свободных мест: '+slot.availableSeats:'Свободных мест нет. Можно встать в очередь.'));
+      for(const conflict of slot.knownConflicts)card.append(el('p','agendaWarning','Пересечение: '+conflict.title+' · '+duration(conflict.overlapSeconds)));
+      if(!slot.myStatus){
+        const label=el('label','consent'),consent=el('input',''),button=el('button','outline',slot.availableSeats?'Записаться':'Встать в очередь');
+        consent.type='checkbox';button.type='button';button.disabled=true;
+        label.append(consent,document.createTextNode('Разрешаю передать мой email организации «'+data.organization.name+'» для этой встречи.'));
+        consent.addEventListener('change',()=>{button.disabled=!consent.checked||state.partnerBusy;delete button.dataset.confirm;});
+        button.addEventListener('click',()=>bookAvailable(data.organization.id,slot,consent,button));card.append(label,button);
+      }root.append(card);
+    }
+  }
+  async function loadAvailable(org){
+    if(!state.token)return;
+    const g=state.generation,sequence=++state.availabilityRead;
+    state.availabilityOrg=org;$('available-organization').value=org;
+    $('available-slots').replaceChildren(el('p','fine','Загрузка времени…'));
+    try{
+      if(!/^[A-Za-z0-9][A-Za-z0-9:_-]{0,99}$/.test(org))throw new Error('invalid_organization');
+      const data=await request(PARTNER_APPT+'/available?organization_id='+encodeURIComponent(org));
+      if(g!==state.generation||sequence!==state.availabilityRead||$('available-organization').value.trim()!==org)return;
+      renderAvailable(data);
+    }catch(e){
+      if(g!==state.generation||sequence!==state.availabilityRead)return;
+      $('available-slots').replaceChildren(el('p','fine','Время недоступно. Проверьте код приглашения или повторите запрос.'));
+      if(e.status===401||e.status===403)fail(e,g);
+    }
+  }
+  async function bookAvailable(org,slot,consent,button){
+    if(!state.token||state.partnerBusy||!consent.checked)return;
+    const g=state.generation;state.partnerBusy=true;button.disabled=true;
+    try{
+      const fresh=await request(PARTNER_APPT+'/available?organization_id='+encodeURIComponent(org));
+      if(g!==state.generation||state.availabilityOrg!==org||$('available-organization').value.trim()!==org||!consent.checked||consent.isConnected===false)return;
+      const current=fresh.slots.find(x=>x.id===slot.id);
+      if(!current||current.startsAt!==slot.startsAt||current.endsAt!==slot.endsAt||(current.availableSeats===0)!==(slot.availableSeats===0)||current.myStatus){
+        renderAvailable(fresh);message('Данные встречи изменились. Проверьте время и статус перед записью.');return;
+      }
+      const signature=JSON.stringify(current.knownConflicts);
+      if(current.knownConflicts.length&&button.dataset.confirm!==signature){
+        button.dataset.confirm=signature;button.textContent='Подтвердить запись с пересечением';message('Есть пересечение. Для записи подтвердите выбор повторным нажатием.',true);return;
+      }
+      const result=await request(PARTNER_APPT,{method:'POST',body:{action:'book',slot_id:slot.id,contact_consent:true,expected_version:current.version}});
+      if(g!==state.generation)return;
+      const text=result.appointment.status==='booked'?'Место подтверждено.':'Вы добавлены в лист ожидания.';
+      state.partnerBusy=false;
+      try{await refresh();if(g===state.generation)message(text);}
+      catch(e){fail(e,g,text+' Обновить кабинет не удалось. Проверьте свои записи перед повторной попыткой.');}
+    }catch(e){fail(e,g,e.code==='version_conflict'?'Партнёр изменил встречу. Обновите время и подтвердите выбор заново.':'Запись не подтверждена. Обновите данные и проверьте свои встречи.');}
+    finally{if(g===state.generation){state.partnerBusy=false;for(const card of $('available-slots').querySelectorAll('.availableSlot')){const input=card.querySelector('input'),action=card.querySelector('button');if(action)action.disabled=!input.checked;}}}
+  }
+  $('available-form').addEventListener('submit',e=>{e.preventDefault();if(!state.partnerBusy)loadAvailable($('available-organization').value.trim());});
   async function refresh(){
     if(!state.token)return;
     const g=state.generation;
     const [data,eventData]=await Promise.all([request(API),request(EVENT_API)]);
     if(g!==state.generation)return;render(data);renderEventRegistrations(eventData);
     await Promise.all([refreshPartner(),refreshAgenda()]);
+    if(state.availabilityOrg||invitation)await loadAvailable(state.availabilityOrg||invitation);
   }
   $("login-form").addEventListener("submit",async e=>{
     e.preventDefault();
@@ -390,7 +495,13 @@
     catch(err){if(g===state.generation){state.busy=false;fail(err,g,"Не удалось подтвердить отзыв всех сессий.");}}
   });
   window.addEventListener("pagehide",clearSession);
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&state.token&&!state.busy){const g=state.generation;refresh().catch(e=>fail(e,g));}});
-  setInterval(()=>{if(state.token&&!state.busy){const g=state.generation;refresh().catch(e=>fail(e,g));}},30000);
+  function backgroundRefresh(){
+    if(!state.token||state.busy||state.partnerBusy||state.eventBusy||state.authBusy||state.agendaExportBusy)return;
+    if($('available-organization').value.trim()!==state.availabilityOrg)return;
+    if($('available-slots').querySelector('input:checked'))return;
+    const g=state.generation;refresh().catch(e=>fail(e,g));
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")backgroundRefresh();});
+  setInterval(backgroundRefresh,30000);
   showAuthMode("login");updateCount();
 })();

@@ -1,12 +1,14 @@
 """Composition router for versioned partner-facing product surfaces."""
-from app import partner_appointments, partner_commercial
+from app import partner_appointments, partner_commercial, organization_operations
 
 
 def serve(actor, raw_path):
     path = raw_path.split("?", 1)[0].split("#", 1)[0]
+    if path == organization_operations.ROUTE:
+        return organization_operations.serve(actor,raw_path)
     if path == partner_commercial.ROUTE:
         return partner_commercial.serve(actor, raw_path)
-    if path == partner_appointments.ROUTE:
+    if path in (partner_appointments.ROUTE,partner_appointments.AVAILABLE_ROUTE):
         return partner_appointments.serve(actor, raw_path)
     return None
 
