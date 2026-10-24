@@ -123,23 +123,57 @@ def _partner_snapshot(c,email):
 
 
 def _participant_snapshot(c,email):
-    rows=[dict(x) for x in c.execute(
+    # Retain the owner's canonical booking state; independently describe whether
+    # the partner relationship still authorizes a usable meeting. A revoked
+    # binding must not be shown as a currently confirmed appointment.
+    result=[]
+    for r in c.execute(
         """SELECT b.slot_id,b.status,b.contact_consent_at,b.requested_at,b.updated_at,
                   s.organization_id,s.starts_at,s.ends_at,s.status slot_status,
-                  o.name organization_name
+                  o.name organization_name,o.status org_status,o.partner_id,
+                  o.demo_only org_demo_only,s.demo_only slot_demo_only,
+                  p.status placement_status,p.demo_only placement_demo_only
            FROM participant_partner_appointments_v1 b
            JOIN partner_appointment_slots_v1 s ON s.id=b.slot_id
            JOIN institutional_organizations o ON o.id=s.organization_id
+           LEFT JOIN partner_commercial_placements_v1 p ON p.organization_id=o.id
            WHERE b.email=?
            ORDER BY s.starts_at,b.slot_id LIMIT 200""",
         (email,),
-    )]
+    ):
+        row=dict(r)
+        admitted=(
+            row["org_status"]=="active"
+            and isinstance(row["partner_id"],str)
+            and bool(row["partner_id"].strip())
+            and row["slot_status"] in ("open","closed")
+            and row["placement_status"]=="enabled"
+            and row["placement_demo_only"] is not None
+            and int(row["org_demo_only"])==int(row["slot_demo_only"])
+            and int(row["slot_demo_only"])==int(row["placement_demo_only"])
+            and (db.demo_seed_enabled() or int(row["slot_demo_only"])==0)
+        )
+        canonical=row["status"]
+        public={
+            key:row[key] for key in (
+                "slot_id","status","contact_consent_at","requested_at","updated_at",
+                "organization_id","starts_at","ends_at","slot_status","organization_name",
+            )
+        }
+        public["effective_status"]=(
+            "cancelled" if canonical=="cancelled"
+            else canonical if admitted else "unavailable"
+        )
+        public["canonicalBookingPreserved"]=True
+        result.append(public)
     return {
         "version":"partner-appointments-v1",
-        "myAppointments":rows,
+        "myAppointments":result,
         "truthBoundary":{
             "appointmentIsNotAttendance":True,
             "waitlistIsNotBooking":True,
+            "unavailableIsNotConfirmed":True,
+            "ownerCancellationStillAvailable":True,
             "marketingConsent":False,
             "medicalConsent":False,
         },

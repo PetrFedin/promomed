@@ -45,6 +45,12 @@ class MyStateUiContractTests(unittest.TestCase):
         self.assertIn('Promise.allSettled([request(PARTNER_APPT),request(PARTNER_LEAD)])',JS)
         self.assertNotIn('innerHTML',JS)
 
+    def test_revoked_partner_is_not_shown_as_confirmed_in_owner_workspace(self):
+        self.assertIn("item.effective_status||status",JS)
+        self.assertIn("Встреча недоступна — история сохранена",JS)
+        self.assertIn('["booked","waitlist"].includes(status)',JS)
+        self.assertIn('action:"cancel",slot_id:item.slot_id',JS)
+
     def test_unified_agenda_is_scoped_and_calendar_download_is_explicit(self):
         self.assertIn('const AGENDA="/api/participant-agenda/v1"',JS)
         self.assertIn('request(AGENDA)',JS)

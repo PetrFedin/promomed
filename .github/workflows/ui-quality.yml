@@ -17,6 +17,7 @@ on:
       - fix/p0-commercial-write-atomicity-2026-10-20
       - feat/participant-unified-agenda-2026-10-20
       - fix/p0-institution-registration-no-implicit-unbind-2026-10-22
+      - feat/p0-partner-binding-governance-2026-10-24
   pull_request:
     branches:
       - main

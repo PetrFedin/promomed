@@ -173,7 +173,10 @@
       if(kind==="appointment"){
         const name=item.organization_name||item.organization_id||"Партнёр";
         const stamp=item.starts_at?new Date(item.starts_at*1000).toLocaleString("ru-RU"):"";
-        card.append(el("strong","",name),el("span","fine",stamp),el("span","",status==="booked"?"Место подтверждено":status==="waitlist"?"Лист ожидания":"Отменено"));
+        const effective=item.effective_status||status;
+        const stateLabel=effective==="unavailable"?"Встреча недоступна — история сохранена":
+          effective==="booked"?"Место подтверждено":effective==="waitlist"?"Лист ожидания":"Отменено";
+        card.append(el("strong","",name),el("span","fine",stamp),el("span","",stateLabel));
       }else{
         card.append(el("strong","",item.kind||"Заявка"),el("span","fine","Организация: "+(item.organization_id||"")),el("span","",status==="submitted"?"Контакт передан":"Согласие отозвано"));
       }

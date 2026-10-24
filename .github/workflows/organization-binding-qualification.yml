@@ -8,6 +8,7 @@ on:
     branches:
       - fix/p0-institutional-binding-refresh-2026-10-20
       - fix/p0-institution-registration-no-implicit-unbind-2026-10-22
+      - feat/p0-partner-binding-governance-2026-10-24
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

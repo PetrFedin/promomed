@@ -1,10 +1,11 @@
 from app.commanding import custom, error
 from app.core import audit
-from app import evidence_interchange
+from app import evidence_interchange, partner_binding_governance
 
 
 ROUTES={
     "/api/institution/register",
+    partner_binding_governance.ROUTE,
     "/api/institution/role",
     "/api/evidence-interchange/package/create",
     "/api/evidence-interchange/package/deliver",
@@ -17,6 +18,8 @@ def handle_command(c,route,role,email,data):
     if route not in ROUTES:
         return None
 
+    if route==partner_binding_governance.ROUTE:
+        return partner_binding_governance.handle_command(c,route,role,email,data)
     if role!="governance":
         return error("forbidden",403)
     if not isinstance(data,dict):
