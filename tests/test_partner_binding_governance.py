@@ -245,6 +245,38 @@ class BindingGovernanceTests(unittest.TestCase):
             )
         self.c.rollback()
 
+    def test_duplicate_decision_key_for_new_request_fails_without_partial_write(self):
+        first=self.proposal()
+        self.assertEqual(self.send(first).status,201)
+        old_decision=self.decision(first["request_id"],decision="reject")
+        self.assertEqual(self.send(old_decision,actor=self.reviewer).status,200)
+        second=self.proposal()
+        self.assertEqual(self.send(second).status,201)
+        collision=self.decision(
+            second["request_id"],decision_id=old_decision["decision_id"],
+        )
+        refused=self.send(collision,actor=self.reviewer)
+        self.assertEqual((refused.status,refused.payload["error"]),
+                         (409,"idempotency_conflict"))
+        self.assertEqual(self.status(),self.partner_id)
+        self.assertEqual(
+            self.c.execute(
+                "SELECT status FROM institutional_partner_binding_requests_v1 "
+                "WHERE id=?",(second["request_id"],),
+            ).fetchone()["status"],"pending",
+        )
+        self.assertEqual(binding._version(self.c,self.org),0)
+        self.assertEqual(
+            self.c.execute(
+                "SELECT status FROM partner_commercial_placements_v1 "
+                "WHERE organization_id=?",(self.org,),
+            ).fetchone()["status"],"enabled",
+        )
+        applied=self.send(self.decision(second["request_id"]),
+                          actor=self.reviewer)
+        self.assertEqual(applied.status,200,applied.payload)
+        self.assertIsNone(self.status())
+
     def test_first_binding_requires_clean_tenant_and_two_actors(self):
         fresh=self.org+"-NEW"
         evidence_interchange.register_organization(

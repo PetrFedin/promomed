@@ -35,7 +35,7 @@ On accepted revoke, institution partner_id becomes NULL; admitted commercial rea
 ## Acceptance and engineering evidence
 
 - SQLite and real PostgreSQL 17 fresh/upgrade migrations, migration checksum continuity and restore qualification.
-- Distinct active proposer/reviewer, suspended-account and wrong-role negatives, explicit request/decision idempotency.
+- Distinct active proposer/reviewer, suspended-account and wrong-role negatives, explicit request/decision idempotency including reused decision IDs across requests and rollback of any partial mutation.
 - Expiry, concurrent proposals, two simultaneous independent reviewers, stale versions and cross-org denial.
 - Commercial lead/partner-appointment read revocation, participant-owner cancellations and unavailable-state ICS.
 - Initial clean binding never implicitly grants unverified partner membership.

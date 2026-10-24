@@ -257,6 +257,15 @@ def _review(c,email,data):
         ):
             return custom({"request":_public(row),"replayed":True})
         return error("decision_already_recorded",409)
+    # A decision id is globally unique, not just unique for one request.
+    # Reject reuse cleanly rather than leaking a SQL UNIQUE error to HTTP.
+    reused=c.execute(
+        "SELECT 1 FROM institutional_partner_binding_requests_v1 "
+        "WHERE decision_id=? AND id<>? LIMIT 1",
+        (decision_id,request_id),
+    ).fetchone()
+    if reused:
+        return error("idempotency_conflict",409)
     now=int(time.time())
     if int(row["expires_at"])<=now:
         return error("request_expired",409)
@@ -327,12 +336,18 @@ def _review(c,email,data):
         state="rejected"
         action="rejected"
         next_version=int(row["expected_version"])
-    updated=c.execute(
-        "UPDATE institutional_partner_binding_requests_v1 "
-        "SET status=?,decision_id=?,reviewed_by=?,reviewed_at=?,review_reason=? "
-        "WHERE id=? AND status='pending'",
-        (state,decision_id,email,now,reason,request_id),
-    )
+    try:
+        updated=c.execute(
+            "UPDATE institutional_partner_binding_requests_v1 "
+            "SET status=?,decision_id=?,reviewed_by=?,reviewed_at=?,review_reason=? "
+            "WHERE id=? AND status='pending'",
+            (state,decision_id,email,now,reason,request_id),
+        )
+    except db.INTEGRITY_ERRORS:
+        # A different organization may have committed the same decision key
+        # after our pre-read. Roll back ALL earlier binding/placement writes.
+        c.rollback()
+        return error("idempotency_conflict",409)
     if updated.rowcount!=1:
         return error("decision_already_recorded",409)
     _receipt(c,request_id,org["id"],action,email,
