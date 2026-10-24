@@ -5,7 +5,7 @@ import time
 import unittest
 import uuid
 
-from app import db, evidence_interchange, partner_binding_governance as binding
+from app import db, evidence_interchange, partner_binding_governance as binding, partner_appointments
 from app import partner_org_scope, participant_agenda, syndication_network
 from app.auth import hash_password
 
@@ -224,6 +224,15 @@ class BindingGovernancePostgresTests(unittest.TestCase):
             self.assertIsNone(partner_org_scope.commercial_member(
                 c,self.org,self.partner,
             ))
+            appointment_owner,status=partner_appointments.read(
+                c,partner_appointments.ROUTE,"participant",self.owner,
+            )
+            self.assertEqual(status,200)
+            self.assertEqual(appointment_owner["myAppointments"][0]["status"],"booked")
+            self.assertEqual(
+                appointment_owner["myAppointments"][0]["effective_status"],
+                "unavailable",
+            )
             owner,status=participant_agenda.read(
                 c,participant_agenda.ROUTE,"participant",self.owner,
             )

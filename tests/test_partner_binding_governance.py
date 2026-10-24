@@ -167,6 +167,16 @@ class BindingGovernanceTests(unittest.TestCase):
         )
         self.assertEqual(status,200)
         self.assertEqual(appointments["organizations"],[])
+        owner_appointments,status=partner_appointments.read(
+            self.c,partner_appointments.ROUTE,"participant",self.owner,
+        )
+        self.assertEqual(status,200)
+        self.assertEqual(owner_appointments["myAppointments"][0]["status"],"booked")
+        self.assertEqual(
+            owner_appointments["myAppointments"][0]["effective_status"],
+            "unavailable",
+        )
+        self.assertNotIn(self.partner,json.dumps(owner_appointments))
         agenda,status=participant_agenda.read(
             self.c,participant_agenda.ROUTE,"participant",self.owner,
         )
