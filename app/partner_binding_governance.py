@@ -272,12 +272,20 @@ def _review(c,email,data):
                 return error("partner_not_active",409)
             if _history(c,org["id"]):
                 return error("prior_commercial_history_requires_new_organization",409)
+        # PostgreSQL cannot infer the type of an untyped "? IS NULL"
+        # parameter. Choose one of two fixed SQL predicates instead.
+        # No untrusted string is interpolated into the SQL structure.
+        if row["expected_partner_id"] is None:
+            predicate="partner_id IS NULL"
+            params=(target,org["id"],int(org["demo_only"]))
+        else:
+            predicate="partner_id=?"
+            params=(target,org["id"],int(org["demo_only"]),
+                    row["expected_partner_id"])
         changed=c.execute(
             "UPDATE institutional_organizations SET partner_id=? "
-            "WHERE id=? AND status='active' AND demo_only=? "
-            "AND ((partner_id IS NULL AND ? IS NULL) OR partner_id=?)",
-            (target,org["id"],int(org["demo_only"]),
-             row["expected_partner_id"],row["expected_partner_id"]),
+            "WHERE id=? AND status='active' AND demo_only=? AND "+predicate,
+            params,
         )
         if changed.rowcount!=1:
             return error("version_conflict",409)
