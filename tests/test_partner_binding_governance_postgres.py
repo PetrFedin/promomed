@@ -6,7 +6,7 @@ import unittest
 import uuid
 
 from app import db, evidence_interchange, partner_binding_governance as binding
-from app import partner_org_scope, participant_agenda
+from app import partner_org_scope, participant_agenda, syndication_network
 from app.auth import hash_password
 
 
@@ -122,8 +122,10 @@ class BindingGovernancePostgresTests(unittest.TestCase):
                       (self.org,))
             c.execute("DELETE FROM partner_commercial_placements_v1 WHERE organization_id=?",
                       (self.org,))
-            c.execute("DELETE FROM institutional_memberships WHERE organization_id=?",
-                      (self.org,))
+            c.execute(
+                "DELETE FROM institutional_memberships "
+                "WHERE organization_id IN (?,?)",(self.org,self.fresh),
+            )
             for org in (self.org,self.fresh):
                 c.execute("DELETE FROM institutional_organizations WHERE id=?",(org,))
             for email in (self.proposer,*self.reviewers,self.partner,self.owner):
@@ -262,6 +264,55 @@ class BindingGovernancePostgresTests(unittest.TestCase):
             self.assertIsNone(
                 evidence_interchange.organization(c,self.fresh)["partner_id"],
             )
+        finally:c.close()
+
+    def test_membership_authority_serializes_before_first_binding(self):
+        c=db.connect()
+        try:
+            args=self.propose(org=self.fresh,old=None,new=self.second_id)
+            self.assertEqual(self.send(c,self.proposer,args).status,201)
+        finally:c.close()
+        # An uncommitted membership claim holds the parent institution lock.
+        # The independent reviewer must not approve from an old snapshot.
+        member_c=db.connect()
+        try:
+            member=syndication_network.bind_member(
+                member_c,self.fresh,self.partner,"operator",self.proposer,
+                verification_ref="independent-verified-fixture",demo_only=False,
+            )
+            self.assertEqual(member["status"],"active")
+            outcomes=[]
+            errors=[]
+            def review():
+                worker=db.connect()
+                try:
+                    res=self.send(
+                        worker,self.reviewers[0],self.review(args["request_id"]),
+                    )
+                    outcomes.append((res.status,res.payload))
+                except Exception as exc:
+                    try:worker.rollback()
+                    except Exception:pass
+                    errors.append(repr(exc))
+                finally:worker.close()
+            t=threading.Thread(target=review)
+            t.start()
+            # Committing the membership first must force a fresh history check
+            # after the reviewer obtains the institution row lock.
+            member_c.commit()
+            t.join(timeout=25)
+            self.assertFalse(t.is_alive())
+            self.assertFalse(errors,errors)
+            self.assertEqual(outcomes[0],(
+                409,{"error":"prior_commercial_history_requires_new_organization"},
+            ))
+        finally:member_c.close()
+        c=db.connect()
+        try:
+            self.assertIsNone(
+                evidence_interchange.organization(c,self.fresh)["partner_id"],
+            )
+            self.assertEqual(binding._version(c,self.fresh),0)
         finally:c.close()
 
     def test_new_partner_cannot_inherit_previous_or_newer_commercial_history(self):

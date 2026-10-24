@@ -2,7 +2,7 @@ import hashlib
 import json
 import time
 
-from app import evidence_checkpoint, reviewer_authority
+from app import db, evidence_checkpoint, reviewer_authority
 
 
 QUALIFICATION_VERSION="promomed-syndication-qualification-v1"
@@ -67,6 +67,16 @@ def bind_member(
     c,organization_id,account_email,member_role,verified_by,
     verification_ref="",expires_at=None,demo_only=False,
 ):
+    # Serialize first commercial binding with membership activation. Without
+    # the parent lock, a concurrent membership insert could bypass the
+    # no-preexisting-grants check and acquire commercial rights by accident.
+    if db.backend_name()=="sqlite" and not c.in_transaction:
+        c.execute("BEGIN IMMEDIATE")
+    if db.backend_name()=="postgres":
+        c.execute(
+            "SELECT id FROM institutional_organizations WHERE id=? FOR UPDATE",
+            (organization_id,),
+        ).fetchone()
     org=_organization(c,organization_id)
     account_email=str(account_email or "").lower().strip()
     account=c.execute(
